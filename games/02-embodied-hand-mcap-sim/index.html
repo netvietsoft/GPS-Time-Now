@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Embodied Robotics Hand Lab — .mcap Simulator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="badge">EMBODIED .MCAP</span>
+      <div>
+        <h1>NextAI Embodied Robotics Hand Lab</h1>
+        <p>21-Keypoint Hand Skeleton + 4-Sensor IMU Stream Multiplexer • nextai.solution</p>
+      </div>
+    </div>
+    <div class="pills">
+      <div class="pill">
+        <div class="lbl">Hand Visibility</div>
+        <div class="val" id="hudVis">98.4%</div>
+      </div>
+      <div class="pill">
+        <div class="lbl">IMU Stability</div>
+        <div class="val" id="hudImu">96.0%</div>
+      </div>
+      <div class="pill">
+        <div class="lbl">.MCAP Chunks</div>
+        <div class="val" id="hudChunks">0</div>
+      </div>
+      <div class="pill">
+        <div class="lbl">BRL / MXN Earned</div>
+        <div class="val" id="hudReward">R$ 0.00</div>
+      </div>
+      <div class="pill">
+        <div class="lbl">Lab Score</div>
+        <div class="val" id="hudScore">0</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stage-box">
+      <canvas id="handCanvas" width="820" height="540"></canvas>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h2>4-Sensor IMU Stream (Accel/Gyro/Mag/RotVec)</h2>
+        <canvas id="imuCanvas" width="310" height="110"></canvas>
+      </div>
+
+      <div class="card">
+        <h2>QA Gatekeeper (>= 85% Required)</h2>
+        <div class="kv-grid">
+          <div class="kv">
+            <span>Tasks Completed</span>
+            <strong id="valTasks">0 / 12</strong>
+          </div>
+          <div class="kv">
+            <span>VIP Days Bonus</span>
+            <strong id="valVip">+0 Days</strong>
+          </div>
+          <div class="kv">
+            <span>Pinch State</span>
+            <strong id="valPinch">OPEN</strong>
+          </div>
+          <div class="kv">
+            <span>Best Score</span>
+            <strong id="valBest">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Dexterous Task Controls</h2>
+        <div class="btn-row">
+          <button class="primary" id="btnFlushMcap">
+            <span>Flush & Upload .mcap Episode</span>
+            <kbd>[E]</kbd>
+          </button>
+          <button id="btnSpawnParts">
+            <span>Spawn New Robotics Workpieces</span>
+            <kbd>[N]</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Foxglove .MCAP Multiplexer Log</h2>
+        <div class="log" id="mcapLog"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

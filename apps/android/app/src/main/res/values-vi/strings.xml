@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Time Now</string>
+    <string name="i_app_name">Time Now</string>
+    <string name="app_full_title">Time Now: Camera Thời Gian &amp; GPS</string>
+    <string name="app_vendor">NextAI Technology &amp; Solution</string>
+    <string name="app_tagline">Camera Đóng Dấu Thời Gian Thực, Tọa Độ GPS &amp; Xác Thực</string>
+
+    <!-- Camera Preview & Modes -->
+    <string name="mode_photo">Chụp Ảnh</string>
+    <string name="mode_video">Quay Video</string>
+    <string name="mode_attendance">Chấm Công</string>
+    <string name="mode_ai_count">Đếm AI</string>
+    <string name="mode_collage">Ghép Báo Cáo</string>
+    <string name="badge_ntp_gps_verified">Đã Xác Thực Thời Gian Thực &amp; GPS • Time Now</string>
+    <string name="badge_aegis_hardware_locked">Đã Khóa Chữ Ký Phần Cứng Aegis</string>
+    <string name="anti_fake_code_label">Time Now Photo Code</string>
+
+    <!-- Navigation & Feature Hubs -->
+    <string name="nav_camera">Máy Ảnh</string>
+    <string name="nav_watermarks">Mẫu Dấu</string>
+    <string name="nav_watermark_editor">Chỉnh Sửa Dấu</string>
+    <string name="nav_gallery_export">Xem Trước</string>
+    <string name="nav_teamspace">Teamspace</string>
+    <string name="nav_verify_auth">Trung Tâm Xác Thực</string>
+    <string name="nav_paywall">Time Now Plans</string>
+    <string name="nav_earn_robotics">Earn</string>
+    <string name="nav_ai_edge_cv">Đếm AI</string>
+    <string name="nav_settings">Cài Đặt</string>
+
+    <!-- Export & Steganography -->
+    <string name="export_pdf_report">Xuất Báo Cáo PDF Công Trường</string>
+    <string name="export_excel_xlsx">Xuất Bảng Tính Excel (.xlsx)</string>
+    <string name="export_google_earth_kmz">Xuất Bản Đồ Google Earth (.kmz)</string>
+    <string name="export_zip_archive">Nén Hồ Sơ Ảnh (.zip)</string>
+    <string name="remove_watermark_lossless">Khôi Phục Ảnh Gốc Không Dấu (JpegPacker)</string>
+
+    <!-- Teamspace SaaS -->
+    <string name="teamspace_tab_feed">Ảnh</string>
+    <string name="teamspace_tab_projects">Dự Án</string>
+    <string name="teamspace_tab_attendance">Chấm Công</string>
+    <string name="teamspace_tab_members">Cài Đặt</string>
+
+    <!-- Paywall -->
+    <string name="paywall_tab_plus">Time Now Plus</string>
+    <string name="paywall_tab_business">Time Now Business</string>
+    <string name="ad_free_pass_active">Thẻ Miễn Quảng Cáo Đang Bật</string>
+</resources>

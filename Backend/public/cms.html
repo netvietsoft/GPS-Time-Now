@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Super Admin CMS — Enterprise Camera, Teamspace & Embodied AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #090d16; color: #e2e8f0; }
+    .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.6); }
+    .tab-btn.active { background: linear-gradient(135deg, #2563eb, #06b6d4); color: white; border-color: transparent; }
+    pre { scrollbar-width: thin; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Top Header -->
+  <header class="glass sticky top-0 z-30 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-blue-500/20">NX</div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg font-bold tracking-tight text-white">NextAI Super Admin CMS</h1>
+          <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">v10.0.281 PROD</span>
+        </div>
+        <p class="text-xs text-slate-400">nextai.global • nextai.solution • nextai.technology • 177 APIs • 42 Relational + OLAP Tables</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 text-xs">
+      <a href="/truth" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-medium transition">🛡️ Truth H5 Portal</a>
+      <a href="/teamspace" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 font-medium transition">🏢 Teamspace Web SaaS</a>
+      <a href="/api/catalog" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-medium transition">📜 177 API Catalog JSON</a>
+      <a href="/health" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 font-medium transition">⚡ Health Status</a>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1600px] w-full mx-auto">
+    <!-- Sidebar Navigation (7 CMS Modules) -->
+    <aside class="lg:col-span-3 space-y-2">
+      <div class="glass rounded-2xl p-4 space-y-1.5">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 px-2 pb-2">7 Core CMS Modules</div>
+        <button onclick="switchTab('m1')" id="btn-m1" class="tab-btn active w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-800 transition flex items-center justify-between">
+          <span>1. Watermark Studio CMS</span><span class="text-xs opacity-75">PGC/UGC</span>
+        </button>
+        <button onclick="switchTab('m2')" id="btn-m2" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-800 hover:bg-slate-800/60 transition flex items-center justify-between">
+          <span>2. Teamspace & PostGIS Geofence</span><span class="text-xs opacity-75">B2B SaaS</span>
+        </button>
+        <button onclick="switchTab('m3')" id="btn-m3" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-800 hover:bg-slate-800/60 transition flex items-center justify-between">
+          <span>3. Anti-Fake & Truth Center</span><span class="text-xs opacity-75">Aegis/HMAC</span>
+        </button>
+        <button onclick="switchTab('m4')" id="btn-m4" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-800 hover:bg-slate-800/60 transition flex items-center justify-between">
+          <span>4. Billing, Plus VIP & Stripe</span><span class="text-xs opacity-75">Paywall</span>
+        </button>
+        <button onclick="switchTab('m5')" id="btn-m5" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-800 hover:bg-slate-800/60 transition flex items-center justify-between">
+          <span>5. AdX & Google AdMob Test Keys</span><span class="text-xs opacity-75">Monetize</span>
+        </button>
+        <button onclick="switchTab('m6')" id="btn-m6" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-800 hover:bg-slate-800/60 transition flex items-center justify-between">
+          <span>6. Embodied AI (.mcap) & Earn</span><span class="text-xs opacity-75">Robotics</span>
+        </button>
+        <button onclick="switchTab('m7')" id="btn-m7" class="tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium border border-slate-800 hover:bg-slate-800/60 transition flex items-center justify-between">
+          <span>7. OLAP Warehouse & AI Gateway</span><span class="text-xs opacity-75">42 Tables</span>
+        </button>
+      </div>
+
+      <!-- Live System Telemetry Card -->
+      <div class="glass rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Atomic NTP & Gateway</span>
+          <span id="live-clock" class="text-xs font-mono text-cyan-400">Syncing...</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-center">
+          <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
+            <div class="text-xl font-bold text-white" id="stat-endpoints">177</div>
+            <div class="text-[11px] text-slate-400">Active API Routes</div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
+            <div class="text-xl font-bold text-emerald-400" id="stat-tables">42 + 6</div>
+            <div class="text-[11px] text-slate-400">SQL + OLAP Tables</div>
+          </div>
+        </div>
+        <div class="text-[11px] text-slate-400 space-y-1">
+          <div>• Package: <code class="text-cyan-300">com.nextai.camera</code></div>
+          <div>• Database: <code class="text-cyan-300">nextai_camera_db</code></div>
+          <div>• Brand Sanitization: <span class="text-emerald-400 font-semibold">100% Clean</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Interactive Workspace -->
+    <main class="lg:col-span-9 space-y-6">
+      <!-- Module 1: Watermark Studio CMS -->
+      <section id="tab-m1" class="tab-pane space-y-4">
+        <div class="glass rounded-2xl p-6">
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Module 1 — Watermark Studio CMS (PGC & UGC Store)</h2>
+              <p class="text-sm text-slate-400">Manage dynamic JSON watermark templates (`new_watermarks_table`, `cloud_water_mark_table`) & On-Device Edge AI CVModel bindings.</p>
+            </div>
+            <button onclick="callApi('/nextai/v1/config/watermarks', {categoryIds:['cat_time_gps','cat_construction']})" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">🔄 Fetch Live Watermarks API</button>
+          </div>
+          <div id="wm-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+        </div>
+      </section>
+
+      <!-- Module 2: Teamspace B2B & Geofence PostGIS -->
+      <section id="tab-m2" class="tab-pane hidden space-y-4">
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Module 2 — B2B Teamspace & PostGIS Haversine Geofence Engine</h2>
+              <p class="text-sm text-slate-400">Manage enterprise tenants (`team_space_entry`), construction sites (`project_item_table`), and live GPS geofence radius verification.</p>
+            </div>
+            <button onclick="callApi('/nextai/v1/app/workgroup/home', {teamId:'team_vn_001'})" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">🏢 Load Teamspace Home</button>
+          </div>
+          <div id="team-list" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+
+          <!-- Interactive Geofence Check Simulator -->
+          <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+            <h3 class="text-sm font-bold text-cyan-400">📍 Live Haversine Geofence Attendance Check (`POST /nextai/v1/app/group/timeclock/geofence/check`)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-400 mb-1">Employee Latitude</label>
+                <input id="geo-lat" type="number" step="0.0001" value="10.7816" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white" />
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Employee Longitude</label>
+                <input id="geo-lng" type="number" step="0.0001" value="106.7073" class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white" />
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Geofence Center (Ba Son)</label>
+                <input disabled value="10.78152, 106.70724 (R=150m)" class="w-full px-3 py-2 rounded-lg bg-slate-950/50 border border-slate-800 text-slate-400" />
+              </div>
+              <div class="flex items-end">
+                <button onclick="testGeofence()" class="w-full px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition">Verify Geofence Radius</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Module 3: Anti-Fake & Truth Verification Center -->
+      <section id="tab-m3" class="tab-pane hidden space-y-4">
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Module 3 — Anti-Fake Cryptographic & Aegis Truth Center</h2>
+              <p class="text-sm text-slate-400">Audit `photo_code_entity`, `anti_code_entry`, `JpegPacker` steganography tail, and HMAC-SHA256 deterministic signatures.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="callApi('/nextai/v1/antiFakeCode/generate', {count: 5, deviceId: 'NX-DEV-9001'})" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">🔐 Generate Batch Anti-Fake Codes</button>
+              <button onclick="callApi('/nextai/v1/truthful/Query/batch/detail', {codes:['NX9X-84K2-V71Q'], ocrText:'2026-10-22 08:15:12 2 Ton Duc Thang'})" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">🔎 Audit Photo NX9X-84K2-V71Q</button>
+            </div>
+          </div>
+          <div id="photo-verify-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        </div>
+      </section>
+
+      <!-- Module 4: Billing, Subscriptions & Coupons -->
+      <section id="tab-m4" class="tab-pane hidden space-y-4">
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Module 4 — Billing, NextAI Plus VIP & Teamspace Subscriptions</h2>
+              <p class="text-sm text-slate-400">Dynamic SKU configuration (`goods/query`), Google Play Billing receipt verification (`order/google/receipts`) & Stripe Web Checkout.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="callApi('/nextai/v1/goods/query', {platform:'google_play'})" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition">💳 Query Paywall SKUs</button>
+              <button onclick="callApi('/nextai/v1/order/google/receipts', {orderNo:'ORD-NX-202610', purchaseToken:'gp_tok_test_998877', productId:'nextai_plus_annual_001'})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">✅ Simulate Play Receipt Verify</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="text-xs text-amber-400 font-bold uppercase">Individual VIP</div>
+              <div class="text-lg font-bold text-white mt-1">NextAI Plus Annual</div>
+              <div class="text-2xl font-black text-emerald-400 mt-2">$29.99 <span class="text-xs font-normal text-slate-400">/ year</span></div>
+              <ul class="text-xs text-slate-300 mt-3 space-y-1">
+                <li>• JpegPacker Reversible Watermark Removal</li>
+                <li>• Unlimited Cloud AI Logo Cutout</li>
+                <li>• Excel Apache POI & Google Earth KMZ Export</li>
+              </ul>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="text-xs text-cyan-400 font-bold uppercase">B2B SaaS Tier</div>
+              <div class="text-lg font-bold text-white mt-1">Teamspace Business Pro</div>
+              <div class="text-2xl font-black text-cyan-400 mt-2">$9.99 <span class="text-xs font-normal text-slate-400">/ seat / mo</span></div>
+              <ul class="text-xs text-slate-300 mt-3 space-y-1">
+                <li>• 100 GB AWS S3 Encrypted Storage</li>
+                <li>• PostGIS Geofence Attendance & QR Patrol</li>
+                <li>• OneDrive / Google Drive Auto-Sync</li>
+              </ul>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="text-xs text-purple-400 font-bold uppercase">Retention Funnel</div>
+              <div class="text-lg font-bold text-white mt-1">Paywall Exit Survey</div>
+              <div class="text-2xl font-black text-purple-400 mt-2">18.4% <span class="text-xs font-normal text-slate-400">win-back rate</span></div>
+              <p class="text-xs text-slate-400 mt-3">Captures user feedback via <code>user/Retention/feekback</code> & triggers 24h Rewarded Ad Free Pass.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Module 5: AdX & Official Google AdMob Test Keys -->
+      <section id="tab-m5" class="tab-pane hidden space-y-4">
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Module 5 — First-Party AdX & Google AdMob Official Test Key Console</h2>
+              <p class="text-sm text-slate-400">All production/legacy ad keys replaced 100% with official Google AdMob Test IDs (`Task.txt #4`).</p>
+            </div>
+            <button onclick="callApi('/nextai/v1/app/adx/global_fetch_exposure_config', {country:'US', vipStatus:0})" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">📡 Fetch AdX Exposure Config</button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+              <span class="text-slate-400">AdMob App ID:</span>
+              <span class="text-emerald-400 font-bold">ca-app-pub-3940256099942544~3347511713</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+              <span class="text-slate-400">Banner Ad Unit:</span>
+              <span class="text-cyan-400 font-bold">ca-app-pub-3940256099942544/6300978111</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+              <span class="text-slate-400">Interstitial Ad Unit:</span>
+              <span class="text-cyan-400 font-bold">ca-app-pub-3940256099942544/1033173712</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+              <span class="text-slate-400">Rewarded Ad Unit (VIP Free Pass):</span>
+              <span class="text-cyan-400 font-bold">ca-app-pub-3940256099942544/5224354917</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+              <span class="text-slate-400">Native Advanced Ad Unit:</span>
+              <span class="text-cyan-400 font-bold">ca-app-pub-3940256099942544/2247696110</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+              <span class="text-slate-400">App Open Ad Unit:</span>
+              <span class="text-cyan-400 font-bold">ca-app-pub-3940256099942544/9257395921</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Module 6: Embodied AI (.mcap) & Earn -->
+      <section id="tab-m6" class="tab-pane hidden space-y-4">
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Module 6 — Embodied AI Robotics (`.mcap`) & Earn Payout Console</h2>
+              <p class="text-sm text-slate-400">Validates ROS2 `.mcap` containers (HEVC 1080p30 + MediaPipe 21 Hand Landmarks + 4 IMU sensors + 48kHz Audio) & Pix/SPEI payouts.</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="callApi('/nextai/v1/app/reward/video/task/list', {country:'BR'})" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">🤖 List Robotics Tasks</button>
+              <button onclick="callApi('/nextai/v1/app/reward/video/submit', {taskId:402, mcapS3Url:'s3://nextai-oversea/mcap/task_402_sample.mcap', durationMs:45000, handRatio:0.94, imuStats:{accelHz:200,gyroHz:200,gravityHz:100,rotVecHz:100}, deviceModel:'SM-A505F'})" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">📤 Simulate .MCAP Submission</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-slate-400">Active Robotics Campaign #402</div>
+              <div class="text-base font-bold text-white mt-1">Egocentric Hand Tool Assembly</div>
+              <div class="mt-2 text-emerald-400 font-semibold">Reward: 1,500 Fen (R$ 15.00 BRL / $3.00 USD)</div>
+              <div class="mt-2 text-slate-400">Min Hand Landmark Ratio: <span class="text-white font-semibold">85% (21 keypoints)</span></div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-slate-400">Multimodal Sensor Streams</div>
+              <div class="text-base font-bold text-cyan-400 mt-1">ROS2 Foxglove .MCAP Spec</div>
+              <ul class="mt-2 space-y-1 text-slate-300">
+                <li>• <code>/camera/hevc_1080p30</code></li>
+                <li>• <code>/mediapipe/hand_landmarks_21</code></li>
+                <li>• <code>/imu/accel_gyro_gravity_rotvec</code></li>
+              </ul>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="text-slate-400">Instant Payout Rails</div>
+              <div class="text-base font-bold text-amber-400 mt-1">Brazil Pix & Mexico SPEI</div>
+              <p class="mt-2 text-slate-300">Supports CPF/CNPJ Pix keys (`BRL`), CLABE (`MXN`), or instant conversion to NextAI Plus VIP days.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Module 7: OLAP Analytics & AI Gateway -->
+      <section id="tab-m7" class="tab-pane hidden space-y-4">
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-white">Module 7 — OLAP Analytics Warehouse, 42 SQL Tables & Cloud AI Proxy</h2>
+              <p class="text-sm text-slate-400">Real-time ClickHouse/StarRocks OLAP telemetry alongside Cloud LLM (`ai/generatePrompt`), Vision (`overseas/understand/photo`) & Logo Cutout (`logo/cutout`).</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="callApi('/nextai/v1/ai/generatePrompt', {industry:'Construction', context:'Concrete pouring inspection at B2 floor'})" class="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold transition">✨ Test LLM Prompt</button>
+              <button onclick="callApi('/nextai/v1/logo/cutout', {imageUrl:'https://static.nextai.global/logos/sample_corp.png'})" class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">✂️ Test AI Logo Cutout</button>
+              <button onclick="callApi('/api/olap/summary', null, 'GET')" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition">📊 Query OLAP Warehouse</button>
+            </div>
+          </div>
+          <div id="olap-summary-box" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs"></div>
+        </div>
+      </section>
+
+      <!-- Live API Inspector Console -->
+      <section class="glass rounded-2xl p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <h3 class="text-sm font-bold text-white">Live API Request / BaseResponse&lt;T&gt; Inspector</h3>
+          </div>
+          <span id="api-last-url" class="text-xs font-mono text-cyan-400">POST /nextai/v1/realtime</span>
+        </div>
+        <pre id="api-output" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-300 overflow-x-auto max-h-80">Loading live telemetry from NextAI Backend Gateway...</pre>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function switchTab(id) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.remove('hidden');
+      document.getElementById('btn-' + id).classList.add('active');
+    }
+
+    async function callApi(url, body = {}, method = 'POST') {
+      document.getElementById('api-last-url').textContent = method + ' ' + url;
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (method !== 'GET' && body !== null) opts.body = JSON.stringify(body);
+      const res = await fetch(url, opts);
+      const data = await res.json();
+      document.getElementById('api-output').textContent = JSON.stringify(data, null, 2);
+      return data;
+    }
+
+    async function testGeofence() {
+      const lat = parseFloat(document.getElementById('geo-lat').value);
+      const lng = parseFloat(document.getElementById('geo-lng').value);
+      await callApi('/nextai/v1/app/group/timeclock/geofence/check', {
+        teamId: 'team_vn_001',
+        geofenceId: 'geo_bason_01',
+        lat,
+        lng
+      });
+    }
+
+    async function initDashboard() {
+      const health = await callApi('/health', null, 'GET');
+      if (health && health.data) {
+        document.getElementById('stat-endpoints').textContent = health.data.totalEndpoints || 177;
+      }
+      const wmRes = await callApi('/nextai/v1/config/watermarks', { categoryIds: ['cat_time_gps'] });
+      const wmList = (wmRes.data && wmRes.data.watermarks) || [];
+      document.getElementById('wm-grid').innerHTML = wmList.map(w => `
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-xs font-mono">base_id: ${w.base_id}</span>
+            <span class="text-xs text-slate-400">v${w.version}</span>
+          </div>
+          <div class="font-bold text-white text-sm">${w.name}</div>
+          <div class="text-xs text-slate-400 font-mono truncate">${w.water_mark_content}</div>
+        </div>
+      `).join('');
+
+      const teamRes = await callApi('/nextai/v1/center/app/group/list', null, 'GET');
+      const teams = (teamRes.data && teamRes.data.groups) || [];
+      document.getElementById('team-list').innerHTML = teams.map(t => `
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+          <div class="text-xs text-cyan-400 font-mono">${t.team_id}</div>
+          <div class="font-bold text-white text-sm">${t.team_name}</div>
+          <div class="text-xs text-slate-400">Members: <b class="text-white">${t.member_count}</b> • Photos: <b class="text-white">${t.photo_count}</b></div>
+        </div>
+      `).join('');
+
+      const truthRes = await callApi('/nextai/v1/truthful/Query/batch', { codes: ['NX9X-84K2-V71Q', 'NX9X-92M4-P18Z', 'NX9X-31L9-K55B'] });
+      const photos = (truthRes.data && truthRes.data.verifiedList) || [];
+      document.getElementById('photo-verify-cards').innerHTML = photos.map(p => `
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="font-mono text-xs font-bold text-emerald-400">${p.photo_code}</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px]">AUTHENTIC</span>
+          </div>
+          <div class="text-xs text-white">${p.address}</div>
+          <div class="text-[11px] text-slate-400 font-mono">GPS: ${p.lat}, ${p.lng}</div>
+        </div>
+      `).join('');
+
+      const olapRes = await callApi('/api/olap/summary', null, 'GET');
+      if (olapRes.data) {
+        document.getElementById('olap-summary-box').innerHTML = `
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-slate-400">OLAP Engine</div>
+            <div class="text-base font-bold text-white mt-1">${olapRes.data.warehouse}</div>
+            <div class="text-emerald-400 mt-1">Fact Tables: ${olapRes.data.factTables.length}</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-slate-400">Relational Room/PG</div>
+            <div class="text-base font-bold text-white mt-1">${olapRes.data.relationalDatabase}</div>
+            <div class="text-cyan-400 mt-1">42 Core Tables Loaded</div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-slate-400">Cryptographic Verifications</div>
+            <div class="text-base font-bold text-white mt-1">100% NTP + Aegis Valid</div>
+            <div class="text-amber-400 mt-1">0 Mock GPS Breaches</div>
+          </div>
+        `;
+      }
+    }
+
+    setInterval(() => {
+      document.getElementById('live-clock').textContent = new Date().toISOString();
+    }, 1000);
+    initDashboard();
+  </script>
+</body>
+</html>

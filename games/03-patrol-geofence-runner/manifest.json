@@ -1,0 +1,19 @@
+{
+  "id": "03-patrol-geofence-runner",
+  "slug": "patrol-geofence-runner",
+  "title": "NextAI Security Patrol & QR Geofence Runner",
+  "subtitle": "Tactical GPS Geofence Verification & Anti-Mock-Location Patrol Game",
+  "version": "2.6.0",
+  "Namespace": "com.nextai.global.games.patrolrunner",
+  "domain": "nextai.global",
+  "category": "Field Operations & Security Compliance",
+  "engine": "HTML5 Canvas 2D Top-Down Tactical Map + Haversine Geofence Engine",
+  "entry": "index.html",
+  "controls": [
+    "WASD / Arrow Keys / Click-to-Move: Navigate Security Officer across facility",
+    "E / Space / Scan Button: Scan QR Checkpoint when inside GPS Geofence radius",
+    "Q / EMP Pulse: Neutralize Mock-GPS Spoofer Drones before they corrupt telemetry"
+  ],
+  "metrics": ["checkpointsScanned", "geofenceCompliance", "spoofersBlocked", "shiftScore"],
+  "admobTestAppId": "ca-app-pub-3940256099942544~3347511713"
+}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Steel Detect Challenge — NCNN Vision Arena</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-badge">NEXTAI VISION</span>
+      <div>
+        <h1>NextAI Steel Detect Challenge</h1>
+        <span>NCNN Pipe & Rebar Cross-Section Counter • nextai.technology</span>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <div class="stat-pill">
+        <div class="label">Site Level</div>
+        <div class="val" id="hudLevel">1 / 6</div>
+      </div>
+      <div class="stat-pill">
+        <div class="label">Shift Timer</div>
+        <div class="val" id="hudTimer">45.0s</div>
+      </div>
+      <div class="stat-pill">
+        <div class="label">Tagged / Target</div>
+        <div class="val" id="hudCount">0 / 0</div>
+      </div>
+      <div class="stat-pill">
+        <div class="label">Total Score</div>
+        <div class="val" id="hudScore">0</div>
+      </div>
+      <div class="stat-pill">
+        <div class="label">Best Score</div>
+        <div class="val" id="hudBest">0</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="canvas-wrap">
+      <div class="canvas-overlay-bar">
+        <span class="badge-tag" id="modelBadge">MODEL: nextai_steel_ncnn_v2.bin (FP16)</span>
+        <span class="badge-tag" id="fpsBadge">NMS IoU: 0.45 | CONF: 0.78</span>
+      </div>
+      <canvas id="steelCanvas" width="820" height="540"></canvas>
+    </section>
+
+    <aside class="sidebar">
+      <div class="card">
+        <h2>NCNN Inference Telemetry</h2>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="k">Precision</div>
+            <div class="v" id="valPrecision">100%</div>
+          </div>
+          <div class="metric-box">
+            <div class="k">Recall</div>
+            <div class="v" id="valRecall">0%</div>
+          </div>
+          <div class="metric-box">
+            <div class="k">F1 Accuracy</div>
+            <div class="v" id="valF1">0.0%</div>
+          </div>
+          <div class="metric-box">
+            <div class="k">AI Assist Left</div>
+            <div class="v" id="valAssists">3</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Field Inspector Controls</h2>
+        <div class="controls-stack">
+          <button class="primary" id="btnAiAssist">
+            <span>Run NCNN Auto-Detect Sweep</span>
+            <kbd>[A]</kbd>
+          </button>
+          <button id="btnToggleBoxes">
+            <span>Toggle Bounding Box Overlay</span>
+            <kbd>[B]</kbd>
+          </button>
+          <button class="success" id="btnVerify">
+            <span>Verify & Stamp Watermark</span>
+            <kbd>[SPACE]</kbd>
+          </button>
+          <button id="btnResetLevel">
+            <span>Regenerate Truck Bundle</span>
+            <kbd>[R]</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Detection Legend</h2>
+        <div class="legend">
+          <div class="legend-item"><span class="dot" style="background:#00e676"></span> True Positive (Verified Steel Pipe)</div>
+          <div class="legend-item"><span class="dot" style="background:#00e5ff"></span> NCNN AI Proposal Candidate</div>
+          <div class="legend-item"><span class="dot" style="background:#ffab00"></span> Decoy / PVC Conduit / Debris (Do NOT tag!)</div>
+          <div class="legend-item"><span class="dot" style="background:#ff5252"></span> False Positive / Missed Pipe</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>NextAI Vision Audit Log</h2>
+        <div class="log-box" id="auditLog"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

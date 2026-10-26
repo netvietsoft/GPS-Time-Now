@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Photo Truth Detective (VerifyAuth)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="badge">VERIFYAUTH LAB</span>
+      <div>
+        <h1>NextAI Photo Truth Detective</h1>
+        <p>JpegPacker Stego Unpacker • AntiFakeCode Base62 HMAC • Aegis Nonce Verifier</p>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="pill">
+        <div class="l">Evidence Case</div>
+        <div class="v" id="hudCase">#101</div>
+      </div>
+      <div class="pill">
+        <div class="l">Accuracy</div>
+        <div class="v" id="hudAcc">100%</div>
+      </div>
+      <div class="pill">
+        <div class="l">Streak</div>
+        <div class="v" id="hudStreak">0</div>
+      </div>
+      <div class="pill">
+        <div class="l">Forensic Score</div>
+        <div class="v" id="hudScore">0</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="scanner-box">
+      <canvas id="forensicCanvas" width="800" height="540"></canvas>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h2>Cryptographic Diagnostic Tools</h2>
+        <div class="tool-list">
+          <button id="btnUnpack">
+            <span>1. Unpack JpegPacker Stego Trailer</span>
+            <kbd>[1]</kbd>
+          </button>
+          <button id="btnHmac">
+            <span>2. Verify AntiFakeCode Base62 HMAC</span>
+            <kbd>[2]</kbd>
+          </button>
+          <button id="btnNtp">
+            <span>3. Audit NTP Clock vs System Drift</span>
+            <kbd>[3]</kbd>
+          </button>
+          <button id="btnAegis">
+            <span>4. Check Aegis ECDSA Hardware Nonce</span>
+            <kbd>[4]</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Live Binary & Telemetry Inspector</h2>
+        <div class="inspector-out" id="inspectorOut">Select a diagnostic tool [1-4] to inspect photo evidence...</div>
+      </div>
+
+      <div class="card">
+        <h2>Forensic Verdict Decision</h2>
+        <div class="verdict-row">
+          <button class="approve" id="btnApprove">AUTHENTIC [V]</button>
+          <button class="reject" id="btnReject">TAMPERED [F]</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Case Audit History</h2>
+        <div class="log" id="caseLog"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

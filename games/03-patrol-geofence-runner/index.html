@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Security Patrol & QR Geofence Runner</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="badge">PATROL GEOFENCE</span>
+      <div>
+        <h1>NextAI Security Patrol & QR Geofence Runner</h1>
+        <p>Tactical Haversine Geofence Verification & Anti-Mock-GPS Guard • nextai.global</p>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="pill">
+        <div class="l">Shift Sector</div>
+        <div class="v" id="hudSector">1</div>
+      </div>
+      <div class="pill">
+        <div class="l">Shift Timer</div>
+        <div class="v" id="hudTimer">60.0s</div>
+      </div>
+      <div class="pill">
+        <div class="l">QR Checkpoints</div>
+        <div class="v" id="hudQr">0 / 5</div>
+      </div>
+      <div class="pill">
+        <div class="l">GPS Integrity</div>
+        <div class="v" id="hudGps">100%</div>
+      </div>
+      <div class="pill">
+        <div class="l">Patrol Score</div>
+        <div class="v" id="hudScore">0</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-grid">
+    <section class="map-wrap">
+      <canvas id="patrolCanvas" width="820" height="540"></canvas>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h2>Tactical Officer Actions</h2>
+        <div class="btn-stack">
+          <button class="primary" id="btnScanQr">
+            <span>Scan Checkpoint QR Code</span>
+            <kbd>[E / SPACE]</kbd>
+          </button>
+          <button class="warn" id="btnEmp">
+            <span>Aegis Anti-Spoof Pulse</span>
+            <kbd>[Q]</kbd>
+          </button>
+          <button id="btnNewShift">
+            <span>Deploy Next Sector Map</span>
+            <kbd>[R]</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Active Geofence Checkpoints</h2>
+        <div class="checkpoint-list" id="cpList"></div>
+      </div>
+
+      <div class="card">
+        <h2>NextAI Teamspace Patrol Log</h2>
+        <div class="log" id="patrolLog"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

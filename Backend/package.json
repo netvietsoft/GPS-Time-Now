@@ -1,0 +1,32 @@
+{
+  "name": "@nextai.global/camera-enterprise-backend",
+  "version": "10.0.281",
+  "description": "NextAI Camera Enterprise Backend Gateway, Super Admin CMS, Anti-Fake Cryptographic Engine, Teamspace PostGIS SaaS & Embodied AI (.mcap) Crowdsourcing Server",
+  "main": "dist/server.js",
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "test": "node tests/verify_backend.js"
+  },
+  "keywords": [
+    "nextai",
+    "next.ai",
+    "nextai.solution",
+    "nextai.technology",
+    "nextai.global",
+    "watermark-camera",
+    "teamspace-saas",
+    "embodied-ai-mcap",
+    "anti-fake-verification"
+  ],
+  "author": "NextAI Global Engineering (https://nextai.global)",
+  "license": "PROPRIETARY",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  }
+}

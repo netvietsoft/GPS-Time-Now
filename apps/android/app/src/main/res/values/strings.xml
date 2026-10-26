@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Time Now</string>
+    <string name="i_app_name">Time Now</string>
+    <string name="app_full_title">Time Now: Time &amp; GPS Camera</string>
+    <string name="app_vendor">NextAI Technology &amp; Solution</string>
+    <string name="app_tagline">100% Real-Time &amp; Location Verified Camera</string>
+
+    <!-- Original Time Now Camera Strings -->
+    <string name="i_main_preview">Preview</string>
+    <string name="i_files">Teamspace</string>
+    <string name="i_main_stamps">Templates</string>
+    <string name="i_verify_center">Verify Center</string>
+    <string name="i_timenow_plans">Time Now Plans</string>
+    <string name="i_plus">Plus</string>
+    <string name="i_business">Business</string>
+    <string name="i_edit_stamp">Edit Stamp</string>
+    <string name="i_search_template">Search Template</string>
+    <string name="i_team_template">Team Template</string>
+    <string name="i_auto_save_to_teamspace">Auto save to Teamspace</string>
+    <string name="i_allow_camera_now">Allow access to your camera</string>
+    <string name="i_allow">Allow</string>
+    <string name="i_ratio">Ratio</string>
+    <string name="i_settings">Settings</string>
+    <string name="i_home_verify_photo">Verify Photo</string>
+    <string name="i_show_timenow_logo">Show Time Now Logo</string>
+    <string name="i_save_original_photo">Save Original Photo</string>
+    <string name="i_verify_by_photo">Verify by Photo</string>
+    <string name="i_check_time_gps_authenticity">Check time &amp; GPS authenticity</string>
+    <string name="i_detect_edits_tampering">Detect edits &amp; tampering</string>
+    <string name="i_upload_photo">Upload Photo</string>
+    <string name="i_verify_by_photo_code">Verify by Photo Code</string>
+    <string name="i_verify_original_time_location">Verify original time &amp; location</string>
+
+    <!-- Camera Preview & Modes -->
+    <string name="mode_photo">Photo</string>
+    <string name="mode_video">Video</string>
+    <string name="mode_attendance">Attendance</string>
+    <string name="mode_ai_count">AI Count</string>
+    <string name="mode_collage">Collage</string>
+    <string name="badge_ntp_gps_verified">100% Real-Time &amp; Location Verified • Time Now</string>
+    <string name="badge_aegis_hardware_locked">Aegis Hardware Nonce Verified</string>
+    <string name="anti_fake_code_label">Time Now Photo Code</string>
+
+    <!-- Navigation & Feature Hubs -->
+    <string name="nav_camera">Camera</string>
+    <string name="nav_watermarks">Templates</string>
+    <string name="nav_watermark_editor">Edit Stamp</string>
+    <string name="nav_gallery_export">Preview</string>
+    <string name="nav_teamspace">Teamspace</string>
+    <string name="nav_verify_auth">Verify Center</string>
+    <string name="nav_paywall">Time Now Plans</string>
+    <string name="nav_earn_robotics">Earn</string>
+    <string name="nav_ai_edge_cv">AI Count</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Export & Steganography -->
+    <string name="export_pdf_report">Export PDF Work Report</string>
+    <string name="export_excel_xlsx">Export Excel (.xlsx)</string>
+    <string name="export_google_earth_kmz">Export Google Earth (.kmz)</string>
+    <string name="export_zip_archive">Export ZIP Bundle</string>
+    <string name="remove_watermark_lossless">Remove Watermark (Original Restore)</string>
+
+    <!-- Teamspace SaaS -->
+    <string name="teamspace_tab_feed">Photos</string>
+    <string name="teamspace_tab_projects">Projects</string>
+    <string name="teamspace_tab_attendance">Attendance</string>
+    <string name="teamspace_tab_members">Settings</string>
+
+    <!-- Paywall -->
+    <string name="paywall_tab_plus">Plus</string>
+    <string name="paywall_tab_business">Business</string>
+    <string name="ad_free_pass_active">AdFreePass Active</string>
+</resources>

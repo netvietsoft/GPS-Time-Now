@@ -1,0 +1,27 @@
+schema_version: "2.1.2"
+id: TASK-RELEASE-0001
+feature_id: FEAT-PAYWALL-ADS
+phase: "20_DEPLOYMENT"
+mode: IMPLEMENTATION
+design_impact: NONE
+title: "Replace Demo/Test Keys with Chairman Production Credentials Prior to Commercial Play Store Release"
+owner: agent-10-devops
+status: ready
+priority: medium
+dependencies:
+  - TASK-RECON-0001
+files_allowed:
+  - .env
+  - apps/android/app/src/main/AndroidManifest.xml
+  - apps/android/app/build.gradle.kts
+files_forbidden:
+  - Backend/src/**
+acceptance_criteria:
+  - "All 14 items in Tasksrequiring.md populated with live production keys from Chairman"
+  - "Release APK/AAB signed with production keystore and verified via scripts/verify.ps1"
+max_fix_cycles: 3
+related_error_ids:
+  - ERR-20261026-004
+related_acquirement_ids:
+  - ACQ-20261026-003
+  - ACQ-20261026-004

@@ -1,0 +1,46 @@
+{
+  "schema_version": "2.1.2",
+  "design_id": "DESIGN-0001",
+  "revision": 2,
+  "task_id": "TASK-RECON-0004",
+  "feature_id": "FEAT-CAMERA-WATERMARK",
+  "owner": "agent-11-designer",
+  "status": "approved",
+  "ui_impact": true,
+  "design_impact_level": "HIGH",
+  "targets": ["android-mobile-390x844dp", "web-cms-1440px", "web-games-hub"],
+  "inputs": {
+    "references": [
+      "SOURCE/Redesign/design_tokens.json",
+      "SOURCE/Redesign/preview_screens.html"
+    ],
+    "design_system": "Docs/Design/DESIGN_SYSTEM.md"
+  },
+  "artifacts": {
+    "tokens": "design/approved/design_tokens.json",
+    "prototype": "design/prototypes/preview_screens.html",
+    "approved_dir": "design/approved/"
+  },
+  "approval": {
+    "required": true,
+    "decision": "APPROVED",
+    "approved_by": "Chairman Tony (Design Gate Specification)",
+    "approved_at": "2026-10-26T01:30:00Z"
+  },
+  "implementation": {
+    "allowed": true,
+    "owner": "agent-3-frontend"
+  },
+  "acceptance_criteria": [
+    "Rebrand all UI labels and package metadata to NextAI Camera (com.nextai.camera)",
+    "Preserve 390x844 dp xxhdpi layout coordinates for PreviewActivity, TeamSpaceHomeParentActivity, and PurchaseActivity",
+    "Support both Dark (#090D16) and Light (#F8FAFC) outdoor high-contrast themes",
+    "Include all 7 interactive core flows plus Web Games Hub navigation"
+  ],
+  "visual_qa": [
+    { "name": "mobile-390x844-viewport", "status": "pass", "evidence": "design/approved/preview_screens.html" },
+    { "name": "outdoor-contrast-tokens", "status": "pass", "evidence": "design/approved/design_tokens.json" },
+    { "name": "nextai-brand-hygiene", "status": "pass", "evidence": "0 legacy brand strings in approved prototype" }
+  ],
+  "risks": []
+}

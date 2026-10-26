@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Global Super-Portal & HTML5 Game Arcade (nextai.global)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="portal-header">
+    <div class="brand-cluster">
+      <div class="brand-logo">NA</div>
+      <div class="brand-titles">
+        <h1>NextAI Global Super-Portal & Game Arcade</h1>
+        <p>nextai.global • nextai.technology • nextai.solution — Zero-Legacy Clean Architecture</p>
+      </div>
+    </div>
+
+    <nav class="main-nav">
+      <button class="nav-tab active" data-tab="tab-games">1. NextAI HTML5 Game Hub (5 Games)</button>
+      <button class="nav-tab" data-tab="tab-simulator">2. NextAI Camera Live Simulator (7 Screens)</button>
+      <button class="nav-tab" data-tab="tab-cms">3. Super Admin CMS & 42-Table Backend</button>
+    </nav>
+
+    <div class="status-cluster">
+      <span class="status-pill" id="apiStatusPill">API: READY (LOCAL + :4580)</span>
+      <span class="status-pill">ADMOB: TEST KEYS ONLY</span>
+    </div>
+  </header>
+
+  <main class="portal-main">
+    <!-- ==================== TAB 1: HTML5 GAME HUB ==================== -->
+    <section class="tab-panel active" id="tab-games">
+      <div class="hero-banner">
+        <div>
+          <h2>NextAI Interactive HTML5 Game & Domain Simulation Hub</h2>
+          <p>
+            Launch all 5 standalone NextAI HTML5 Canvas games directly in the embedded arcade stage or open them in dedicated tabs. High scores, precision metrics, and `.mcap` chunks synchronize automatically via <code>postMessage</code> &amp; <code>localStorage</code>.
+          </p>
+        </div>
+        <div class="hero-metrics">
+          <div class="metric-chip">
+            <span>Standalone Games</span>
+            <strong>5 / 5</strong>
+          </div>
+          <div class="metric-chip">
+            <span>Combined Best Score</span>
+            <strong id="totalCombinedScore">0</strong>
+          </div>
+          <div class="metric-chip">
+            <span>Active AdMob App ID</span>
+            <strong style="font-size:12px">3940256099942544</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="games-grid" id="gamesCatalogGrid"></div>
+
+      <div class="arcade-stage-grid">
+        <div class="iframe-shell">
+          <div class="iframe-bar">
+            <strong id="activeGameTitle">Playing: NextAI Steel Detect Challenge</strong>
+            <div class="btn-group">
+              <button id="btnReloadGame">Reload Game</button>
+              <a class="btn-link" id="btnOpenStandalone" href="../../games/01-steel-pipe-ai-counter/index.html" target="_blank" rel="noopener">Open Standalone Tab ↗</a>
+            </div>
+          </div>
+          <iframe id="gameFrame" src="../../games/01-steel-pipe-ai-counter/index.html" title="NextAI HTML5 Game Player"></iframe>
+        </div>
+
+        <aside>
+          <div class="panel-card">
+            <h3>NextAI Global High-Score Leaderboard</h3>
+            <div class="leaderboard-list" id="leaderboardList"></div>
+            <div style="margin-top:10px;display:flex;gap:8px;">
+              <button id="btnSeedScores" style="flex:1">Seed Demo Scores</button>
+              <button id="btnResetScores">Reset</button>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <h3>Live Arcade Telemetry Stream</h3>
+            <div class="code-console" id="arcadeTelemetryLog" style="height:240px;">[NEXTAI ARCADE] Ready. Select or play any game in the stage to stream real-time telemetry...</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: 7-SCREEN CAMERA LIVE SIMULATOR ==================== -->
+    <section class="tab-panel" id="tab-simulator">
+      <div class="subnav">
+        <button class="sub-btn active" data-sub="sim-1">Screen 1: Camera Live Watermark</button>
+        <button class="sub-btn" data-sub="sim-2">Screen 2: Watermark Store & 24 Fields</button>
+        <button class="sub-btn" data-sub="sim-3">Screen 3: Teamspace & Geofence Map</button>
+        <button class="sub-btn" data-sub="sim-4">Screen 4: Batch Export & JpegPacker</button>
+        <button class="sub-btn" data-sub="sim-5">Screen 5: VerifyAuth Inspector</button>
+        <button class="sub-btn" data-sub="sim-6">Screen 6: Dual Paywall & AdMob Test</button>
+        <button class="sub-btn" data-sub="sim-7">Screen 7: Earn .MCAP Robotics</button>
+      </div>
+
+      <!-- Screen 1: Camera Live Watermark -->
+      <div class="sub-screen active" id="sim-1">
+        <div class="panel-card">
+          <h3>NextAI Live Camera Viewfinder (Real-Time Watermark Renderer)</h3>
+          <canvas id="liveCameraCanvas" width="840" height="500" style="width:100%;border-radius:10px;border:1px solid var(--border);background:#050912;"></canvas>
+          <div style="margin-top:12px;">
+            <h3>Captured Field Evidence Gallery (Click to Download PNG)</h3>
+            <div class="photo-strip" id="capturedGallery"></div>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <h3>Camera & Watermark Controls</h3>
+          <div class="form-group">
+            <label>Watermark Module Template (11 Verticals)</label>
+            <select id="camTemplateSelect">
+              <option value="WM-10">WM-10: Engineering Construction QA/QC</option>
+              <option value="WM-20">WM-20: Security Patrol QR & Geofence</option>
+              <option value="WM-34">WM-34: NextAI Attendance Punch Card</option>
+              <option value="WM-60">WM-60: SteelDetect NCNN Counter Stamp</option>
+              <option value="WM-90">WM-90: Before / After Milestone Collage</option>
+              <option value="WM-120">WM-120: Municipal Sanitation & Logistics</option>
+              <option value="WM-210">WM-210: Embodied Robotics .MCAP Telemetry</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Project / Site Title</label>
+            <input type="text" id="camProjectInput" value="Metro Line 4 Viaduct Pier #18" />
+          </div>
+          <div class="form-group">
+            <label>GPS Coordinates (WGS-84)</label>
+            <input type="text" id="camGpsInput" value="10.7769° N, 106.7009° E (±2.4m)" />
+          </div>
+          <div class="form-group">
+            <label>Weather & Compass Azimuth</label>
+            <input type="text" id="camWeatherInput" value="31°C Clear • Azimuth 068° ENE • Alt 14.2m" />
+          </div>
+          <div class="form-group">
+            <label>Inspector / Operator Note</label>
+            <input type="text" id="camNoteInput" value="Verified structural rebar & foundation pour" />
+          </div>
+          <div class="btn-group" style="margin-top:14px;">
+            <button class="primary" id="btnShutterCapture">📸 Capture Watermarked Photo</button>
+            <button id="btnToggleWebcam">Toggle Live Webcam</button>
+          </div>
+          <div class="code-console" id="camLastCaptureMeta" style="margin-top:12px;height:145px;">Ready to capture photo with AntiFakeCode HMAC + JpegPacker binary trailer...</div>
+        </div>
+      </div>
+
+      <!-- Screen 2: Watermark Store & 24-Type Field Editor -->
+      <div class="sub-screen" id="sim-2">
+        <div class="panel-card">
+          <h3>11-Module Watermark Catalog & 24-Type Dynamic Field Toggles</h3>
+          <div class="games-grid" id="wmStoreCatalog"></div>
+        </div>
+        <div class="panel-card">
+          <h3>24-Field Schema Inspector</h3>
+          <div class="code-console" id="wmFieldSchemaOut" style="height:430px;"></div>
+        </div>
+      </div>
+
+      <!-- Screen 3: Teamspace SaaS & Geofence Map -->
+      <div class="sub-screen" id="sim-3">
+        <div class="panel-card">
+          <h3>Interactive Teamspace GPS Geofence Map (Click Map to Relocate Officer)</h3>
+          <canvas id="teamGeofenceCanvas" width="800" height="460" style="width:100%;border-radius:10px;border:1px solid var(--border);background:#070d19;cursor:crosshair;"></canvas>
+        </div>
+        <div class="panel-card">
+          <h3>Haversine Geofence Compliance</h3>
+          <div class="form-group">
+            <label>Allowed Geofence Radius (Meters)</label>
+            <input type="number" id="geoRadiusInput" value="150" min="50" max="500" />
+          </div>
+          <div class="code-console" id="geoStatusConsole" style="height:310px;"></div>
+        </div>
+      </div>
+
+      <!-- Screen 4: Batch Export & JpegPacker Unpacker -->
+      <div class="sub-screen" id="sim-4">
+        <div class="panel-card">
+          <h3>Batch Deliverable Compiler (PDF / Excel CSV / Google Earth KMZ) & JpegPacker</h3>
+          <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px;">
+            Generate downloadable engineering deliverables or run a live binary demonstration of the <code>JpegPacker</code> steganographic trailer protocol (<code>NEXTAI_JPEG_PACK_END_2026</code>).
+          </p>
+          <div class="btn-group" style="margin-bottom:14px;flex-wrap:wrap;">
+            <button class="primary" id="btnGenHtmlPdf">📄 Download Printable PDF Report</button>
+            <button class="success" id="btnGenCsv">📊 Download Excel CSV Log</button>
+            <button id="btnGenKml">🌍 Download Google Earth KML/KMZ</button>
+            <button id="btnRunJpegPacker">🔐 Run JpegPacker Pack/Unpack Demo</button>
+          </div>
+          <div class="code-console" id="exportConsoleOut" style="height:360px;">Select an export format or run the JpegPacker binary trailer inspector...</div>
+        </div>
+        <div class="panel-card">
+          <h3>JpegPacker Protocol Specification</h3>
+          <div class="code-console" style="height:420px;">[NextAI JpegPacker Binary Layout]
+1. Standard Watermarked JPEG Stream:
+   0xFFD8 (SOI) ... [Compressed Image] ... 0xFFD9 (EOI)
+
+2. Appended Forensic Payload (After 0xFFD9):
+   - Raw Unwatermarked Crop Slice Bytes
+   - JSON Cryptographic Metadata Manifest:
+     * antiFakeCode (12-char Base62)
+     * trustedNtpUtcMs
+     * deviceClockUtcMs
+     * wgs84Coordinates + azimuth
+     * sha256OriginalSlice
+
+3. 32-Byte Fixed Trailer Footer:
+   - 8-byte ASCII Length Header
+   - 24-byte Magic Signature:
+     "NEXTAI_JPEG_PACK_END_2026"</div>
+        </div>
+      </div>
+
+      <!-- Screen 5: VerifyAuth Cryptographic Inspector -->
+      <div class="sub-screen" id="sim-5">
+        <div class="panel-card">
+          <h3>VerifyAuth Cryptographic Truth Engine (AntiFakeCode + Aegis ECDSA + NTP)</h3>
+          <div class="form-group">
+            <label>Photo AntiFakeCode (12-Char Base62)</label>
+            <input type="text" id="verifyCodeInput" value="NX94A7K2M8P1" />
+          </div>
+          <div class="form-group">
+            <label>Trusted NTP Timestamp (UTC ms)</label>
+            <input type="number" id="verifyNtpInput" value="1793008200000" />
+          </div>
+          <div class="form-group">
+            <label>Device System Clock Timestamp (UTC ms)</label>
+            <input type="number" id="verifySysInput" value="1793008201200" />
+          </div>
+          <div class="btn-group" style="margin-bottom:12px;">
+            <button class="primary" id="btnRunVerifyAuth">Run Full Cryptographic Audit</button>
+            <button id="btnSimulateTamper">Simulate Clock Spoof Attack</button>
+          </div>
+          <div class="code-console" id="verifyAuthConsole" style="height:260px;"></div>
+        </div>
+        <div class="panel-card">
+          <h3>3-Tier Security Architecture</h3>
+          <div class="code-console" style="height:410px;">Tier 1: Aegis Transport Signing
+- ECDSA P-256 + Nonce + Timestamp
+- Header: X-NextAI-Sign
+
+Tier 2: AntiFakeCode Generator
+- 12-Character Base62 Digest
+- PBKDF2-HMAC-SHA256 over (UID + Timestamp + LatLng + DeviceSalt)
+
+Tier 3: JpegPacker Pixel Verification
+- Compares original unwatermarked slice inside JPEG trailer against visible canvas region.</div>
+        </div>
+      </div>
+
+      <!-- Screen 6: Dual-Mode Paywall & AdMob Test Suite -->
+      <div class="sub-screen" id="sim-6">
+        <div class="panel-card">
+          <h3>NextAI Dual-Mode SaaS Paywall (NextAI Plus VIP & NextAI Business)</h3>
+          <div class="games-grid">
+            <div class="game-card">
+              <span class="game-tag" style="background:#00e5ff">INDIVIDUAL VIP</span>
+              <h3>NextAI Plus</h3>
+              <p>Remove Watermark Brand Logo, Custom Company Logo Overlay, Unlimited NCNN Steel Pipe Counter, Ad-Free Experience, 50GB Cloud Vault.</p>
+              <div class="game-meta"><span>$4.99 / Month</span><span>$29.99 / Year</span></div>
+              <button class="primary" id="btnSimSubPlus">Simulate NextAI Plus Activation</button>
+            </div>
+            <div class="game-card">
+              <span class="game-tag" style="background:#00e676">ENTERPRISE TEAM SAAS</span>
+              <h3>NextAI Business</h3>
+              <p>Unlimited Teamspace Seats, Mandatory Watermark Policy Lock, Haversine Geofence Attendance, Automated PDF/XLSX/KMZ Webhook API.</p>
+              <div class="game-meta"><span>$9.99 / Seat / Mo</span><span>SLA 99.95%</span></div>
+              <button class="success" id="btnSimSubBiz">Simulate Business Provisioning</button>
+            </div>
+          </div>
+          <div class="code-console" id="paywallAdmobConsole" style="height:190px;"></div>
+        </div>
+        <div class="panel-card">
+          <h3>Official Google AdMob Test Units (Task #4)</h3>
+          <div class="code-console" style="height:410px;">App ID:
+ca-app-pub-3940256099942544~3347511713
+
+Banner Test ID:
+ca-app-pub-3940256099942544/6300978111
+
+Interstitial Test ID:
+ca-app-pub-3940256099942544/1033173712
+
+Rewarded Video Test ID:
+ca-app-pub-3940256099942544/5224354917
+
+Native Advanced Test ID:
+ca-app-pub-3940256099942544/2247696110
+
+App Open Test ID:
+ca-app-pub-3940256099942544/9257395921</div>
+        </div>
+      </div>
+
+      <!-- Screen 7: Earn .MCAP Robotics Collector -->
+      <div class="sub-screen" id="sim-7">
+        <div class="panel-card">
+          <h3>Embodied AI .MCAP Collector Preview (Launch Full Game in Tab 1)</h3>
+          <div class="code-console" id="earnMcapPreviewConsole" style="height:360px;">[NextAI Earn Module — Embodied Robotics Data Collection]
+• Container Format : Foxglove .mcap (chunked zstd compression)
+• Video Stream     : H.264 1080p @ 30 FPS (/camera/color/image_raw)
+• Hand Skeleton    : 21 MediaPipe 3D Landmarks (/hand/landmarks_21)
+• 4-Sensor IMU     :
+  - /imu/accelerometer (m/s²)
+  - /imu/gyroscope (rad/s)
+  - /imu/magnetometer (uT)
+  - /imu/rotation_vector (quaternion x,y,z,w)
+• QA Gatekeeper    : Rejects episodes if hand stays inside green FOV box < 85% of frames.
+• Multi-Currency   : BRL (R$), MXN (Mex$), USD ($), or NextAI Plus VIP Days.</div>
+        </div>
+        <div class="panel-card">
+          <h3>Quick Launch Embodied Simulator</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+            Jump straight into the interactive 21-Keypoint Hand &amp; IMU simulator game in the Game Hub.
+          </p>
+          <button class="primary" id="btnJumpMcapGame" style="width:100%;">🚀 Launch Game #2: Embodied Hand .MCAP Lab</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: SUPER ADMIN CMS & 42-TABLE BACKEND ==================== -->
+    <section class="tab-panel" id="tab-cms">
+      <div class="hero-banner">
+        <div>
+          <h2>NextAI Super Admin CMS & Live Backend Connector</h2>
+          <p>
+            Connects to <code>http://localhost:4580/nextai/v1/</code> with automatic offline/<code>file://</code> fallback. Inspect all 42 Relational + OLAP tables, test REST API endpoints, and audit AdMob Test SDK keys.
+          </p>
+        </div>
+        <div class="btn-group">
+          <input type="text" id="backendUrlInput" value="http://localhost:4580/nextai/v1" style="width:270px;" />
+          <button class="primary" id="btnPingBackend">Ping Backend API</button>
+        </div>
+      </div>
+
+      <div class="arcade-stage-grid">
+        <div class="panel-card">
+          <h3>42-Table Relational (PostgreSQL) & OLAP (ClickHouse) Schema Explorer</h3>
+          <div class="form-group">
+            <input type="text" id="schemaFilterInput" placeholder="Filter 42 tables by domain or table name (e.g. patrol, mcap, watermark, olap)..." />
+          </div>
+          <div class="schema-grid" id="schemaTablesGrid"></div>
+        </div>
+
+        <aside>
+          <div class="panel-card">
+            <h3>Interactive API Endpoint Tester</h3>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+              <button class="api-test-btn" data-ep="/health">GET /nextai/v1/health</button>
+              <button class="api-test-btn" data-ep="/config/bootstrap">GET /nextai/v1/config/bootstrap</button>
+              <button class="api-test-btn" data-ep="/templates/catalog">GET /nextai/v1/templates/catalog</button>
+              <button class="api-test-btn" data-ep="/teamspace/projects">GET /nextai/v1/teamspace/projects</button>
+              <button class="api-test-btn" data-ep="/embodied/tasks">GET /nextai/v1/embodied/tasks</button>
+              <button class="api-test-btn" data-ep="/olap/dashboard">GET /nextai/v1/olap/dashboard</button>
+            </div>
+            <div class="code-console" id="apiResponseConsole" style="height:260px;">Click any endpoint above to inspect live JSON payload...</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

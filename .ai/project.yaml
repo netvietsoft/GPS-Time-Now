@@ -1,0 +1,116 @@
+schema_version: "2.1.2"
+
+project:
+  name: nextai-camera-platform
+  package_name: com.nextai.camera
+  brand_tokens:
+    - next
+    - nextai
+    - next.ai
+    - nextai.solution
+    - nextai.technology
+    - nextai.global
+    - nextaiglobal
+    - nextaitechnology
+    - nextaisolution
+  version: "10.0.281-nextai"
+  version_code: 100028100
+  status: development
+  workspace_profile: RECONSTRUCTION
+
+profiles:
+  enabled:
+    - CORE
+    - PRODUCT
+    - RECONSTRUCTION
+  optional_modules:
+    reconstruction: true
+    design_gate: true
+    ai_data: true
+
+network:
+  backend_port: 4580
+  api_base_path: "/next"
+  cms_path: "/cms"
+  games_path: "/games"
+  real_test_device:
+    model: "Samsung Galaxy A50 (SM-A505F)"
+    adb_connect: "192.168.1.2:35977"
+    adb_pair_port: 28721
+    adb_pair_code: "741742"
+
+stack:
+  android:
+    language: kotlin
+    ui_framework: jetpack-compose-material3
+    min_sdk: 24
+    target_sdk: 34
+    local_db: room-sqlite-v61-42-tables
+    native_jni: cpp17-ndk-lld-arm64-v8a
+  backend:
+    runtime: nodejs-20
+    language: typescript-5
+    framework: express
+    port: 4580
+  database:
+    oltp_engine: sqlite-wal-42-tables-postgres-compatible
+    olap_engine: star-schema-analytical-cubes
+  games:
+    framework: html5-canvas-webgl-hub
+
+commands:
+  install: "cd Backend && npm install"
+  build: "cd Backend && npm run build"
+  test: "powershell -ExecutionPolicy Bypass -File scripts/test.ps1"
+  verify: "powershell -ExecutionPolicy Bypass -File scripts/verify.ps1"
+  validate_memory: "powershell -ExecutionPolicy Bypass -File scripts/validate-project-memory.ps1"
+
+git:
+  default_branch: main
+  use_worktree: true
+
+ai:
+  max_fix_cycles: 5
+  require_task_id: true
+  require_review: true
+  require_security_review: true
+
+project_knowledge:
+  project_error_file: PROJECT_ERROR.md
+  acquirements_file: ACQUIREMENTS.md
+  read_before_task: true
+  review_before_done: true
+  update_in_same_commit: true
+  require_verification_for_resolved: true
+  require_evidence_for_standard: true
+  secret_scan: true
+  error_id_pattern: "ERR-YYYYMMDD-NNN"
+  acquirement_id_pattern: "ACQ-YYYYMMDD-NNN"
+
+design:
+  require_gate_for_ui_changes: true
+  impact_levels:
+    NONE: no_design_gate
+    LOW: lightweight_visual_gate
+    MEDIUM: full_design_gate
+    HIGH: full_design_gate_plus_human_approval
+  require_human_approval_for:
+    - MEDIUM
+    - HIGH
+  require_visual_qa: true
+  designer_can_modify_production_ui: false
+  implementation_owner: frontend
+  artifact_root: design/
+  state_root: .ai/design/
+
+reconstruction:
+  authorization_reference: internal_project
+  authorization_status: approved
+  parity_gate:
+    behavior: 0.98
+    ui: 0.98
+    api: 1.00
+    data: 1.00
+    critical_features_must_pass: true
+  uncertainty_gate:
+    max_unvalidated_inference_for_critical_feature: 0

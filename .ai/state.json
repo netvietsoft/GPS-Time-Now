@@ -1,0 +1,58 @@
+{
+  "schema_version": "2.1.2",
+  "revision": 21,
+  "updated_at": "2026-10-26T08:10:00Z",
+  "updated_by": "agent-12-documentation",
+  "project_status": "original_ui_baseline_verified_on_hardware",
+  "workspace_profile": "RECONSTRUCTION",
+  "backend_port": 4580,
+  "package_name": "com.nextai.camera",
+  "active_tasks": 0,
+  "completed_tasks": 11,
+  "blocked_tasks": 0,
+  "test_devices": [
+    {
+      "model": "Samsung Galaxy A07 (SM-A075F)",
+      "serial": "R83L80E1LXX",
+      "android_version": "16 (API 36)",
+      "wireless_adb": "192.168.1.11:35161",
+      "status": "verified"
+    },
+    {
+      "model": "Samsung Galaxy A50s (SM-A507FN)",
+      "serial": "R58MA581ZZA",
+      "android_version": "11 (API 30)",
+      "wireless_adb": "192.168.1.2:35977",
+      "status": "verified"
+    }
+  ],
+  "agents": {
+    "orchestrator": "active",
+    "architect": "idle",
+    "backend": "idle",
+    "frontend": "idle",
+    "integration-api": "idle",
+    "payment": "idle",
+    "tester": "idle",
+    "fixer": "idle",
+    "reviewer": "idle",
+    "security": "idle",
+    "devops": "idle",
+    "designer": "idle",
+    "documentation": "idle",
+    "adversary-auditor": "idle"
+  },
+  "current_release": "v10.0.281-original-baseline",
+  "apk_artifact": "CONVERT/apps/android/app/build/outputs/apk/debug/Timemark-Original-v10.0.281-arm64.apk",
+  "health": {
+    "build": "pass",
+    "lint": "pass",
+    "typecheck": "pass",
+    "unit_test": "pass",
+    "integration_test": "pass",
+    "native_cpp_audit": "pass",
+    "brand_sanitization": "pass",
+    "project_memory_validation": "pass",
+    "real_device_verification": "pass"
+  }
+}

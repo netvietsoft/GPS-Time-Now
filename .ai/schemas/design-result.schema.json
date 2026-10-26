@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nextai.technology/schemas/v2.1.2/design-result.schema.json",
+  "title": "Design Visual QA & Comparison Result (Section 54)",
+  "type": "object",
+  "required": [
+    "design_id",
+    "task_id",
+    "status",
+    "checks",
+    "critical_differences",
+    "noncritical_differences"
+  ],
+  "properties": {
+    "design_id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "status": { "type": "string", "enum": ["pass", "fail"] },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status", "evidence"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "type": "string", "enum": ["pass", "fail"] },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "critical_differences": { "type": "array", "items": { "type": "string" } },
+    "noncritical_differences": { "type": "array", "items": { "type": "string" } }
+  }
+}

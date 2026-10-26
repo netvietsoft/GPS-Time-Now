@@ -1,0 +1,20 @@
+{
+  "id": "04-truth-forensics-detective",
+  "slug": "truth-forensics-detective",
+  "title": "NextAI Photo Truth Detective (VerifyAuth)",
+  "subtitle": "JpegPacker Stego-Slice, AntiFakeCode HMAC & Aegis Nonce Forensics Lab",
+  "version": "2.6.0",
+  "Namespace": "com.nextai.global.games.truthforensics",
+  "domain": "nextai.technology",
+  "category": "Cryptographic Forensics & Anti-Tamper Security",
+  "engine": "HTML5 Canvas Forensics Scanner + Binary Trailer Inspector",
+  "entry": "index.html",
+  "controls": [
+    "1 / Unpack JpegPacker: Inspect binary trailer after JPEG EOI (0xFFD9)",
+    "2 / Decode AntiFakeCode: Verify 12-char Base62 HMAC-SHA256 signature",
+    "3 / Audit NTP Clock Drift: Compare Trusted NTP UTC vs Device System Clock",
+    "V = Approve Authentic Photo | F = Flag Tampered/Spoofed Photo"
+  ],
+  "metrics": ["casesSolved", "accuracyRate", "forgeriesCaught", "forensicScore"],
+  "admobTestAppId": "ca-app-pub-3940256099942544~3347511713"
+}

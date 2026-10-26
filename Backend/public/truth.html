@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Photo Truth Verification Center (H5 Portal)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #070b14; color: #f1f5f9; }
+    .card { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.25); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+  <div class="max-w-2xl w-full card rounded-3xl p-8 space-y-6 shadow-2xl">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center font-black text-slate-950 text-lg">✓</div>
+        <div>
+          <h1 class="text-xl font-bold text-white">NextAI Truth Verification Center</h1>
+          <p class="text-xs text-slate-400">Cryptographic Anti-Tamper Photo Code & Aegis Hardware Attestation</p>
+        </div>
+      </div>
+      <a href="/cms" class="text-xs text-cyan-400 hover:underline">← Back to CMS</a>
+    </div>
+
+    <div class="space-y-3">
+      <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Enter Photo Code or Anti-Fake Code</label>
+      <div class="flex gap-2">
+        <input id="code-input" value="NX9X-84K2-V71Q" placeholder="e.g. NX9X-84K2-V71Q" class="flex-1 px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-sm" />
+        <button onclick="verifyCode()" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition">Verify Authenticity</button>
+      </div>
+      <div class="flex gap-2 text-xs text-slate-400">
+        <span>Sample Verified Codes:</span>
+        <button onclick="setCode('NX9X-84K2-V71Q')" class="text-cyan-400 hover:underline font-mono">NX9X-84K2-V71Q</button>
+        <button onclick="setCode('NX9X-92M4-P18Z')" class="text-cyan-400 hover:underline font-mono">NX9X-92M4-P18Z</button>
+        <button onclick="setCode('NX9X-31L9-K55B')" class="text-cyan-400 hover:underline font-mono">NX9X-31L9-K55B</button>
+      </div>
+    </div>
+
+    <div id="verify-result" class="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 text-xs font-mono">
+      Click "Verify Authenticity" to inspect cryptographic signature, NTP atomic clock delta, and JpegPacker integrity.
+    </div>
+  </div>
+
+  <script>
+    function setCode(c) {
+      document.getElementById('code-input').value = c;
+      verifyCode();
+    }
+    async function verifyCode() {
+      const code = document.getElementById('code-input').value.trim();
+      const res = await fetch('/nextai/v1/photo/code/get', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoCode: code })
+      });
+      const json = await res.json();
+      document.getElementById('verify-result').textContent = JSON.stringify(json, null, 2);
+    }
+    verifyCode();
+  </script>
+</body>
+</html>

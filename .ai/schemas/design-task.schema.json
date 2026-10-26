@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nextai.technology/schemas/v2.1.2/design-task.schema.json",
+  "title": "Design Gate Task Record (Section 51)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "design_id",
+    "task_id",
+    "feature_id",
+    "owner",
+    "status",
+    "ui_impact",
+    "targets",
+    "artifacts",
+    "approval",
+    "implementation"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "2.1.2" },
+    "design_id": { "type": "string", "pattern": "^DESIGN-[0-9]{4}$" },
+    "task_id": { "type": "string" },
+    "feature_id": { "type": "string" },
+    "owner": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "designing",
+        "visual_qa",
+        "awaiting_approval",
+        "changes_requested",
+        "approved",
+        "rejected",
+        "implementing",
+        "implementation_visual_qa",
+        "completed",
+        "blocked"
+      ]
+    },
+    "ui_impact": { "type": "boolean" },
+    "design_impact_level": {
+      "type": "string",
+      "enum": ["NONE", "LOW", "MEDIUM", "HIGH"]
+    },
+    "targets": { "type": "array", "items": { "type": "string" } },
+    "artifacts": {
+      "type": "object",
+      "properties": {
+        "tokens": { "type": "string" },
+        "prototype": { "type": "string" },
+        "approved_dir": { "type": "string" }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "required": ["required", "decision", "approved_by", "approved_at"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "decision": { "type": ["string", "null"], "enum": ["APPROVED", "REJECTED", "REQUEST_CHANGES", null] },
+        "approved_by": { "type": ["string", "null"] },
+        "approved_at": { "type": ["string", "null"] }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "required": ["allowed", "owner"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "owner": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,258 @@
+{
+  "schema_version": "2.1.2",
+  "updated_at": "2026-10-26T02:55:00Z",
+  "features": {
+    "FEAT-CAMERA-WATERMARK": {
+      "title": "CameraX Viewfinder, OpenGL LUT Filters & Real-Time Anti-Tamper Watermark Studio (#10011, #57, #34, #52)",
+      "classification_summary": {
+        "observed": 42,
+        "inferred": 4,
+        "new_design": 3
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 0.99,
+        "ui": 0.99,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-CAM-0001", "EVD-WM-10011"]
+    },
+    "FEAT-ANTI-FAKE-STEGO": {
+      "title": "JpegPacker EOI Tail Steganography, Aegis Hardware Capture Session & AntiFakeCode Generation",
+      "classification_summary": {
+        "observed": 18,
+        "inferred": 2,
+        "new_design": 1
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 1.0,
+        "ui": 0.99,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-JNI-JPEGPACKER", "EVD-JNI-AEGIS"]
+    },
+    "FEAT-TEAMSPACE-SAAS": {
+      "title": "NextAI Teamspace Enterprise SaaS, Projects, Geofence Timeclock, Checklists, Patrol & Batch Export (PDF/XLSX/KMZ)",
+      "classification_summary": {
+        "observed": 91,
+        "inferred": 6,
+        "new_design": 4
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 0.99,
+        "ui": 0.98,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-API-CLUSTER-91", "EVD-DB-TEAMSPACE"]
+    },
+    "FEAT-VERIFY-AUTH": {
+      "title": "VerifyAuth Photo Authenticity Inspection Center (4-Point Audit + PaddleOCR + PDF Certificate)",
+      "classification_summary": {
+        "observed": 12,
+        "inferred": 1,
+        "new_design": 2
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 1.0,
+        "ui": 0.99,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-API-TRUTHFUL", "EVD-JNI-PADDLEOCR"]
+    },
+    "FEAT-EARN-EMBODIED-AI": {
+      "title": "NextAI Earn Embodied Robotics Data Crowdsourcing (.mcap Container, 21 Hand Landmarks, 4-IMU, Pix/SPEI Payouts)",
+      "classification_summary": {
+        "observed": 16,
+        "inferred": 2,
+        "new_design": 1
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 0.99,
+        "ui": 0.99,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-API-EARN-9", "EVD-JNI-MCAP"]
+    },
+    "FEAT-PAYWALL-ADS": {
+      "title": "Dual-Mode Paywall (NextAI Plus & Teamspace Business), Exit Survey, AdFreePass & Test AdMob Mediation",
+      "classification_summary": {
+        "observed": 22,
+        "inferred": 2,
+        "new_design": 2
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 0.99,
+        "ui": 0.99,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-BILLING-SKUS", "EVD-ADX-TESTKEYS"]
+    },
+    "FEAT-EDGE-AI-CV": {
+      "title": "Native C++17 Edge AI NCNN Models (SteelDetect Rebar Counter, VLPR License Plate, ZeroDCE Low-Light, WatermarkRemove)",
+      "classification_summary": {
+        "observed": 31,
+        "inferred": 0,
+        "new_design": 1
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "not_required",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 1.0,
+        "ui": 0.99,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-JNI-198-FUNCS", "EVD-NCNN-MODELS"]
+    },
+    "FEAT-CMS-BACKEND": {
+      "title": "Self-Hosted TypeScript + Node.js Backend (:4580), 177 /next/* Endpoints, 42-Table OLTP + OLAP Star Schema & 7-Module Admin CMS",
+      "classification_summary": {
+        "observed": 177,
+        "inferred": 12,
+        "new_design": 15
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "not_required",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 1.0,
+        "ui": 1.0,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-OPENAPI-177", "EVD-DB-42-TABLES"]
+    },
+    "FEAT-WEB-GAMES-HUB": {
+      "title": "Dedicated Mini-Games Directory (CONVERT/games/) & Interactive HTML5 Web Games Hub (5 Field & Engineering Games)",
+      "classification_summary": {
+        "observed": 5,
+        "inferred": 2,
+        "new_design": 8
+      },
+      "discovery": "complete",
+      "evidence": "complete",
+      "behavior": "complete",
+      "api": "complete",
+      "domain": "complete",
+      "contract": "complete",
+      "android": "complete",
+      "backend": "complete",
+      "cms": "complete",
+      "build": "pass",
+      "test": "pass",
+      "security": "pass",
+      "parity": {
+        "behavior": 1.0,
+        "ui": 1.0,
+        "api": 1.0,
+        "data": 1.0
+      },
+      "open_risks": [],
+      "evidence_ids": ["EVD-GAMES-HUB-5"]
+    }
+  }
+}

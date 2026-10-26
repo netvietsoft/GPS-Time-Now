@@ -1,0 +1,37 @@
+schema_version: "2.1.2"
+id: TASK-RECON-0001
+feature_id: FEAT-CAMERA-WATERMARK
+phase: "20_DEPLOYMENT"
+mode: IMPLEMENTATION
+design_impact: HIGH
+title: "Full-Stack NextAI Camera Reconstruction (Android Compose + Node.js/TS OLTP/OLAP Backend + CMS + Web Games Hub)"
+owner: agent-0-orchestrator
+status: done
+priority: critical
+dependencies: []
+files_allowed:
+  - "**"
+files_forbidden: []
+acceptance_criteria:
+  - "Rebuild Android app with Kotlin + Jetpack Compose under package com.nextai.camera"
+  - "Sanitize all legacy brand references and replace with NextAI brand tokens"
+  - "Configure Google official AdMob Test IDs and document production keys in Tasksrequiring.md"
+  - "Build self-hosted Node.js + TypeScript Backend on port 4580 with 177 /next/* endpoints, CMS, and Relational OLTP (42 tables) + OLAP Star Schema"
+  - "Organize standalone games in CONVERT/games/ and provide HTML5 Web Game Hub"
+commands:
+  test:
+    - "powershell -ExecutionPolicy Bypass -File scripts/test.ps1"
+  verify:
+    - "powershell -ExecutionPolicy Bypass -File scripts/verify.ps1"
+max_fix_cycles: 5
+related_error_ids:
+  - ERR-20261026-001
+  - ERR-20261026-002
+  - ERR-20261026-003
+  - ERR-20261026-004
+related_acquirement_ids:
+  - ACQ-20261026-001
+  - ACQ-20261026-002
+  - ACQ-20261026-003
+  - ACQ-20261026-004
+  - ACQ-20261026-005

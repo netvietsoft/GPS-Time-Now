@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nextai.technology/schemas/v2.1.2/reconstruction-ledger.schema.json",
+  "title": "Reconstruction Ledger Schema (Section 44)",
+  "type": "object",
+  "required": ["schema_version", "updated_at", "features"],
+  "properties": {
+    "schema_version": { "type": "string", "const": "2.1.2" },
+    "updated_at": { "type": "string" },
+    "features": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "title",
+          "classification_summary",
+          "discovery",
+          "evidence",
+          "behavior",
+          "api",
+          "domain",
+          "contract",
+          "android",
+          "backend",
+          "cms",
+          "build",
+          "test",
+          "security",
+          "parity"
+        ],
+        "properties": {
+          "title": { "type": "string" },
+          "classification_summary": {
+            "type": "object",
+            "required": ["observed", "inferred", "new_design"],
+            "properties": {
+              "observed": { "type": "integer" },
+              "inferred": { "type": "integer" },
+              "new_design": { "type": "integer" }
+            }
+          },
+          "discovery": { "type": "string" },
+          "evidence": { "type": "string" },
+          "behavior": { "type": "string" },
+          "api": { "type": "string" },
+          "domain": { "type": "string" },
+          "contract": { "type": "string" },
+          "android": { "type": "string" },
+          "backend": { "type": "string" },
+          "cms": { "type": "string" },
+          "build": { "type": "string" },
+          "test": { "type": "string" },
+          "security": { "type": "string" },
+          "parity": {
+            "type": "object",
+            "required": ["behavior", "ui", "api", "data"],
+            "properties": {
+              "behavior": { "type": "number" },
+              "ui": { "type": "number" },
+              "api": { "type": "number" },
+              "data": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "id": "05-field-collage-builder",
+  "slug": "field-collage-builder",
+  "title": "NextAI Construction Before/After Puzzle",
+  "subtitle": "Engineering Inspection Photo Matcher & PDF/Excel/KMZ Milestone Builder",
+  "version": "2.6.0",
+  "Namespace": "com.nextai.global.games.collagebuilder",
+  "domain": "nextai.solution",
+  "category": "Construction QA/QC & Report Automation",
+  "engine": "HTML5 Canvas 2D Interactive Collage Board + KMZ/PDF Report Compiler",
+  "entry": "index.html",
+  "controls": [
+    "Click 'BEFORE' Card then matching 'AFTER' Card with same Azimuth & GPS Stake",
+    "Click 'Compile PDF/Excel/KMZ Batch' to lock completed Before/After pairs",
+    "Complete site milestones before the inspection deadline expires"
+  ],
+  "metrics": ["pairsMatched", "reportsExported", "azimuthAccuracy", "builderScore"],
+  "admobTestAppId": "ca-app-pub-3940256099942544~3347511713"
+}

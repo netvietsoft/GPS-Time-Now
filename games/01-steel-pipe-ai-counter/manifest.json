@@ -1,0 +1,20 @@
+{
+  "id": "01-steel-pipe-ai-counter",
+  "slug": "steel-pipe-ai-counter",
+  "title": "NextAI Steel Detect Challenge",
+  "subtitle": "NCNN Vision AI Pipe & Rebar Counting Arena",
+  "version": "2.6.0",
+  "Namespace": "com.nextai.global.games.steeldetect",
+  "domain": "nextai.technology",
+  "category": "Computer Vision & Field Engineering",
+  "engine": "HTML5 Canvas 2D + WebAudio Synth",
+  "entry": "index.html",
+  "controls": [
+    "Left Click: Tag / Untag steel pipe cross-section",
+    "Drag Box: Multi-tag pipe bundle region",
+    "A Key / Button: Run NCNN AI Auto-Proposal Assist",
+    "Space / Submit: Verify Count & Precision/Recall F1 Score"
+  ],
+  "metrics": ["precision", "recall", "f1Score", "pipesCounted", "inferenceMs"],
+  "admobTestAppId": "ca-app-pub-3940256099942544~3347511713"
+}

@@ -1,0 +1,11 @@
+# .clinerules — Cline / Roo Code Execution Adapter
+# Standard: Development Workspace Standard V2.1.2 (Section 2 & Section 3)
+# DO NOT duplicate canonical rules here. Always load and obey the canonical sources below:
+
+1. Canonical Agent Constitution: AGENTS.md
+2. Canonical Engineering Rules: Docs/rules.md
+3. Durable Error Memory: PROJECT_ERROR.md
+4. Distilled Project Knowledge: ACQUIREMENTS.md
+5. Architecture & Contracts: Docs/Architecture/overview.md, Docs/Contracts/openapi.yaml, Docs/Contracts/database-schema.md
+6. Active Task & Lock State: .ai/project.yaml, .ai/state.json, .ai/locks.json, UPDATETODOS.md
+7. Missing Production Credentials Tracker: Tasksrequiring.md

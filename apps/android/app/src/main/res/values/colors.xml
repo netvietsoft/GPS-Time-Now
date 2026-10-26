@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nextai_primary_blue">#2563EB</color>
+    <color name="nextai_primary_hover">#1D4ED8</color>
+    <color name="nextai_industrial_amber">#F59E0B</color>
+    <color name="nextai_verified_emerald">#10B981</color>
+    <color name="nextai_earn_purple">#6366F1</color>
+    <color name="nextai_earn_cyan">#06B6D4</color>
+    <color name="nextai_vip_gold_start">#FBBF24</color>
+    <color name="nextai_vip_gold_end">#D97706</color>
+    <color name="nextai_danger_red">#EF4444</color>
+    <color name="nextai_dark_bg">#090D16</color>
+    <color name="nextai_dark_surface">#111827</color>
+    <color name="nextai_dark_elevated">#1E293B</color>
+    <color name="nextai_light_bg">#F8FAFC</color>
+    <color name="nextai_light_surface">#FFFFFF</color>
+    <color name="nextai_text_primary_dark">#F8FAFC</color>
+    <color name="nextai_text_secondary_dark">#94A3B8</color>
+    <color name="nextai_text_primary_light">#0F172A</color>
+    <color name="nextai_text_secondary_light">#64748B</color>
+</resources>

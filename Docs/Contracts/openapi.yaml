@@ -1,0 +1,207 @@
+openapi: 3.0.3
+info:
+  title: NextAI Camera & Enterprise Field SaaS API Gateway (/next/*)
+  version: "10.0.281-nextai"
+  description: |
+    Canonical OpenAPI 3.0 contract for NextAI Camera (`com.nextai.camera`).
+    Covers all 5 service domains (177 endpoints under `/next/*`) plus `/health` and `/next/analytics/olap/*` running on Port 4580.
+servers:
+  - url: http://localhost:4580
+    description: Local Self-Hosted Node.js + TypeScript Server (Port 4580)
+  - url: https://api.nextai.technology
+    description: NextAI Global Production Gateway
+
+paths:
+  /health:
+    get:
+      summary: Server liveness & OLTP/OLAP database status
+      responses:
+        "200":
+          description: Healthy
+  /next/realtime:
+    post:
+      tags: [TodayApiService]
+      summary: Synchronize atomic server clock to prevent system clock tampering
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientTime: { type: integer }
+      responses:
+        "200":
+          description: Atomic server time
+  /next/android/config:
+    post:
+      tags: [TodayApiService]
+      summary: Fetch Android feature flags, watermark defaults, and upgrade info
+      responses:
+        "200":
+          description: Android configuration payload
+  /next/weather/current/detail:
+    post:
+      tags: [TodayApiService]
+      summary: Fetch live weather, temperature, wind, and AQI for GPS coordinates
+      responses:
+        "200":
+          description: Current weather telemetry
+  /next/v2/place/list/group:
+    post:
+      tags: [TodayApiService]
+      summary: Fetch surrounding POI places and street address for GPS coordinates
+      responses:
+        "200":
+          description: Grouped POI list
+  /next/config/watermarks:
+    post:
+      tags: [TodayApiService]
+      summary: List official and PGC watermark templates (#10011, #57, #34, #52)
+      responses:
+        "200":
+          description: Watermark template catalog
+  /next/logo/cutout:
+    post:
+      tags: [TodayApiService]
+      summary: AI automatic background removal for company logos
+      responses:
+        "200":
+          description: Transparent PNG logo URL
+  /next/ai/generatePrompt:
+    post:
+      tags: [TodayApiService]
+      summary: LLM-assisted field inspection note and work summary generation
+      responses:
+        "200":
+          description: Generated inspection note
+  /next/truthful/create/batch:
+    post:
+      tags: [TodayApiService]
+      summary: Register batch AntiFakeCode, photo hashes, and Aegis telemetry
+      responses:
+        "200":
+          description: Batch registration confirmation
+  /next/truthful/Query/batch/detail:
+    post:
+      tags: [TodayApiService]
+      summary: 4-point VerifyAuth photo authenticity and PaddleOCR inspection
+      responses:
+        "200":
+          description: Detailed authenticity certificate result
+  /next/center/app/login:
+    post:
+      tags: [TodayApiService]
+      summary: Multi-provider authentication (Email OTP, Google, Microsoft MSAL)
+      responses:
+        "200":
+          description: JWT accessToken, refreshToken, and user profile
+  /next/member/vip/info:
+    post:
+      tags: [TodayApiService]
+      summary: Query NextAI Plus VIP subscription and AdFreePass status
+      responses:
+        "200":
+          description: VIP entitlement status
+  /next/goods/query:
+    post:
+      tags: [TodayApiService]
+      summary: Query Google Play Billing SKUs (00000001, plus_1year_onetime, pro-monthly-non-stripe)
+      responses:
+        "200":
+          description: SKU pricing catalog
+  /next/order/google/receipts:
+    post:
+      tags: [TodayApiService]
+      summary: Verify Google Play purchaseToken and activate NextAI Plus
+      responses:
+        "200":
+          description: Receipt verification status
+  /next/app/adx/global_fetch_exposure_config:
+    post:
+      tags: [TodayApiService]
+      summary: Fetch NextAI AdX exposure config with Google Official Test AdMob IDs
+      responses:
+        "200":
+          description: Test-safe AdMob placement configuration
+  /next/app/group/query:
+    post:
+      tags: [ClusterApiService]
+      summary: Query NextAI Teamspace enterprise workspace details and S3 quota
+      responses:
+        "200":
+          description: Teamspace workspace details
+  /next/app/photo/list:
+    post:
+      tags: [ClusterApiService]
+      summary: List Teamspace field photos with AI rebar count and OCR search
+      responses:
+        "200":
+          description: Paginated Teamspace photo stream
+  /next/app/group/timeclock/geofence/check:
+    post:
+      tags: [ClusterApiService]
+      summary: Verify employee GPS distance against project geofence radius
+      responses:
+        "200":
+          description: Geofence compliance status
+  /next/app/reward/video/task/list:
+    post:
+      tags: [EarnApiService]
+      summary: List Embodied AI (.mcap) robotics data collection tasks
+      responses:
+        "200":
+          description: Robotics task list with BRL/MXN rewards
+  /next/app/reward/video/submit:
+    post:
+      tags: [EarnApiService]
+      summary: Submit recorded .mcap file (HEVC + 21 Hand Landmarks + 4-IMU)
+      responses:
+        "200":
+          description: Submission verification status
+  /next/app/reward/video/withdrawal/apply:
+    post:
+      tags: [EarnApiService]
+      summary: Apply for cash withdrawal via Pix (Brazil BRL) or SPEI (Mexico MXN)
+      responses:
+        "200":
+          description: Payout transaction record
+  /next/antiFakeCode/generate:
+    post:
+      tags: [DualModeApiService]
+      summary: Pre-allocate batch offline AntiFakeCode tokens (NEXT9X-...)
+      responses:
+        "200":
+          description: Pre-allocated anti-fake codes
+  /next/workgroup/photo/watermark/remove/check:
+    post:
+      tags: [DualModeApiService]
+      summary: Authorize JpegPacker lossless watermark removal
+      responses:
+        "200":
+          description: Unpack authorization token
+  /next/workgroup/v4/s3/token:
+    post:
+      tags: [StorageStsApiService]
+      summary: Issue temporary AWS S3 / R2 STS credentials
+      responses:
+        "200":
+          description: Temporary STS credentials
+  /next/analytics/olap/summary:
+    get:
+      tags: [OLAPAnalytics]
+      summary: Query star-schema OLAP cubes (captures, attendance, revenue, .mcap telemetry)
+      responses:
+        "200":
+          description: Multidimensional OLAP summary
+
+components:
+  schemas:
+    BaseResponse:
+      type: object
+      required: [code, msg, status, data]
+      properties:
+        code: { type: integer, example: 200 }
+        msg: { type: string, example: "success" }
+        status: { type: integer, example: 0 }
+        data: { type: object }

@@ -1,0 +1,20 @@
+{
+  "id": "02-embodied-hand-mcap-sim",
+  "slug": "embodied-hand-mcap-sim",
+  "title": "NextAI Embodied Robotics Hand Lab",
+  "subtitle": "21-Keypoint Hand Skeleton & 4-Channel IMU (.mcap) Telemetry Simulator",
+  "version": "2.6.0",
+  "Namespace": "com.nextai.global.games.embodiedmcap",
+  "domain": "nextai.solution",
+  "category": "Embodied AI & Robotics Data Collection",
+  "engine": "HTML5 Canvas 2D + 21-Landmark Inverse Kinematics + IMU Oscilloscope",
+  "entry": "index.html",
+  "controls": [
+    "Mouse Move: Control 21-Keypoint Articulated Hand inside Green FOV Zone",
+    "Hold Left Click / Space: Pinch Grasp object with Thumb + Index landmarks",
+    "Release Left Click: Drop object into matching target assembly bin",
+    "Maintain >85% Hand Visibility & Smooth IMU Velocity to pass NextAI QA"
+  ],
+  "metrics": ["visibilityRatio", "imuStability", "mcapChunks", "brlReward", "mxnReward"],
+  "admobTestAppId": "ca-app-pub-3940256099942544~3347511713"
+}

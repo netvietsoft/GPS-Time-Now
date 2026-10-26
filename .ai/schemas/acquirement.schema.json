@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nextai.technology/schemas/v2.1.2/acquirement.schema.json",
+  "title": "Distilled Project Acquirement Schema (Section 57.4)",
+  "type": "object",
+  "required": [
+    "id",
+    "status",
+    "category",
+    "component",
+    "owner",
+    "context",
+    "distilled_knowledge",
+    "optimal_solution",
+    "when_to_use",
+    "when_not_to_use",
+    "evidence"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^ACQ-[0-9]{8}-[0-9]{3}$" },
+    "status": {
+      "type": "string",
+      "enum": ["CANDIDATE", "VALIDATED", "STANDARD", "DEPRECATED"]
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "ARCHITECTURE",
+        "PRODUCT",
+        "REQUIREMENTS",
+        "DESIGN_UX",
+        "FRONTEND",
+        "BACKEND",
+        "MOBILE",
+        "DESKTOP",
+        "GAME",
+        "AI_DATA",
+        "DATABASE",
+        "API_INTEGRATION",
+        "INFRASTRUCTURE",
+        "SECURITY",
+        "TESTING",
+        "PERFORMANCE",
+        "DEPLOYMENT",
+        "OBSERVABILITY",
+        "PROCESS"
+      ]
+    },
+    "component": { "type": "string" },
+    "owner": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "context": { "type": "string" },
+    "distilled_knowledge": { "type": "string" },
+    "optimal_solution": { "type": "string" },
+    "when_to_use": { "type": "string" },
+    "when_not_to_use": { "type": "string" },
+    "evidence": { "type": "string" },
+    "limitations": { "type": "string" },
+    "related_error_ids": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nextai.technology/schemas/v2.1.2/project-error.schema.json",
+  "title": "Durable Project Error Memory Schema (Section 57.3)",
+  "type": "object",
+  "required": [
+    "id",
+    "status",
+    "severity",
+    "component",
+    "environment",
+    "owner",
+    "summary",
+    "symptoms",
+    "root_cause",
+    "resolution",
+    "verification",
+    "prevention"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^ERR-[0-9]{8}-[0-9]{3}$" },
+    "status": {
+      "type": "string",
+      "enum": ["INVESTIGATING", "OPEN", "MITIGATED", "RESOLVED", "REOPENED", "WONT_FIX"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["S0 CRITICAL", "S1 HIGH", "S2 MEDIUM", "S3 LOW"]
+    },
+    "component": { "type": "string" },
+    "environment": { "type": "string" },
+    "version_commit": { "type": "string" },
+    "first_seen": { "type": "string" },
+    "last_seen": { "type": "string" },
+    "resolved_at": { "type": ["string", "null"] },
+    "owner": { "type": "string" },
+    "recurrence_count": { "type": "integer", "minimum": 1 },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "summary": { "type": "string" },
+    "symptoms": { "type": "string" },
+    "root_cause": { "type": "string" },
+    "failed_attempts": { "type": "array", "items": { "type": "object" } },
+    "resolution": { "type": "string" },
+    "verification": { "type": "string" },
+    "prevention": { "type": "string" },
+    "related_acquirement_ids": { "type": "array", "items": { "type": "string" } }
+  }
+}

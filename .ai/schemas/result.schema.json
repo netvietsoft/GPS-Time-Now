@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nextai.technology/schemas/v2.1.2/result.schema.json",
+  "title": "Workspace Standard V2.1.2 Task Result Record",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "task_id",
+    "status",
+    "files_changed",
+    "tests"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "2.1.2" },
+    "task_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "blocked", "failed", "needs_review"]
+    },
+    "outputs": { "type": "array", "items": { "type": "string" } },
+    "evidence_created": { "type": "array", "items": { "type": "string" } },
+    "files_changed": { "type": "array", "items": { "type": "string" } },
+    "tests": { "type": "array", "items": { "type": "object" } },
+    "related_error_ids": { "type": "array", "items": { "type": "string" } },
+    "related_acquirement_ids": { "type": "array", "items": { "type": "string" } },
+    "unresolved_questions": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "next_recommended_tasks": { "type": "array", "items": { "type": "string" } }
+  }
+}

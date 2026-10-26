@@ -1,0 +1,206 @@
+schema_version: "2.1.2"
+
+agents:
+  orchestrator:
+    id: agent-0-orchestrator
+    name: "CEO - ORCHESTRATOR"
+    role: coordinator
+    can_code: false
+    skills:
+      - source-ingestion-provenance
+      - task-graph-orchestration
+      - state-and-lock-management
+    writable:
+      - .ai/**
+      - UPDATETODOS.md
+      - Tasksrequiring.md
+      - TASK_LOG.md
+
+  architect:
+    id: agent-1-architect
+    name: "Agent 1 - ARCHITECT"
+    role: architecture
+    can_code: false
+    skills:
+      - class-module-classification
+      - call-graph-recovery
+      - api-knowledge-graph
+      - domain-recovery
+      - backend-architecture
+      - android-kotlin-architecture
+    writable:
+      - Docs/Architecture/**
+      - Docs/ADR/**
+      - Docs/Contracts/**
+      - Docs/Reconstruction/**
+      - PROJECT_ERROR.md
+      - ACQUIREMENTS.md
+
+  backend:
+    id: agent-2-backend
+    name: "Agent 2 - BACKEND"
+    role: backend
+    can_code: true
+    skills:
+      - domain-recovery
+      - database-reconstruction
+      - backend-architecture
+      - cms-admin-reconstruction
+    writable:
+      - Backend/**
+    forbidden:
+      - apps/android/**
+
+  frontend:
+    id: agent-3-frontend
+    name: "Agent 3 - FRONTEND"
+    role: frontend
+    can_code: true
+    skills:
+      - resource-ui-discovery
+      - navigation-screen-recovery
+      - behavior-extraction
+      - local-data-storage-recovery
+      - android-kotlin-architecture
+    writable:
+      - apps/android/**
+      - games/**
+      - Backend/cms/**
+
+  integration-api:
+    id: agent-4-integration-api
+    name: "Agent 4 - INTEGRATION/API"
+    role: integration-api
+    can_code: true
+    skills:
+      - api-intelligence
+      - api-knowledge-graph
+    writable:
+      - Docs/Contracts/openapi.yaml
+      - Backend/src/routes/**
+      - apps/android/app/src/main/java/com/nextai/camera/network/**
+
+  payment:
+    id: agent-5-payment
+    name: "Agent 5 - PAYMENT"
+    role: payment
+    can_code: true
+    skills:
+      - payment-discovery
+      - billing-reconciliation
+    writable:
+      - Backend/src/routes/billing*
+      - apps/android/app/src/main/java/com/nextai/camera/billing/**
+
+  tester:
+    id: agent-6-tester
+    name: "Agent 6 - TESTER"
+    role: testing
+    can_code: false
+    skills:
+      - build-static-qa
+      - functional-integration-testing
+    writable:
+      - scripts/test.ps1
+      - .ai/bugs/**
+      - Docs/Testing/**
+    forbidden:
+      - Backend/src/**
+      - apps/android/app/src/main/**
+
+  fixer:
+    id: agent-7-fixer
+    name: "Agent 7 - FIXER"
+    role: bugfix
+    can_code: true
+    skills:
+      - root-cause-resolution
+    writable:
+      - Backend/src/**
+      - apps/android/app/src/main/**
+      - PROJECT_ERROR.md
+      - ACQUIREMENTS.md
+
+  reviewer:
+    id: agent-8-reviewer
+    name: "Agent 8 - REVIEWER"
+    role: review
+    can_code: false
+    skills:
+      - original-app-parity
+      - architecture-code-review
+    writable:
+      - .ai/reports/**
+
+  security:
+    id: agent-9-security
+    name: "Agent 9 - SECURITY"
+    role: security
+    can_code: false
+    skills:
+      - security-performance-validation
+    writable:
+      - Docs/Architecture/security.md
+      - Tasksrequiring.md
+
+  devops:
+    id: agent-10-devops
+    name: "Agent 10 - DEVOPS"
+    role: devops
+    can_code: true
+    skills:
+      - infrastructure-release
+    writable:
+      - scripts/**
+      - .env.example
+      - Docs/Architecture/deployment.md
+
+  designer:
+    id: agent-11-designer
+    name: "Agent 11 - DESIGNER"
+    role: design
+    can_code: false
+    can_create_prototype: true
+    requires_human_approval_before_handoff: true
+    skills:
+      - resource-ui-discovery
+      - visual-parity-qa
+    writable:
+      - design/**
+      - .ai/design/**
+      - Docs/Design/**
+    forbidden:
+      - Backend/src/**
+      - apps/android/app/src/main/**
+
+  documentation:
+    id: agent-12-documentation
+    name: "Agent 12 - DOCUMENTATION"
+    role: documentation
+    can_code: false
+    skills:
+      - documentation-governance
+    writable:
+      - README.md
+      - AGENTS.md
+      - PROJECT_MEMORY.md
+      - TASK_LOG.md
+      - UPDATETODOS.md
+      - Tasksrequiring.md
+      - LIBRARY.MD
+      - CLAUDE.md
+      - .clinerules
+      - Docs/**
+
+  adversary-auditor:
+    id: agent-13-adversary-auditor
+    name: "Agent 13 - ADVERSARY AUDITOR / RED TEAM CRITIC"
+    role: adversary-audit
+    can_code: false
+    skills:
+      - original-app-parity
+      - ast-code-diff-verification
+      - six-gate-adversarial-audit
+    writable:
+      - .ai/reports/**
+      - .ai/reconstruction/ledger.json

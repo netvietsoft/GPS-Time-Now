@@ -1,0 +1,69 @@
+{
+  "brand": "NextAI Global Suite",
+  "domains": [
+    "nextai.global",
+    "nextai.technology",
+    "nextai.solution"
+  ],
+  "version": "2.6.0",
+  "admobTestConfig": {
+    "appId": "ca-app-pub-3940256099942544~3347511713",
+    "banner": "ca-app-pub-3940256099942544/6300978111",
+    "interstitial": "ca-app-pub-3940256099942544/1033173712",
+    "rewarded": "ca-app-pub-3940256099942544/5224354917",
+    "native": "ca-app-pub-3940256099942544/2247696110",
+    "appOpen": "ca-app-pub-3940256099942544/9257395921"
+  },
+  "games": [
+    {
+      "id": "01-steel-pipe-ai-counter",
+      "title": "NextAI Steel Detect Challenge",
+      "category": "Computer Vision & NCNN AI",
+      "path": "../../games/01-steel-pipe-ai-counter/index.html",
+      "relativeFromGames": "./01-steel-pipe-ai-counter/index.html",
+      "badge": "NCNN FP16 VISION",
+      "accent": "#00e5ff",
+      "description": "Race with the simulated NCNN SteelDetect neural engine to count and tag stacked construction steel pipes while avoiding PVC conduit decoys and maximizing Precision/Recall F1 score."
+    },
+    {
+      "id": "02-embodied-hand-mcap-sim",
+      "title": "NextAI Embodied Robotics Hand Lab",
+      "category": "Embodied AI & .MCAP Telemetry",
+      "path": "../../games/02-embodied-hand-mcap-sim/index.html",
+      "relativeFromGames": "./02-embodied-hand-mcap-sim/index.html",
+      "badge": "21-KEYPOINT .MCAP",
+      "accent": "#00e676",
+      "description": "Control an articulated 21-landmark hand skeleton with real-time 4-sensor IMU waveforms to pinch-grasp and sort robotics components while keeping FOV visibility >= 85%."
+    },
+    {
+      "id": "03-patrol-geofence-runner",
+      "title": "NextAI Security Patrol & QR Geofence Runner",
+      "category": "Tactical Geofence & Anti-Spoof",
+      "path": "../../games/03-patrol-geofence-runner/index.html",
+      "relativeFromGames": "./03-patrol-geofence-runner/index.html",
+      "badge": "QR GEOFENCE GUARD",
+      "accent": "#ffab00",
+      "description": "Navigate a security officer across facility sectors, verify QR checkpoints inside Haversine GPS geofences, and neutralize Mock-GPS spoofer drones with Aegis EMP pulses."
+    },
+    {
+      "id": "04-truth-forensics-detective",
+      "title": "NextAI Photo Truth Detective (VerifyAuth)",
+      "category": "Cryptographic Forensics",
+      "path": "../../games/04-truth-forensics-detective/index.html",
+      "relativeFromGames": "./04-truth-forensics-detective/index.html",
+      "badge": "VERIFYAUTH LAB",
+      "accent": "#b388ff",
+      "description": "Inspect field evidence photos using JpegPacker stego-slice unpacker, AntiFakeCode Base62 HMAC verifier, NTP clock drift analyzer, and Aegis ECDSA hardware attestation."
+    },
+    {
+      "id": "05-field-collage-builder",
+      "title": "NextAI Construction Before/After Puzzle",
+      "category": "Engineering QA/QC & Batch Export",
+      "path": "../../games/05-field-collage-builder/index.html",
+      "relativeFromGames": "./05-field-collage-builder/index.html",
+      "badge": "PDF / XLSX / KMZ",
+      "accent": "#00b0ff",
+      "description": "Match BEFORE and AFTER construction site inspection photos by highway stake and compass azimuth, then compile verified PDF, Excel, and Google Earth KMZ deliverables."
+    }
+  ]
+}

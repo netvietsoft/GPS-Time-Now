@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Teamspace Enterprise Web Portal & Stripe Checkout</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #080d1a; color: #f8fafc; }
+    .card { background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(59, 130, 246, 0.25); }
+  </style>
+</head>
+<body class="min-h-screen p-6">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <header class="card rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <span class="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">NextAI Teamspace SaaS Portal</span>
+        <h1 class="text-2xl font-bold text-white mt-2">Enterprise Field Photo Cloud & Stripe Checkout</h1>
+        <p class="text-xs text-slate-400">Replaced legacy teamspace portal with self-hosted NextAI B2B Cloud (`nextai.solution`)</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="createPlanShortLink()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition">💳 Simulate Stripe Checkout Link</button>
+        <a href="/cms" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">Super Admin CMS</a>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="card rounded-2xl p-5 space-y-2">
+        <div class="text-xs text-slate-400">Active B2B Workspace</div>
+        <div class="text-lg font-bold text-white">Coteccons Metro Line 1</div>
+        <div class="text-xs text-emerald-400">Plan: TEAMSPACE_BUSINESS_PRO (42 Seats)</div>
+        <div class="text-xs text-slate-400">Cloud Storage: 64.2 GB / 100 GB S3</div>
+      </div>
+      <div class="card rounded-2xl p-5 space-y-2">
+        <div class="text-xs text-slate-400">Cloud Export Engines</div>
+        <div class="text-lg font-bold text-cyan-400">PDF • Excel POI • KMZ</div>
+        <p class="text-xs text-slate-400">Generate 4-Grid Construction PDF, Apache POI `.xlsx` with embedded thumbnails, or Google Earth `.kmz`.</p>
+        <button onclick="exportReport()" class="mt-2 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold">Trigger Cloud Report Export</button>
+      </div>
+      <div class="card rounded-2xl p-5 space-y-2">
+        <div class="text-xs text-slate-400">3rd-Party Cloud Sync</div>
+        <div class="text-lg font-bold text-purple-400">OneDrive & Google Drive</div>
+        <p class="text-xs text-slate-400">Auto-syncs field photos to <code>/NextAI_Teamspace/Metro_Line_1</code> via MSAL OAuth2 & Webhook integrations.</p>
+      </div>
+    </div>
+
+    <pre id="teamspace-out" class="card rounded-2xl p-5 text-xs font-mono text-emerald-300 overflow-x-auto">Ready.</pre>
+  </div>
+
+  <script>
+    async function createPlanShortLink() {
+      const res = await fetch('/nextai/v1/app/plan/shortLink/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamId: 'team_vn_001', planType: 'TEAMSPACE_BUSINESS_PRO' })
+      });
+      document.getElementById('teamspace-out').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+    async function exportReport() {
+      const res = await fetch('/nextai/v1/app/photo/export/task/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamId: 'team_vn_001', projectId: 'proj_01', format: 'EXCEL_APACHE_POI' })
+      });
+      document.getElementById('teamspace-out').textContent = JSON.stringify(await res.json(), null, 2);
+    }
+    createPlanShortLink();
+  </script>
+</body>
+</html>

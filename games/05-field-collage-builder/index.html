@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NextAI Construction Before/After Puzzle</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="badge">BEFORE / AFTER</span>
+      <div>
+        <h1>NextAI Construction Before/After Puzzle</h1>
+        <p>Site Inspection Azimuth & Stake Matcher • PDF / Excel / KMZ Batch Compiler</p>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="pill">
+        <div class="l">Milestone</div>
+        <div class="v" id="hudMile">1</div>
+      </div>
+      <div class="pill">
+        <div class="l">Timer</div>
+        <div class="v" id="hudTimer">50.0s</div>
+      </div>
+      <div class="pill">
+        <div class="l">Matched Pairs</div>
+        <div class="v" id="hudPairs">0 / 4</div>
+      </div>
+      <div class="pill">
+        <div class="l">Builder Score</div>
+        <div class="v" id="hudScore">0</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="board-wrap">
+      <canvas id="collageCanvas" width="820" height="540"></canvas>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h2>Batch Export Deliverables</h2>
+        <div class="export-stats">
+          <div class="exp-box">
+            <span>PDF Reports</span>
+            <strong id="cntPdf">0</strong>
+          </div>
+          <div class="exp-box">
+            <span>XLSX Sheets</span>
+            <strong id="cntXls">0</strong>
+          </div>
+          <div class="exp-box">
+            <span>Google KMZ</span>
+            <strong id="cntKmz">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Engineering Report Actions</h2>
+        <div class="btn-stack">
+          <button class="primary" id="btnExport">
+            <span>Compile PDF / XLSX / KMZ Package</span>
+            <kbd>[SPACE]</kbd>
+          </button>
+          <button id="btnAutoHint">
+            <span>Highlight Matching Azimuth Pair</span>
+            <kbd>[H]</kbd>
+          </button>
+          <button id="btnShuffle">
+            <span>New Site Inspection Batch</span>
+            <kbd>[R]</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>QA/QC Deliverable Log</h2>
+        <div class="log" id="collageLog"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>

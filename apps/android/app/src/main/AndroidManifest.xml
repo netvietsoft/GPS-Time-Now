@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.nextai.camera">
+
+    <!-- Camera, Microphone & Hardware Sensors (Embodied AI .mcap + Live Watermark) -->
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false" />
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name="com.nextai.camera.NextAiApplication"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_nextai_launcher"
+        android:roundIcon="@drawable/ic_nextai_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:largeHeap="true"
+        android:theme="@style/Theme.NextAICamera">
+
+        <!-- Official Google AdMob Test App ID (Task.txt #4) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
+
+        <!-- Official Google AdMob Test Unit Metadata -->
+        <meta-data
+            android:name="com.nextai.camera.ads.APP_OPEN_AD_UNIT_ID"
+            android:value="ca-app-pub-3940256099942544/9257395921" />
+        <meta-data
+            android:name="com.nextai.camera.ads.BANNER_AD_UNIT_ID"
+            android:value="ca-app-pub-3940256099942544/6300978111" />
+        <meta-data
+            android:name="com.nextai.camera.ads.INTERSTITIAL_AD_UNIT_ID"
+            android:value="ca-app-pub-3940256099942544/1033173712" />
+        <meta-data
+            android:name="com.nextai.camera.ads.REWARDED_AD_UNIT_ID"
+            android:value="ca-app-pub-3940256099942544/5224354917" />
+        <meta-data
+            android:name="com.nextai.camera.ads.NATIVE_ADVANCED_AD_UNIT_ID"
+            android:value="ca-app-pub-3940256099942544/2247696110" />
+
+        <!-- NextAI Build Identity -->
+        <meta-data
+            android:name="com.nextai.camera.VENDOR"
+            android:value="NextAI Technology &amp; Solution" />
+        <meta-data
+            android:name="com.nextai.camera.BUILD_TAG"
+            android:value="20261026-NextAIOverseaRelease" />
+
+        <activity
+            android:name="com.nextai.camera.MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>
