@@ -2,6 +2,8 @@
 
 Mỗi PR sửa `AUD-*` phải ghi: commit SHA, môi trường, phiên bản tool, lệnh tái hiện, đầu ra đã xóa dữ liệu nhạy cảm, kết quả trước/sau và liên kết artifact CI. Test trên máy cá nhân chỉ là bằng chứng bổ sung; auditor chạy lại trên commit PR.
 
+Với PR tái dựng Time mark, thêm manifest/hash bản gốc, nhãn `OBSERVED`/`INFERRED`/`NEW_DESIGN`, ảnh/video hoặc fixture đối chiếu cặp và sai khác được giải thích theo [PARITY-AUDIT.md](PARITY-AUDIT.md). Không coi cách triển khai backend server, CMS, OLAP hoặc games là hành vi gốc nếu nguồn không chứng minh điều đó.
+
 | Nhóm | Bằng chứng tối thiểu | Phản biện cần trả lời |
 |---|---|---|
 | API và CMS | Ma trận route × vai trò × tenant; test 401/403/404, rate limit, audit log; thử request không token | Có endpoint nào cho phép vượt tenant hoặc admin bằng payload do client tự đặt không? |

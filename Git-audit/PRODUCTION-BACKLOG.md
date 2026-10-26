@@ -2,6 +2,8 @@
 
 Các mục này là việc mới hoặc phạm vi cần hoàn thiện, không khẳng định tất cả đã lỗi. Chủ sở hữu do đội dev phân công trong issue/PR. Release chỉ được đề xuất khi tất cả mục P0/P1 trong [FINDINGS.md](FINDINGS.md) được auditor đóng.
 
+Trước khi tuyên bố **tái dựng Time mark hoàn chỉnh**, đội dev cũng phải nộp và được kiểm lại các bằng chứng `PAR-001..004` trong [PARITY-AUDIT.md](PARITY-AUDIT.md). Điều kiện parity và điều kiện production được theo dõi riêng.
+
 | ID | Ưu tiên | Việc cần làm | Điều kiện hoàn thành |
 |---|---|---|---|
 | PROD-01 | P0 | Xác định phạm vi MVP và tắt an toàn billing, Earn, payout, CMS nếu chưa có dịch vụ thật | Danh sách tính năng bật/tắt theo môi trường; test chứng minh route chưa sẵn sàng không trả success giả. |
@@ -18,6 +20,7 @@ Các mục này là việc mới hoặc phạm vi cần hoàn thiện, không kh
 | PROD-12 | P2 | Đối chiếu OpenAPI, 177 route và UI với hành vi thật | Contract tests; route chưa triển khai trả 404/501 rõ ràng; không dùng sweep HTTP 200 làm chứng nhận chức năng. |
 | PROD-13 | P2 | Khóa phiên bản dependency, SBOM và quy trình vá lỗi | Lockfile, scan có ngưỡng chặn, bản ghi xử lý lỗ hổng. |
 | PROD-14 | P2 | Sửa tài liệu setup theo workspace hiện tại và báo cáo trạng thái theo chứng cứ | Không còn đường dẫn `E:\...` trong hướng dẫn thao tác; trạng thái demo/staging/prod tách riêng. |
+| PROD-15 | P1 | Lập ma trận đối chiếu Time mark gốc với từng tính năng được tái dựng | `PAR-001..004` có artifact tham chiếu, fixture và kết quả auditor chạy lại; các phần NextAI mới được đánh dấu riêng. |
 
 ## Thứ tự triển khai
 

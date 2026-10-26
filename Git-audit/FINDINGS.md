@@ -2,6 +2,8 @@
 
 Baseline: `4ba4cbe`. Mọi đường dẫn và số dòng là tại baseline. `OPEN` cho đến khi auditor xác nhận PR và bằng chứng.
 
+Các phát hiện `AUD-*` bên dưới là rủi ro của bản NextAI khi đưa lên production. Vì đây là dự án tái dựng Time mark, xem thêm [PARITY-AUDIT.md](PARITY-AUDIT.md) để kiểm tra tính tương đương với bản gốc. Không suy ra rằng mọi hành vi NextAI dưới đây có trong Time mark gốc.
+
 ## AUD-001 — P0 — API không kiểm tra xác thực và phân quyền
 
 - **Quan sát:** `Backend/src/server.ts:1116-1248` tiếp nhận request rồi gọi `handleApiRoute` mà không kiểm tra `Authorization`; `/cms` được phục vụ tại `:1133-1137`. `Access-Control-Allow-Origin: *` tại `:1119`. `NextAiNetworkConfig.kt:35` dùng token mặc định trong app nhưng server không xác thực nó.

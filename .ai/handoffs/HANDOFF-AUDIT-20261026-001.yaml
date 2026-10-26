@@ -4,6 +4,7 @@ agent: independent-auditor
 baseline_commit: 4ba4cbe
 changed:
   - Git-audit/README.md
+  - Git-audit/PARITY-AUDIT.md
   - Git-audit/FINDINGS.md
   - Git-audit/EVIDENCE.md
   - Git-audit/PRODUCTION-BACKLOG.md
@@ -14,5 +15,6 @@ tests:
   backend_tests: pass
   android_tests: not_run
 remaining:
+  - "Development team to provide Time mark reference manifest and PAR-001..004 evidence."
   - "Development team to address AUD-001..009 and attach repeatable evidence."
   - "Independent auditor to verify each fix on its PR commit."

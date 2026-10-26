@@ -3,7 +3,16 @@
 Audit ID: `AUDIT-20261026-001`
 
 Baseline: `4ba4cbe` (`main`, 2026-10-26)
-Status: **Chưa đủ điều kiện production**. Các kết luận dưới đây dựa trên mã nguồn và kiểm tra tại commit baseline; không coi tài liệu tiến độ là bằng chứng vận hành.
+Nguồn gốc: **sản phẩm tái dựng từ ứng dụng Time mark v10.0.281**. Theo `Docs/Reconstruction/overview.md`, camera, Teamspace, Earn và các luồng khác có tham chiếu từ ứng dụng gốc; backend phía server chủ yếu được suy luận từ hợp đồng client, còn CMS, OLAP và games là phần bổ sung. Audit phải kiểm tra cả độ tương đương với bản gốc và khả năng vận hành của phần mới.
+
+Status: **Chưa đủ bằng chứng để xác nhận tương đương đầy đủ với Time mark hoặc đủ điều kiện production**. Các kết luận dưới đây dựa trên mã nguồn và kiểm tra tại commit baseline; không coi tài liệu tiến độ là bằng chứng vận hành.
+
+Hai cổng nghiệm thu độc lập:
+
+1. **Tái dựng:** đối chiếu hành vi, giao diện, ảnh/video đầu ra, dữ liệu, API và thư viện native với bản Time mark gốc. Xem [PARITY-AUDIT.md](PARITY-AUDIT.md).
+2. **Production:** xác thực, thanh toán, bảo mật, lưu trữ, vận hành và phát hành bản NextAI. Xem [FINDINGS.md](FINDINGS.md) và [PRODUCTION-BACKLOG.md](PRODUCTION-BACKLOG.md).
+
+Một chức năng có thể giống bản gốc nhưng chưa an toàn để mở trên production. Một chức năng mới của NextAI phải được đánh giá theo yêu cầu và test riêng, không chấm điểm parity với Time mark.
 
 ## Cách đội dev làm việc với audit
 
@@ -11,6 +20,7 @@ Status: **Chưa đủ điều kiện production**. Các kết luận dưới đ�
 2. Trong PR, nêu thay đổi, cách tái hiện trước sửa, kết quả sau sửa, và liên kết bằng chứng theo [EVIDENCE.md](EVIDENCE.md).
 3. Auditor kiểm tra độc lập trên commit PR. Chỉ đóng mục khi tiêu chí chấp nhận đạt và bằng chứng có thể chạy lại.
 4. Nếu có tính năng mới hoặc thay đổi phạm vi, bổ sung mục vào [PRODUCTION-BACKLOG.md](PRODUCTION-BACKLOG.md) và liên kết PR.
+5. Với phần được tái dựng, PR phải chỉ ra nguồn tham chiếu Time mark và kết quả đối chiếu trước/sau; phần mới ghi rõ `NEW_DESIGN`.
 
 Mức ưu tiên: **P0** chặn phát hành và có nguy cơ bảo mật/tài chính; **P1** chặn production hoặc độ tin cậy cốt lõi; **P2** chất lượng, khả năng vận hành. `OPEN` nghĩa là chưa xác nhận đã sửa. Các mục cần bằng chứng là yêu cầu kiểm chứng, không mặc định là lỗi.
 
