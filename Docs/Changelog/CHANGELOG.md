@@ -1,5 +1,9 @@
 # Product Changelog (`Docs/Changelog/CHANGELOG.md`)
 
+## Audit documentation — 2026-10-26
+
+- Added `Git-audit/` with baseline findings, required evidence and a production backlog (`AUDIT-20261026-001`). This records open release blockers; no product behavior changed.
+
 > **Format**: Development Workspace Standard V2.1.2 (Section 20.A)
 
 ---
