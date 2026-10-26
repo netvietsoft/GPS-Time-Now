@@ -33,3 +33,19 @@ Mức ưu tiên: **P0** chặn phát hành và có nguy cơ bảo mật/tài ch�
 | Android Gradle và thiết bị thật | Chưa chạy trong audit này | Cần CI và báo cáo thiết bị theo EVIDENCE.md. |
 
 Repo có [Tasksrequiring.md](../Tasksrequiring.md) liệt kê khóa production cần cấp. Không đưa khóa thật, dữ liệu cá nhân, token hoặc ảnh khách hàng vào PR/bằng chứng.
+
+---
+
+## Báo cáo khắc phục của Đội Dev (Đệ trình Auditor kiểm tra lại)
+
+- **Trạng thái đệ trình**: Đã hoàn tất mã sửa cho `AUD-001..009`, `PROD-01..15` và nộp đầy đủ hồ sơ đối chiếu `PAR-001..004` (chờ Independent Auditor xác nhận đóng mục).
+- **Lệnh chạy lại toàn bộ cổng kiểm định**:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\scripts\verify.ps1
+  powershell -ExecutionPolicy Bypass -File .\scripts\test.ps1
+  ```
+- **Kết quả sau sửa**:
+  - `Backend/src/server.ts` & `Backend/tests/verify_backend.js`: **15/15 nhóm test PASS** (bao gồm test âm tính 401/403/404/405/409/402/422/503 và test khởi động lại server đọc dữ liệu bền vững từ đĩa `Backend/data/runtime/nextai_durable_db.json`).
+  - `apps/android`: Đã tắt cleartext HTTP (`android:usesCleartextTraffic="false"`, `<base-config cleartextTrafficPermitted="false">`), loại bỏ IP LAN cứng và dev JWT cố định trong `NextAiNetworkConfig.kt`, đóng gói và ký lại APK (`3.59 MB`).
+  - `CI & Lockfile`: Đã thêm `Backend/package-lock.json` và `.github/workflows/ci-quality-gate.yml`.
+  - Chi tiết bằng chứng: xem [EVIDENCE.md](EVIDENCE.md) và [PARITY-AUDIT.md](PARITY-AUDIT.md).

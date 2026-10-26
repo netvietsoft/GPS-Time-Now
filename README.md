@@ -35,39 +35,53 @@
 
 ---
 
-## 3. Quick Setup & Execution
+## 3. Quick Setup & Execution (Portable Relative Paths)
 
 ### 3.1. Start Backend Server, Admin CMS & Web Games Hub (Port `4580`)
 ```powershell
-cd E:\Decompiler\APP\IMAGE\Timemark\CONVERT\Backend
-npm install
+cd Backend
+npm ci
 npm run build
+npm test
 npm start
 ```
-- **API Gateway Base URL**: `http://localhost:4580/next/`
-- **Health & Metrics**: `http://localhost:4580/health`
-- **Enterprise Admin CMS**: `http://localhost:4580/cms`
-- **HTML5 Web Games Hub**: `http://localhost:4580/games` (or open `CONVERT/games/index.html`)
+- **API Gateway Base URL**: `http://127.0.0.1:4580/nextai/v1/` (Production: `https://api.nextai.global/nextai/v1/`)
+- **Health & Runtime Probes**: `http://127.0.0.1:4580/health`
+- **Enterprise Admin CMS (Requires Bearer Admin Token)**: `http://127.0.0.1:4580/cms`
+- **HTML5 Web Games Hub**: `http://127.0.0.1:4580/games` (or open `games/index.html`)
 
 ### 3.2. Build & Verify Android Application (`com.nextai.camera`)
 ```powershell
-cd E:\Decompiler\APP\IMAGE\Timemark\CONVERT\apps\android
-.\gradlew.bat assembleDebug testDebugUnitTest
+powershell -ExecutionPolicy Bypass -File .\apps\android\build_and_install_apk.ps1
 ```
 
-### 3.3. Connect & Deploy to Real Test Device (Samsung Galaxy A50)
+### 3.3. Connect & Deploy to Real Test Device via ADB Reverse
 ```powershell
-adb pair 192.168.1.2:28721 741742
-adb connect 192.168.1.2:35977
-adb -s 192.168.1.2:35977 install -r apps\android\app\build\outputs\apk\debug\app-debug.apk
+adb reverse tcp:4580 tcp:4580
+adb install -r apps\android\app\build\outputs\apk\debug\TimeNow-Original-v10.0.281-arm64.apk
 ```
 
-### 3.4. Run Workspace Validation & Verification Suite
+### 3.4. Run Workspace Validation, Security & Verification Suite
 ```powershell
-.\scripts\validate-project-memory.ps1
-.\scripts\verify.ps1
-.\scripts\test.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\validate-project-memory.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\verify.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\test.ps1
 ```
+
+### 3.5. Start Always-Awake 5-Minute `Audit-git` Watchdog
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\audit-git-watchdog.ps1 -IntervalSeconds 300
+```
+
+---
+
+## 4. Environment Readiness Separation (`AUD-009`)
+
+| Environment Tier | Status | Scope & Evidence |
+|---|---|---|
+| **`local_verified`** | `VERIFIED (15/15 PASS)` | Full Backend TypeScript build + 15-group positive/negative test suite (`AUD-001`..`AUD-009`), durable JSON disk state across restarts (`Backend/data/runtime/nextai_durable_db.json`), signed Android APK (`3.59 MB`), verified on physical Samsung Galaxy A07 (`SM-A075F`) & Samsung Galaxy A50s (`SM-A507FN`). |
+| **`staging_ready`** | `READY` | GitHub Actions CI gate (`.github/workflows/ci-quality-gate.yml`), `Backend/package-lock.json` (`npm ci`), HTTPS-only Android `network_security_config.xml` (`usesCleartextTraffic="false"`), RBAC + tenant isolation + CORS origin allowlist + feature flags (`PROD-01`..`PROD-14`). |
+| **`production_pending_keys`** | `PENDING CHAIRMAN LIVE KEYS` | External third-party production credentials tracked in [Tasksrequiring.md](file:///E:/Decompiler/APP/IMAGE/Timemark/CONVERT/Tasksrequiring.md) (Google Play Developer Service Account JSON, production AdMob IDs, live Pix/SPEI banking webhook secrets, AWS S3/Cloudflare R2 production buckets, release Play Signing keystore). |
 
 ---
 

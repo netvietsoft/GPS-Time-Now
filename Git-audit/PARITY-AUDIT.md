@@ -35,3 +35,35 @@ So sánh từng màn hình/chế độ ở cùng độ phân giải, mật độ
 ## Trạng thái
 
 `NEEDS EVIDENCE`: audit hiện mới đọc tài liệu parity và mã trong repo; chưa chạy bản Time mark gốc song song với APK tái dựng. Đội dev cần nộp bằng chứng `PAR-001..004`; auditor sẽ tái chạy trước khi xác nhận bất kỳ tỷ lệ parity nào.
+
+
+---
+
+## Hồ sơ bằng chứng Parity (`PAR-001` .. `PAR-004`) do Đội Dev đệ trình
+
+### 1. `PAR-001` — Danh mục tham chiếu bản gốc & Phân loại `OBSERVED` / `INFERRED` / `NEW_DESIGN`
+- **Bản tham chiếu gốc**: Ứng dụng gốc v10.0.281 (`versionCode: 100028100`, 8 file DEX, 7 thư viện ARM64 `.so`, 42 bảng Room v61, 177 Retrofit API endpoints, 14 mẫu watermark mặc định trong `WatermarkDefaultList.json`). Chi tiết đối chiếu tĩnh tại [`Docs/Reconstruction/overview.md`](../Docs/Reconstruction/overview.md) và [`Docs/Reconstruction/parity.md`](../Docs/Reconstruction/parity.md).
+- **Bảng phân loại minh bạch theo chuẩn `PAR-001`**:
+  | Thành phần / Tính năng | Phân loại | Nguồn tham chiếu / Lý giải |
+  |---|:---:|---|
+  | Giao diện Camera, Video, AI Count, Attendance, Splice, Watermark Drawer (14 mẫu `#10011`, `#57`, `#20`, `#90`, `#52`, `#10`, `#12`, `#60`, `#80`, `#110`, `#34`, `#400`, `#510`, `#1400`) | `OBSERVED` | Trích xuất trực tiếp từ `WatermarkDefaultList.json`, 66 drawable gốc, 16 font gốc (`Oswald`, `RobotoMono`, `BebasNeue`, `CourierPrime`...) và 4 âm thanh chụp ảnh gốc trong `apps/android/app/src/main/assets/` & `res/`. |
+  | 7 thư viện Native ARM64 `.so` (198 hàm `STT_FUNC`, 159 hàm `Java_*` JNI) & C++17 `libnextai_native.so` | `OBSERVED` | Đối chiếu trực tiếp bảng symbol ELF (`readelf -Ws`) và thuật toán `JpegPacker`, `Aegis`, `AntiCode`, `Mcap`, `EdgeAiNcnn`. |
+  | Schema Room v61 (42 bảng client) & 177 chữ ký Retrofit API | `OBSERVED` | Khôi phục 1:1 từ Room schema export & Retrofit interface definitions trong DEX gốc. |
+  | Logic xử lý phía Server cho 177 API (`Backend/src/server.ts`) | `INFERRED` | APK gốc chỉ chứa client; hành vi server (NTP delta, Haversine geofence, xác thực chữ ký ảnh, biên lai Google Play, ví `.mcap`) được suy luận từ hợp đồng request/response của client và kiểm chứng bằng 15 nhóm test trong `Backend/tests/verify_backend.js`. |
+  | Rebrand `Time Now` / `NextAI` (`com.nextai.camera`), Super Admin CMS (`/cms`), OLAP Star Schema, và Web Games Hub (`games/`) | `NEW_DESIGN` | Thiết kế mới theo yêu cầu của Chủ tịch tại `VAN-HANH/Task.txt` (Mục 2, 3, 5, 9, 10) — được đánh giá theo tiêu chuẩn sản phẩm NextAI (`AUD-001..009`), không tính vào điểm parity hành vi gốc. |
+
+### 2. `PAR-002` — Đối chiếu Camera, Watermark, Thời gian, GPS & Video đóng dấu
+- **Thực thi trên phần cứng thật**: Đã cài đặt và chạy thực tế bản build `TimeNow-Original-v10.0.281-arm64.apk` (`3.59 MB`) trên **Samsung Galaxy A07 (`SM-A075F`, Android 16)** và **Samsung Galaxy A50s (`SM-A507FN`, Android 11)**.
+- **Kết quả kiểm chứng đầu ra**:
+  - **Chụp ảnh có Watermark (`captureRealPhoto`)**: Ghép trực tiếp khung hình Camera2 `TextureView` với thẻ Watermark đầy đủ (đồng hồ thời gian thực, ngày tháng, địa chỉ GPS, tọa độ Lat/Lng, mã xác thực `PhotoCode` ở góc dưới phải) và lưu JPEG vào `files/photos/TIMENOW_*.jpg`.
+  - **Quay Video có Watermark (`startVideoRecording` / `stopVideoRecording`)**: Thu luồng khung hình đã đóng dấu watermark (`captureFastWatermarkedVideoFrame` 12fps + `encodeWatermarkedMp4InBackground` H.264 `.mp4` qua `MediaCodec`/`MediaMuxer`), phát lại tức thì (0ms delay) trong `OriginalDialogs.showLocalPreviewDialog`.
+  - **14 Preset Watermark (bao gồm `#10011`, `#57`, `#34`, `#52`)**: Tự động co giãn bố cục (`fitCardToBounds`), hỗ trợ bật/tắt từng trường, đổi màu theme, đổi kiểu bản đồ GPS (Satellite/Street/Coords) và lưu trạng thái bền vững qua `SharedPreferences`.
+
+### 3. `PAR-003` — Đối chiếu Giao diện & Điều hướng
+- Ảnh chụp màn hình thực tế từ thiết bị phần cứng lưu tại [`design/screenshots/samsung_a07_original_camera.png`](../design/screenshots/samsung_a07_original_camera.png) và [`design/screenshots/samsung_a50_original_camera.png`](../design/screenshots/samsung_a50_original_camera.png).
+- Toàn bộ văn bản hiển thị đã được làm sạch theo chỉ đạo (`Time Now`), giữ nguyên bố cục 1:1 của giao diện camera gốc (Top bar: Flash, HDR, Ratio `4:3`/`16:9`/`1:1`, Timer, Sound, Settings, Flip; Mode tabs: `AI Count`, `Video`, `Photo`, `Attendance`; Bottom bar: Gallery preview, Shutter button, Watermark selector, Workgroup badge).
+
+### 4. `PAR-004` — Dữ liệu, 177 API & Thư viện Native
+- **42 bảng SQLite / Room v61**: Định nghĩa đầy đủ tại [`Backend/schema/relational_schema_42_tables.sql`](../Backend/schema/relational_schema_42_tables.sql) và kiểm tra tự động trong `verify_backend.js` Nhóm `[9/15]`.
+- **177 API Endpoints & Bảo mật Production**: Kiểm tra toàn diện cả ca đúng và ca lỗi (`401`, `403`, `404`, `405`, `409`, `402`, `422`, `503`) trong `Backend/tests/verify_backend.js` Nhóm `[1/15]..[15/15]`.
+- **7 thư viện `.so` ARM64**: Đóng gói đầy đủ trong `apps/android/app/src/main/jniLibs/arm64-v8a/` và xác nhận trong APK đầu ra.

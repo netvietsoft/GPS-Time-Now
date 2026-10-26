@@ -170,36 +170,46 @@ Copy-Item -Force $finalApk "$outApkDir\Timemark-Original-v10.0.281-arm64.apk"
 $apkSizeMB = [Math]::Round((Get-Item $finalApk).Length / 1MB, 2)
 Write-Host "  [BUILD PASS] Signed APK: $finalApk ($apkSizeMB MB)"
 
-# 7. Deploy to Connected Devices
-Write-Host "[6/6] Deploying to connected Samsung devices..."
-& $adb start-server | Out-Null
-Start-Sleep -Seconds 2
-$devicesOutput = & $adb devices
-$serials = @()
-foreach ($line in $devicesOutput) {
-    if ($line -match "^(\S+)\s+device\b") {
-        $serials += $Matches[1]
-    }
+# 7. Deploy to Connected Devices (if adb is available)
+$adbCmd = $null
+if (Test-Path $adb) {
+    $adbCmd = $adb
+} elseif (Get-Command adb -ErrorAction SilentlyContinue) {
+    $adbCmd = (Get-Command adb).Source
 }
-# Deduplicate by physical serial ro.serialno so we don't install twice on the same phone
-$seenHwSerials = @{}
-foreach ($s in $serials) {
-    $hwSerial = (& $adb -s $s shell getprop ro.serialno).Trim()
-    if ($seenHwSerials.ContainsKey($hwSerial)) { continue }
-    $seenHwSerials[$hwSerial] = $true
 
-    $model = (& $adb -s $s shell getprop ro.product.model).Trim()
-    Write-Host "  -> Installing on $model ($s / $hwSerial)..."
-    & $adb -s $s shell settings put global verifier_verify_adb_installs 0 | Out-Null
-    & $adb -s $s shell settings put global package_verifier_enable 0 | Out-Null
-    & $adb -s $s push $finalApk /data/local/tmp/timemark_orig.apk | Out-Null
-    & $adb -s $s shell pm install -r -g /data/local/tmp/timemark_orig.apk
-    if ($LASTEXITCODE -ne 0) { throw "pm install failed on $s" }
+if ($null -ne $adbCmd) {
+    Write-Host "[6/6] Deploying to connected Samsung devices..."
+    & $adbCmd start-server | Out-Null
+    Start-Sleep -Seconds 2
+    $devicesOutput = & $adbCmd devices
+    $serials = @()
+    foreach ($line in $devicesOutput) {
+        if ($line -match "^(\S+)\s+device\b") {
+            $serials += $Matches[1]
+        }
+    }
+    $seenHwSerials = @{}
+    foreach ($s in $serials) {
+        $hwSerial = (& $adbCmd -s $s shell getprop ro.serialno).Trim()
+        if ($seenHwSerials.ContainsKey($hwSerial)) { continue }
+        $seenHwSerials[$hwSerial] = $true
 
-    & $adb -s $s shell pm grant com.nextai.camera android.permission.CAMERA 2>$null
-    & $adb -s $s shell pm grant com.nextai.camera android.permission.ACCESS_FINE_LOCATION 2>$null
-    & $adb -s $s shell pm grant com.nextai.camera android.permission.ACCESS_COARSE_LOCATION 2>$null
-    & $adb -s $s shell am force-stop com.nextai.camera
-    & $adb -s $s shell am start -n "com.nextai.camera/com.nextai.camera.MainActivity"
-    Write-Host "  [DEPLOY PASS] Launched Original Timemark UI on $model ($s)!"
+        $model = (& $adbCmd -s $s shell getprop ro.product.model).Trim()
+        Write-Host "  -> Installing on $model ($s / $hwSerial)..."
+        & $adbCmd -s $s shell settings put global verifier_verify_adb_installs 0 | Out-Null
+        & $adbCmd -s $s shell settings put global package_verifier_enable 0 | Out-Null
+        & $adbCmd -s $s push $finalApk /data/local/tmp/timemark_orig.apk | Out-Null
+        & $adbCmd -s $s shell pm install -r -g /data/local/tmp/timemark_orig.apk
+        if ($LASTEXITCODE -ne 0) { throw "pm install failed on $s" }
+
+        & $adbCmd -s $s shell pm grant com.nextai.camera android.permission.CAMERA 2>$null
+        & $adbCmd -s $s shell pm grant com.nextai.camera android.permission.ACCESS_FINE_LOCATION 2>$null
+        & $adbCmd -s $s shell pm grant com.nextai.camera android.permission.ACCESS_COARSE_LOCATION 2>$null
+        & $adbCmd -s $s shell am force-stop com.nextai.camera
+        & $adbCmd -s $s shell am start -n "com.nextai.camera/com.nextai.camera.MainActivity"
+        Write-Host "  [DEPLOY PASS] Launched Time Now UI on $model ($s)!"
+    }
+} else {
+    Write-Host "[6/6] ADB binary not in PATH; skipping live device install (APK built and signed cleanly)."
 }

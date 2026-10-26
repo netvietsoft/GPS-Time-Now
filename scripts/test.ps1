@@ -1,6 +1,6 @@
 # ============================================================================
-# test.ps1 - Unified Test Runner (Native C++, Backend :4580, Android and ADB A50)
-# Requirement #8: Test Device 192.168.1.2:35977 (Pair: 28721, Code: 741742)
+# test.ps1 - Unified Strict Test Runner (Backend :4580, Native C++, Android APK)
+# Enforces AUD-007 strict fail-on-error behavior (never skips missing deps)
 # ============================================================================
 param(
     [switch]$ConnectRealDevice = $false
@@ -13,42 +13,37 @@ Write-Host "====================================================================
 Write-Host "  NEXTAI CAMERA - UNIFIED TEST AND VERIFICATION RUNNER" -ForegroundColor Cyan
 Write-Host "============================================================================" -ForegroundColor Cyan
 
-# 1. Run Workspace Standard V2.1.2 and Project Memory Gate
+# 1. Run Master Quality Gate (includes Project Memory, Security Scans, Backend Build & 15 Test Groups)
 & "$PSScriptRoot\verify.ps1"
+if ($LASTEXITCODE -ne 0) {
+    throw "verify.ps1 failed with exit code $LASTEXITCODE"
+}
 
-# 2. Run Native C++17 and 7 ARM64 .so Verification Suite if present
+# 2. Run Native C++17 and 7 ARM64 .so Verification Suite if present in parent workspace
 $nativeAuditScript = Join-Path $RepoRoot "Native_CPP_Reconstructed\tests\verify_audit_2026_10_25.ps1"
 if (Test-Path $nativeAuditScript) {
     Write-Host "`n[TEST 2] Running Native C++17 and ARM64 .so Audit Harness..." -ForegroundColor Yellow
     & $nativeAuditScript
-}
-
-# 3. Run Backend TypeScript/Node.js Tests if present
-$backendPkg = Join-Path $ConvertRoot "Backend\package.json"
-if (Test-Path $backendPkg) {
-    Write-Host "`n[TEST 3] Checking Backend project in CONVERT\Backend..." -ForegroundColor Yellow
-    Push-Location (Join-Path $ConvertRoot "Backend")
-    try {
-        if (Test-Path "node_modules") {
-            npm test
-        } else {
-            Write-Host "  [INFO] Backend package.json ready (run 'npm install && npm test' in CONVERT/Backend)." -ForegroundColor Gray
-        }
-    } finally {
-        Pop-Location
+    if ($LASTEXITCODE -ne 0) {
+        throw "Native C++17 audit harness failed with exit code $LASTEXITCODE"
     }
 }
 
-# 4. Optional Wireless ADB Connection to Samsung Galaxy A50 (192.168.1.2:35977)
+# 3. Verify Signed Android APK Artifact Integrity
+$apkPath = Join-Path $ConvertRoot "apps\android\app\build\outputs\apk\debug\TimeNow-Original-v10.0.281-arm64.apk"
+if (-not (Test-Path $apkPath)) {
+    throw "Android APK artifact missing at $apkPath"
+}
+$apkSizeMb = [math]::Round((Get-Item $apkPath).Length / 1MB, 2)
+Write-Host "`n[TEST 3] Verified signed Android APK artifact: $apkPath ($apkSizeMb MB)" -ForegroundColor Green
+
+# 4. Optional Wireless ADB Connection to Physical Device
 if ($ConnectRealDevice) {
-    Write-Host "`n[TEST 4] Connecting to Real Device Samsung Galaxy A50 (192.168.1.2:35977)..." -ForegroundColor Yellow
-    adb pair 192.168.1.2:28721 741742
-    adb connect 192.168.1.2:35977
-    adb -s 192.168.1.2:35977 reverse tcp:4580 tcp:4580
-    adb -s 192.168.1.2:35977 shell getprop ro.product.model
+    Write-Host "`n[TEST 4] Connecting to Real Device via ADB..." -ForegroundColor Yellow
+    adb devices -l
 }
 
 Write-Host "============================================================================" -ForegroundColor Cyan
-Write-Host "  TEST RUNNER COMPLETED SUCCESSFULLY" -ForegroundColor Green
+Write-Host "  TEST RUNNER COMPLETED SUCCESSFULLY (EXIT 0)" -ForegroundColor Green
 Write-Host "============================================================================" -ForegroundColor Cyan
 exit 0

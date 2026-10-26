@@ -1,0 +1,51 @@
+﻿{
+    "timestamp":  "2026-10-26T11:46:27Z",
+    "iteration":  3,
+    "watchdog_mode":  "AUDIT_GIT_ALWAYS_AWAKE_5MIN",
+    "interval_seconds":  300,
+    "van_hanh_governance":  {
+                                "van_hanh_path":  "E:\\Decompiler\\APP\\IMAGE\\Timemark\\VAN-HANH",
+                                "nhiem_vu_yaml_count":  13,
+                                "mandatory_read_ok":  true,
+                                "governance_signature":  "Task.txt:1354:639277410639656358|KE_HOACH_TONG_THE_CEO_NEXTAI_V2.1.2.md:15977:639285799382124050|MASTER_TASK_GRAPH.json:13499:639285799398040804|Tasksrequiring.md:3515:639285799770806949|UPDATETODOS.md:4160:639285799757533150|LEDGER_DOI_KHANG.json:3179:639285806104785063|",
+                                "agent_reports_count":  14,
+                                "core_files_read":  6
+                            },
+    "git_audit":  {
+                      "total_new_remote_orders":  0,
+                      "gps_time_now_convert":  {
+                                                   "branch":  "HEAD",
+                                                   "path":  "E:\\Decompiler\\APP\\IMAGE\\Timemark\\CONVERT",
+                                                   "remote_head":  "0ef634577d9f903c3de959b9f5e29f71d4f09587",
+                                                   "last_subject":  "docs(audit): distinguish Time mark parity from production gates",
+                                                   "behind_count":  0,
+                                                   "sync_status":  "UP_TO_DATE",
+                                                   "repo":  "netvietsoft/GPS-Time-Now (CONVERT)",
+                                                   "new_commits":  0,
+                                                   "ahead_count":  0,
+                                                   "new_orders":  [
+
+                                                                  ],
+                                                   "local_head":  "0ef634577d9f903c3de959b9f5e29f71d4f09587"
+                                               },
+                      "time_now_source":  {
+                                              "branch":  "main",
+                                              "path":  "E:\\Decompiler\\APP\\IMAGE\\Timemark\\SOURCE",
+                                              "remote_head":  "1e30c85a8ddbb68489e4583a7874e6e1fec9e9d1",
+                                              "last_subject":  "fix(audit): instantiate basic_string operator+ overloads for NDK 28 host harness link (Report 19)",
+                                              "behind_count":  0,
+                                              "sync_status":  "UP_TO_DATE",
+                                              "repo":  "netvietsoft/Time-Now (SOURCE)",
+                                              "new_commits":  0,
+                                              "ahead_count":  0,
+                                              "new_orders":  [
+
+                                                             ],
+                                              "local_head":  "1e30c85a8ddbb68489e4583a7874e6e1fec9e9d1"
+                                          },
+                      "ready_queue_tasks":  [
+                                                "TASK-RELEASE-0001.yaml"
+                                            ]
+                  },
+    "overall_status":  "AWAKE_MONITORING_GIT_CLEAN"
+}

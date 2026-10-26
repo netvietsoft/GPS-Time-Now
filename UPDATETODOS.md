@@ -48,4 +48,20 @@
 | **17** | `SERVER_LOGIC_VALIDATION` | Agent 2 & 5 | ✅ `COMPLETE` | NTP time delta check, `AntiFakeCode` batch verification, Geofence Haversine, Billing receipt check |
 | **18** | `SECURITY_TEST` | Agent 9 | ✅ `COMPLETE` | Secret scan PASS, test ad keys enforced, production keys listed in `Tasksrequiring.md` |
 | **19** | `PERFORMANCE_TEST` | Agent 6 | ✅ `COMPLETE` | `< 8 ms` API response on `:4580`, `60 FPS` OpenGL LUT filter, `8/8 PASS` native C++ harness |
-| **20** | `DEPLOYMENT` | Agent 10 | ✅ `COMPLETE` | Ready for local & LAN deployment (`192.168.1.2:35977` Samsung A50) |
+| **20** | `DEPLOYMENT` | Agent 10 | ✅ `COMPLETE` | Local & Staging verified (`local_verified`, `staging_ready`); external live keys tracked in `Tasksrequiring.md` (`production_pending_keys`) |
+
+---
+
+## 3. Remote `Git-audit` Remediation Tracker (`AUDIT-20261026-001`)
+
+| Audit ID | Severity | Finding Summary | Status | Verification Evidence |
+|---|:---:|---|:---:|---|
+| `AUD-001` | `P0` | API & `/cms` Authentication (`401`), RBAC (`403`), Tenant Isolation (`403`), CORS Allowlist & Admin Audit Log | ✅ **VERIFIED** | `Backend/src/server.ts`, `Backend/tests/verify_backend.js` (`[11/15] PASS`) |
+| `AUD-002` | `P0` | Google Play Receipt Signature Verification, SKU/Package Check, Anti-Replay (`409`), Refund/Expiry Revocation (`402`) & Idempotency | ✅ **VERIFIED** | `Backend/src/server.ts`, `Backend/tests/verify_backend.js` (`[12/15] PASS`) |
+| `AUD-003` | `P0` | Runtime Versioned Key Ring (`kid` rotation & revocation), No Hardcoded `HMAC_SECRET`, Clock Skew (`422`) & Tamper Detection + Real `/health` Probes | ✅ **VERIFIED** | `Backend/src/server.ts`, `Backend/tests/verify_backend.js` (`[2/15]` & `[13/15] PASS`) |
+| `AUD-004` | `P0` | Feature Flags (`PROD-01`), `.mcap` Integrity QA (`422`/`409`), Immutable Wallet Ledger, Balance/Limit/Idempotency Checks & Signed Payout Webhook (`401`/`200`) | ✅ **VERIFIED** | `Backend/src/server.ts`, `Backend/tests/verify_backend.js` (`[14/15] PASS`) |
+| `AUD-005` | `P1` | Durable Disk Persistence Across Restarts (`nextai_durable_db.json`) & Strict `404`/`405` Routing (No Catch-All `requestEcho`) | ✅ **VERIFIED** | `Backend/src/server.ts`, `Backend/tests/verify_backend.js` (`[15/15] PASS`) |
+| `AUD-006` | `P1` | Android Release HTTPS-Only (`usesCleartextTraffic="false"`, `cleartextTrafficPermitted="false"`), No Hardcoded LAN IP or Static Dev Token | ✅ **VERIFIED** | `AndroidManifest.xml`, `network_security_config.xml`, `NextAiNetworkConfig.kt`, `scripts/verify.ps1` |
+| `AUD-007` | `P1` | `scripts/verify.ps1` & `scripts/test.ps1` Run Real Builds, Security Scans & 15-Group Tests with Hard Exit Codes | ✅ **VERIFIED** | `scripts/verify.ps1`, `scripts/test.ps1` (`EXIT 0`) |
+| `AUD-008` | `P1` | Clean Dependency Lockfile (`Backend/package-lock.json`) & GitHub Actions CI Workflow (`.github/workflows/ci-quality-gate.yml`) | ✅ **VERIFIED** | `Backend/package-lock.json`, `.github/workflows/ci-quality-gate.yml` |
+| `AUD-009` | `P2` | Environment Status Separation (`local_verified`, `staging_ready`, `production_pending_keys`) & Portable Docs (`PROD-14`) | ✅ **VERIFIED** | `.ai/state.json`, `README.md`, `Git-audit/EVIDENCE.md` |

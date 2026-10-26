@@ -59,3 +59,20 @@ Các phát hiện `AUD-*` bên dưới là rủi ro của bản NextAI khi đưa
 - **Quan sát:** `.ai/state.json` ghi tất cả health `pass`; `UPDATETODOS.md` ghi nhiều hạng mục `COMPLETED`, trong khi các hành vi mô phỏng ở trên còn tồn tại. `Backend/tests/verify_backend.js:129-153` dựa trên kết quả thành công của simulator.
 - **Yêu cầu:** Phân biệt demo, local test, staging, production trong báo cáo; liên kết mỗi khẳng định với artifact/commit/log kiểm chứng.
 - **Chấp nhận:** Không còn mục `production-ready` chỉ dựa trên HTTP 200 hoặc trạng thái tự khai báo; dashboard hiển thị kết quả gate thật và giới hạn của chúng.
+
+
+---
+
+## Bảng tổng hợp khắc phục của Đội Dev (Chờ Auditor xác nhận)
+
+| Mục | File đã sửa | Test tự động đối chứng (Dương tính & Âm tính) | Trạng thái Dev |
+|---|---|---|---|
+| `AUD-001` | `Backend/src/server.ts` | `Backend/tests/verify_backend.js` Nhóm `[11/15]`: Không token -> `401`, JWT hết hạn -> `401`, Role `member` vào `/cms` hoặc xóa group -> `403`, Cross-tenant `team_vn_001` sang `team_vn_002` -> `403`, CORS lạ -> `403`, ghi `auditLogs` | `READY_FOR_AUDITOR` |
+| `AUD-002` | `Backend/src/server.ts` | `Backend/tests/verify_backend.js` Nhóm `[12/15]`: Token giả -> `400`, Sai chữ ký -> `400`, Mua hợp lệ -> `200`, Gửi lặp cùng user -> `200 (idempotentReplay: true)`, Replay khác user -> `409`, Refund -> `402` & thu hồi VIP | `READY_FOR_AUDITOR` |
+| `AUD-003` | `Backend/src/server.ts` | `Backend/tests/verify_backend.js` Nhóm `[2/15]` & `[13/15]`: Đã xóa `HMAC_SECRET` cứng; hỗ trợ xoay khóa `kid` (`rotateSigningKey`), thu hồi khóa (`revokeSigningKey` -> `403`), lệch đồng hồ `> 5m` -> `422`, Mock GPS -> `422`, sửa tọa độ -> `TAMPERED`, `/health` probe thật | `READY_FOR_AUDITOR` |
+| `AUD-004` | `Backend/src/server.ts` | `Backend/tests/verify_backend.js` Nhóm `[14/15]`: Feature flag (`503` khi tắt), `.mcap` `handRatio` thấp -> `422`, `.mcap` trùng -> `409`, Rút quá số dư -> `400`, Rút hợp lệ -> `PENDING_PROVIDER`, Idempotency -> không trừ tiền 2 lần, Webhook giả -> `401`, Webhook ký HMAC thật -> `200 COMPLETED` | `READY_FOR_AUDITOR` |
+| `AUD-005` | `Backend/src/server.ts` | `Backend/tests/verify_backend.js` Nhóm `[15/15]`: Route lạ trả `404 ERR_ROUTE_NOT_FOUND`, sai HTTP method trả `405`, đóng server & xóa RAM rồi khởi động lại từ `Backend/data/runtime/nextai_durable_db.json` giữ nguyên 100% VIP, số dư ví, lịch sử rút tiền và mã ảnh | `READY_FOR_AUDITOR` |
+| `AUD-006` | `AndroidManifest.xml`, `network_security_config.xml`, `NextAiNetworkConfig.kt` | `scripts/verify.ps1` Bước 5: `usesCleartextTraffic="false"`, `<base-config cleartextTrafficPermitted="false">`, xóa IP LAN `192.168.*` và xóa token dev tĩnh; mặc định `https://api.nextai.global/nextai/v1/` | `READY_FOR_AUDITOR` |
+| `AUD-007` | `scripts/verify.ps1`, `scripts/test.ps1` | Chạy thật `npm run build`, `npm test` (15/15 nhóm), quét bảo mật Android/Backend và kiểm tra file APK ký số với mã thoát nghiêm ngặt | `READY_FOR_AUDITOR` |
+| `AUD-008` | `Backend/package-lock.json`, `.github/workflows/ci-quality-gate.yml` | Khóa phiên bản dependency (`npm ci`) và thiết lập GitHub Actions CI chạy tự động trên mọi push/PR | `READY_FOR_AUDITOR` |
+| `AUD-009` | `.ai/state.json`, `README.md`, `UPDATETODOS.md` | Tách rõ 3 tầng `local_verified`, `staging_ready`, `production_pending_keys` và loại bỏ đường dẫn cứng `E:\...` trong hướng dẫn chạy lệnh | `READY_FOR_AUDITOR` |

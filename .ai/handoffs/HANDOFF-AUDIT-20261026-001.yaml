@@ -18,3 +18,11 @@ remaining:
   - "Development team to provide Time mark reference manifest and PAR-001..004 evidence."
   - "Development team to address AUD-001..009 and attach repeatable evidence."
   - "Independent auditor to verify each fix on its PR commit."
+
+dev_submission:
+  submitted_at: "2026-10-26T18:46:00+07:00"
+  remediated_findings: "AUD-001..AUD-009"
+  remediated_backlog: "PROD-01..PROD-15"
+  parity_evidence: "PAR-001..PAR-004"
+  backend_test_groups_passed: "15/15"
+  android_apk_verified: "apps/android/app/build/outputs/apk/debug/TimeNow-Original-v10.0.281-arm64.apk"

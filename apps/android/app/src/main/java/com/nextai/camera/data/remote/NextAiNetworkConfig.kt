@@ -8,46 +8,57 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Internal Backend API Connection Configuration (`Task.txt` #5).
- * Connects to the internal NextAI Node.js + TypeScript Backend on port 4580:
- * - Emulator: `http://10.0.2.2:4580/nextai/v1/`
- * - Physical LAN Device: `http://192.168.1.100:4580/nextai/v1/`
- * - Localhost / ADB Reverse: `http://localhost:4580/nextai/v1/`
+ * NextAI Network & Gateway Configuration (AUD-006 & PROD-08 Hardened).
+ * - Production Default: `https://api.nextai.global/nextai/v1/` (HTTPS enforced, no cleartext)
+ * - Localhost / ADB Reverse (`adb reverse tcp:4580 tcp:4580`): `http://127.0.0.1:4580/nextai/v1/`
+ * - Android Emulator Loopback: `http://10.0.2.2:4580/nextai/v1/`
+ * No hardcoded LAN IPs or static development JWT tokens are shipped in source.
  */
 object NextAiNetworkConfig {
+    const val PRODUCTION_BASE_URL = "https://api.nextai.global/nextai/v1/"
+    const val LOCALHOST_BASE_URL = "http://127.0.0.1:4580/nextai/v1/"
     const val EMULATOR_BASE_URL = "http://10.0.2.2:4580/nextai/v1/"
-    const val LAN_DEVICE_BASE_URL = "http://192.168.1.100:4580/nextai/v1/"
-    const val LOCALHOST_BASE_URL = "http://localhost:4580/nextai/v1/"
 
     enum class EndpointProfile(val label: String, val baseUrl: String) {
-        EMULATOR("Android Emulator (10.0.2.2:4580)", EMULATOR_BASE_URL),
-        LAN_DEVICE("LAN Physical Device (192.168.1.100:4580)", LAN_DEVICE_BASE_URL),
-        LOCALHOST("Localhost / ADB Reverse (localhost:4580)", LOCALHOST_BASE_URL)
+        PRODUCTION("Production HTTPS Gateway (api.nextai.global)", PRODUCTION_BASE_URL),
+        LOCALHOST("Localhost / ADB Reverse (127.0.0.1:4580)", LOCALHOST_BASE_URL),
+        EMULATOR("Android Emulator Loopback (10.0.2.2:4580)", EMULATOR_BASE_URL)
     }
 
     @Volatile
-    var activeProfile: EndpointProfile = EndpointProfile.EMULATOR
+    var activeProfile: EndpointProfile = EndpointProfile.PRODUCTION
         private set
 
     @Volatile
-    var jwtAccessToken: String = "nextai-dev-jwt-token-v1"
+    var jwtAccessToken: String? = null
+        private set
 
-    fun initialize(isEmulator: Boolean) {
-        activeProfile = if (isEmulator) EndpointProfile.EMULATOR else EndpointProfile.LAN_DEVICE
+    fun initialize(isEmulator: Boolean, useLocalAdbReverse: Boolean = false) {
+        activeProfile = when {
+            isEmulator -> EndpointProfile.EMULATOR
+            useLocalAdbReverse -> EndpointProfile.LOCALHOST
+            else -> EndpointProfile.PRODUCTION
+        }
     }
 
     fun switchEndpointProfile(profile: EndpointProfile) {
         activeProfile = profile
     }
 
+    fun updateAccessToken(token: String?) {
+        jwtAccessToken = token?.takeIf { it.isNotBlank() }
+    }
+
     private val authHeaderInterceptor = Interceptor { chain ->
         val original = chain.request()
-        val request = original.newBuilder()
-            .header("Authorization", "Bearer $jwtAccessToken")
+        val builder = original.newBuilder()
             .header("X-NextAI-Client", "NextAI-Camera-Android/10.0.281")
             .header("X-NextAI-Namespace", "com.nextai.camera")
-            .build()
-        chain.proceed(request)
+        val currentToken = jwtAccessToken
+        if (!currentToken.isNullOrBlank()) {
+            builder.header("Authorization", "Bearer $currentToken")
+        }
+        chain.proceed(builder.build())
     }
 
     private val okHttpClient: OkHttpClient by lazy {
