@@ -81,6 +81,8 @@ public class MainActivity extends Activity {
     private ImageView mFlashIv;
     private ImageView mPreviewThumbIv;
     private ImageView mShootIv;
+    private LinearLayout mLayoutPlus;
+    private TextView mPlusTv;
     private final TextView[] mZoomPills = new TextView[3];
     private final TextView[] mModeTabs = new TextView[5];
     private final View[] mModeDots = new View[5];
@@ -205,6 +207,7 @@ public class MainActivity extends Activity {
         }
 
         loadOriginalFonts();
+        mModel.loadState(this);
         setContentView(buildOriginalPreviewActivityLayout());
 
         requestCameraAndLocationPermissions();
@@ -339,32 +342,37 @@ public class MainActivity extends Activity {
         rcLp.setMarginEnd(dp(16));
         rightContainer.setLayoutParams(rcLp);
 
-        LinearLayout layoutPlus = new LinearLayout(this);
-        layoutPlus.setOrientation(LinearLayout.HORIZONTAL);
-        layoutPlus.setGravity(Gravity.CENTER_VERTICAL);
-        layoutPlus.setBackground(roundedRect(0xFF282828, 12, 0, 0));
-        layoutPlus.setPadding(dp(8), dp(3), dp(8), dp(3));
+        mLayoutPlus = new LinearLayout(this);
+        mLayoutPlus.setOrientation(LinearLayout.HORIZONTAL);
+        mLayoutPlus.setGravity(Gravity.CENTER_VERTICAL);
+        mLayoutPlus.setBackground(roundedRect(mModel.isVipPlus ? 0xFF7A6EFF : 0xFF282828, 12, 0, 0));
+        mLayoutPlus.setPadding(dp(8), dp(3), dp(8), dp(3));
         LinearLayout.LayoutParams plusLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(24));
         plusLp.setMarginEnd(dp(12));
-        layoutPlus.setLayoutParams(plusLp);
+        mLayoutPlus.setLayoutParams(plusLp);
 
         ImageView crownIv = new ImageView(this);
         crownIv.setImageResource(R.drawable.ic_vip_crown);
-        layoutPlus.addView(crownIv, new LinearLayout.LayoutParams(dp(14), dp(14)));
+        mLayoutPlus.addView(crownIv, new LinearLayout.LayoutParams(dp(14), dp(14)));
 
-        TextView plusTv = new TextView(this);
-        plusTv.setText(" Plus");
-        plusTv.setTextSize(12);
-        plusTv.setTypeface(Typeface.DEFAULT_BOLD);
-        plusTv.setTextColor(0xFFFFFFFF);
-        layoutPlus.addView(plusTv);
-        layoutPlus.setOnClickListener(new View.OnClickListener() {
+        mPlusTv = new TextView(this);
+        mPlusTv.setText(mModel.isVipPlus ? " VIP" : " Plus");
+        mPlusTv.setTextSize(12);
+        mPlusTv.setTypeface(Typeface.DEFAULT_BOLD);
+        mPlusTv.setTextColor(0xFFFFFFFF);
+        mLayoutPlus.addView(mPlusTv);
+        mLayoutPlus.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                OriginalDialogs.showPurchaseDialog(MainActivity.this);
+                OriginalDialogs.showPurchaseDialog(MainActivity.this, mModel, new Runnable() {
+                    @Override
+                    public void run() {
+                        rebuildWatermarkOverlay();
+                    }
+                });
             }
         });
-        rightContainer.addView(layoutPlus);
+        rightContainer.addView(mLayoutPlus);
 
         ImageView switchCamIv = new ImageView(this);
         switchCamIv.setImageResource(R.drawable.img_camera_switch);
@@ -598,7 +606,21 @@ public class MainActivity extends Activity {
         mModeSpecialPillTv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mModel.cameraMode == 3) {
+                if (mModel.cameraMode == 2) {
+                    if ("CLOCK IN".equals(mModel.customTitle)) {
+                        mModel.customTitle = "CLOCK OUT";
+                    } else if ("CLOCK OUT".equals(mModel.customTitle)) {
+                        mModel.customTitle = "ON SITE";
+                    } else if ("ON SITE".equals(mModel.customTitle)) {
+                        mModel.customTitle = "BREAK";
+                    } else {
+                        mModel.customTitle = "CLOCK IN";
+                    }
+                    mModel.showTitle = true;
+                    mModel.saveState(MainActivity.this);
+                    updateModeSpecialPill();
+                    rebuildWatermarkOverlay();
+                } else if (mModel.cameraMode == 3) {
                     if ("Steel Pipes".equals(mModel.aiCountCategory)) {
                         mModel.aiCountCategory = "Rebar";
                         mModel.aiCountDetected = 24;
@@ -815,7 +837,12 @@ public class MainActivity extends Activity {
         clFolder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                OriginalDialogs.showTeamspaceDialog(MainActivity.this, mModel);
+                OriginalDialogs.showTeamspaceDialog(MainActivity.this, mModel, new Runnable() {
+                    @Override
+                    public void run() {
+                        rebuildWatermarkOverlay();
+                    }
+                });
             }
         });
         leftGroup.addView(clFolder);
@@ -888,6 +915,10 @@ public class MainActivity extends Activity {
 
         mAntiCodeVerticalTv.setVisibility(mModel.showPhotoCode ? View.VISIBLE : View.GONE);
         mAntiCodeVerticalTv.setText("Time Now Photo Code: " + mModel.currentPhotoCode);
+        if (mPlusTv != null && mLayoutPlus != null) {
+            mPlusTv.setText(mModel.isVipPlus ? " VIP" : " Plus");
+            mLayoutPlus.setBackground(roundedRect(mModel.isVipPlus ? 0xFF7A6EFF : 0xFF282828, 12, 0, 0));
+        }
 
         WatermarkModel.TemplateInfo tmpl = mModel.activeTemplate;
         String id = (tmpl != null) ? tmpl.id : "34";
@@ -2106,7 +2137,11 @@ public class MainActivity extends Activity {
 
     private void updateModeSpecialPill() {
         if (mModeSpecialPillTv == null) return;
-        if (mModel.cameraMode == 3) {
+        if (mModel.cameraMode == 2) {
+            mModeSpecialPillTv.setVisibility(View.VISIBLE);
+            String punchType = (mModel.customTitle != null && !mModel.customTitle.trim().isEmpty()) ? mModel.customTitle : "CLOCK IN";
+            mModeSpecialPillTv.setText("⏱ Attendance: " + punchType + " (Tap to Switch)");
+        } else if (mModel.cameraMode == 3) {
             mModeSpecialPillTv.setVisibility(View.VISIBLE);
             mModeSpecialPillTv.setText("🤖 AI Count: " + mModel.aiCountDetected + " " + mModel.aiCountCategory + " (Tap to Switch)");
         } else if (mModel.cameraMode == 4) {

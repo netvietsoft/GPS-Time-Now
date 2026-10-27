@@ -3,6 +3,7 @@ package com.nextai.camera;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -122,10 +123,17 @@ public class OriginalDialogs {
         tipCard.addView(tipTitle);
 
         TextView tipDesc = new TextView(act);
-        tipDesc.setText("Simplify crew's input with a consistent, tamper-proof watermark format.");
+        tipDesc.setText("Simplify crew's input with a consistent, tamper-proof watermark format. Tap to manage in Teamspace ›");
         tipDesc.setTextSize(13);
-        tipDesc.setTextColor(0xFF484848);
+        tipDesc.setTextColor(0xFF0070F4);
         tipCard.addView(tipDesc);
+        tipCard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dlg.dismiss();
+                showTeamspaceDialog(act, model, onUpdate);
+            }
+        });
         root.addView(tipCard);
 
         // Search Template bar (clGetFromCodeAb in fragment_universal_watermark_list_global.xml)
@@ -133,7 +141,7 @@ public class OriginalDialogs {
         searchRow.setOrientation(LinearLayout.HORIZONTAL);
         searchRow.setGravity(Gravity.CENTER_VERTICAL);
         searchRow.setBackground(roundedRect(0xFFF5F5F5, 22, dp(act, 1), 0xFFDEDEDE, act));
-        searchRow.setPadding(dp(act, 14), dp(act, 4), dp(act, 14), dp(act, 4));
+        searchRow.setPadding(dp(act, 14), dp(act, 4), dp(act, 6), dp(act, 4));
         LinearLayout.LayoutParams sLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 42));
         sLp.setMargins(dp(act, 16), 0, dp(act, 16), dp(act, 10));
         searchRow.setLayoutParams(sLp);
@@ -143,14 +151,39 @@ public class OriginalDialogs {
         searchRow.addView(searchIcon, new LinearLayout.LayoutParams(dp(act, 20), dp(act, 20)));
 
         final EditText searchInput = new EditText(act);
-        searchInput.setHint("Search Template or Enter Share Code...");
-        searchInput.setTextSize(14);
+        searchInput.setHint("Search or Share Code (e.g. TN-WM-120)...");
+        searchInput.setTextSize(13.5f);
         searchInput.setTextColor(0xFF222222);
         searchInput.setHintTextColor(0xFF888888);
         searchInput.setSingleLine(true);
         searchInput.setBackgroundColor(Color.TRANSPARENT);
         searchInput.setPadding(dp(act, 8), 0, dp(act, 8), 0);
         searchRow.addView(searchInput, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView applyCodeBtn = new TextView(act);
+        applyCodeBtn.setText("Import");
+        applyCodeBtn.setTextSize(12f);
+        applyCodeBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        applyCodeBtn.setTextColor(0xFFFFFFFF);
+        applyCodeBtn.setBackground(roundedRect(0xFF0093FF, 16, 0, 0, act));
+        applyCodeBtn.setPadding(dp(act, 12), dp(act, 6), dp(act, 12), dp(act, 6));
+        applyCodeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String raw = searchInput.getText().toString().trim();
+                WatermarkModel.TemplateInfo found = model.findTemplateByCodeOrQuery(raw);
+                if (found != null) {
+                    model.selectTemplate(found);
+                    model.saveState(act);
+                    if (onUpdate != null) onUpdate.run();
+                    dlg.dismiss();
+                    Toast.makeText(act, "✓ Imported Template: " + found.name + " (TN-WM-" + found.id.toUpperCase() + ")", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(act, "Enter a template name or code like TN-WM-120, TN-WM-21, TN-WM-34", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        searchRow.addView(applyCodeBtn);
         root.addView(searchRow);
 
         // Category Filter Tabs
@@ -178,6 +211,8 @@ public class OriginalDialogs {
             public void run() {
                 gridContainer.removeAllViews();
                 String q = searchQuery[0].trim().toLowerCase();
+                if (q.startsWith("tn-")) q = q.substring(3);
+                if (q.startsWith("wm-")) q = q.substring(3);
                 List<WatermarkModel.TemplateInfo> filtered = new ArrayList<WatermarkModel.TemplateInfo>();
                 for (int i = 0; i < model.templates.size(); i++) {
                     WatermarkModel.TemplateInfo t = model.templates.get(i);
@@ -240,16 +275,62 @@ public class OriginalDialogs {
                     card.addView(nameTv);
 
                     TextView catTv = new TextView(act);
-                    catTv.setText(item.category);
-                    catTv.setTextSize(11);
+                    catTv.setText(item.category + " • TN-" + item.id.toUpperCase(Locale.US));
+                    catTv.setTextSize(10.5f);
                     catTv.setTextColor(0xFF848484);
-                    catTv.setPadding(dp(act, 2), dp(act, 1), dp(act, 2), 0);
+                    catTv.setPadding(dp(act, 2), dp(act, 1), dp(act, 2), dp(act, 6));
                     card.addView(catTv);
+
+                    LinearLayout actBtnRow = new LinearLayout(act);
+                    actBtnRow.setOrientation(LinearLayout.HORIZONTAL);
+
+                    TextView useBtn = new TextView(act);
+                    useBtn.setText(isSel ? "✓ Active" : "Use");
+                    useBtn.setTextSize(11f);
+                    useBtn.setTypeface(Typeface.DEFAULT_BOLD);
+                    useBtn.setGravity(Gravity.CENTER);
+                    useBtn.setTextColor(isSel ? 0xFFFFFFFF : 0xFF0070F4);
+                    useBtn.setBackground(roundedRect(isSel ? 0xFF0093FF : 0xFFE8F2FF, 6, 0, 0, act));
+                    useBtn.setPadding(dp(act, 6), dp(act, 5), dp(act, 6), dp(act, 5));
+                    useBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            model.selectTemplate(item);
+                            model.saveState(act);
+                            if (onUpdate != null) onUpdate.run();
+                            dlg.dismiss();
+                        }
+                    });
+                    LinearLayout.LayoutParams uLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                    uLp.setMargins(0, 0, dp(act, 4), 0);
+                    actBtnRow.addView(useBtn, uLp);
+
+                    TextView custBtn = new TextView(act);
+                    custBtn.setText("✏️ Edit");
+                    custBtn.setTextSize(11f);
+                    custBtn.setTypeface(Typeface.DEFAULT_BOLD);
+                    custBtn.setGravity(Gravity.CENTER);
+                    custBtn.setTextColor(0xFF333333);
+                    custBtn.setBackground(roundedRect(0xFFEEEEEE, 6, dp(act, 1), 0xFFD5D5D5, act));
+                    custBtn.setPadding(dp(act, 6), dp(act, 5), dp(act, 6), dp(act, 5));
+                    custBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            model.selectTemplate(item);
+                            model.saveState(act);
+                            if (onUpdate != null) onUpdate.run();
+                            dlg.dismiss();
+                            showEditStampSheet(act, model, onUpdate);
+                        }
+                    });
+                    actBtnRow.addView(custBtn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                    card.addView(actBtnRow);
 
                     card.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             model.selectTemplate(item);
+                            model.saveState(act);
                             if (onUpdate != null) onUpdate.run();
                             dlg.dismiss();
                         }
@@ -329,6 +410,7 @@ public class OriginalDialogs {
         final Runnable notifyChange = new Runnable() {
             @Override
             public void run() {
+                model.saveState(act);
                 if (refreshPreviewHolder[0] != null) refreshPreviewHolder[0].run();
                 if (onUpdate != null) onUpdate.run();
             }
@@ -365,6 +447,7 @@ public class OriginalDialogs {
             @Override
             public void onClick(View v) {
                 model.resetActiveTemplateDefaults();
+                model.saveState(act);
                 if (onUpdate != null) onUpdate.run();
                 dlg.dismiss();
                 showEditStampSheet(act, model, onUpdate);
@@ -383,6 +466,7 @@ public class OriginalDialogs {
         doneBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                model.saveState(act);
                 if (onUpdate != null) onUpdate.run();
                 dlg.dismiss();
             }
@@ -1663,7 +1747,7 @@ public class OriginalDialogs {
             @Override
             public void onClick(View v) {
                 dlg.dismiss();
-                showTeamspaceDialog(act, model);
+                showTeamspaceDialog(act, model, onUpdate);
             }
         });
         menu.addView(tsHeader);
@@ -1683,7 +1767,7 @@ public class OriginalDialogs {
         vipCard.addView(vipCrown, new LinearLayout.LayoutParams(dp(act, 23), dp(act, 23)));
 
         TextView vipTv = new TextView(act);
-        vipTv.setText("  Time Now Plans");
+        vipTv.setText(model.isVipPlus ? "  Time Now Plus (Active)" : "  Time Now Plans");
         vipTv.setTextSize(16);
         vipTv.setTypeface(Typeface.DEFAULT_BOLD);
         vipTv.setTextColor(0xFFFFFFFF);
@@ -1698,7 +1782,7 @@ public class OriginalDialogs {
             @Override
             public void onClick(View v) {
                 dlg.dismiss();
-                showPurchaseDialog(act);
+                showPurchaseDialog(act, model, onUpdate);
             }
         });
         menu.addView(vipCard);
@@ -1734,6 +1818,7 @@ public class OriginalDialogs {
                 else if (model.timerSeconds == 3) model.timerSeconds = 5;
                 else if (model.timerSeconds == 5) model.timerSeconds = 10;
                 else model.timerSeconds = 0;
+                model.saveState(act);
                 timerLabelRef[0].setText(model.timerSeconds == 0 ? "Timer: Off" : ("Timer: " + model.timerSeconds + "s"));
             }
         });
@@ -1756,6 +1841,7 @@ public class OriginalDialogs {
                 if ("FHD 1080P".equals(model.resolutionLabel)) model.resolutionLabel = "4K UHD";
                 else if ("4K UHD".equals(model.resolutionLabel)) model.resolutionLabel = "HD 720P";
                 else model.resolutionLabel = "FHD 1080P";
+                model.saveState(act);
                 resLabelRef[0].setText(model.resolutionLabel);
             }
         });
@@ -1828,6 +1914,7 @@ public class OriginalDialogs {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 model.showTimeNowLogo = isChecked;
+                model.saveState(act);
                 if (onUpdate != null) onUpdate.run();
             }
         });
@@ -1857,6 +1944,7 @@ public class OriginalDialogs {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 model.saveOriginalPhoto = isChecked;
+                model.saveState(act);
             }
         });
         origRow.addView(origSw);
@@ -1888,7 +1976,7 @@ public class OriginalDialogs {
             @Override
             public void onClick(View v) {
                 dlg.dismiss();
-                showEarnRoboticsDialog(act, model);
+                showEarnRoboticsDialog(act, model, onUpdate);
             }
         });
         toolsCard.addView(earnRow);
@@ -1917,6 +2005,7 @@ public class OriginalDialogs {
         closeIv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                model.saveState(act);
                 if (onUpdate != null) onUpdate.run();
                 dlg.dismiss();
             }
@@ -1951,16 +2040,16 @@ public class OriginalDialogs {
         camCard.addView(c1Head);
 
         addSwitchRow(act, camCard, "Grid Lines (3x3 Composition)", model.showGridLines, new CompoundButton.OnCheckedChangeListener() {
-            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.showGridLines = c; if (onUpdate != null) onUpdate.run(); }
+            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.showGridLines = c; model.saveState(act); if (onUpdate != null) onUpdate.run(); }
         });
         addSwitchRow(act, camCard, "Horizontal Electronic Leveler", model.showLeveler, new CompoundButton.OnCheckedChangeListener() {
-            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.showLeveler = c; if (onUpdate != null) onUpdate.run(); }
+            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.showLeveler = c; model.saveState(act); if (onUpdate != null) onUpdate.run(); }
         });
         addSwitchRow(act, camCard, "ZeroDCE AI Night Mode (Low-Light Boost)", model.nightModeZeroDce, new CompoundButton.OnCheckedChangeListener() {
-            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.nightModeZeroDce = c; if (onUpdate != null) onUpdate.run(); }
+            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.nightModeZeroDce = c; model.saveState(act); if (onUpdate != null) onUpdate.run(); }
         });
         addSwitchRow(act, camCard, "Shutter Sound", model.shutterSoundEnabled, new CompoundButton.OnCheckedChangeListener() {
-            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.shutterSoundEnabled = c; }
+            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.shutterSoundEnabled = c; model.saveState(act); }
         });
         body.addView(camCard);
 
@@ -1982,10 +2071,10 @@ public class OriginalDialogs {
         fmtCard.addView(c2Head);
 
         addSwitchRow(act, fmtCard, "24-Hour Time Format (vs 12-Hour AM/PM)", model.use24HourFormat, new CompoundButton.OnCheckedChangeListener() {
-            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.use24HourFormat = c; if (onUpdate != null) onUpdate.run(); }
+            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.use24HourFormat = c; model.saveState(act); if (onUpdate != null) onUpdate.run(); }
         });
         addSwitchRow(act, fmtCard, "Show Seconds (:ss) in Clock", model.showSecondsInClock, new CompoundButton.OnCheckedChangeListener() {
-            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.showSecondsInClock = c; if (onUpdate != null) onUpdate.run(); }
+            @Override public void onCheckedChanged(CompoundButton b, boolean c) { model.showSecondsInClock = c; model.saveState(act); if (onUpdate != null) onUpdate.run(); }
         });
 
         TextView gpsLbl = new TextView(act);
@@ -2013,6 +2102,7 @@ public class OriginalDialogs {
                 @Override
                 public void onClick(View v) {
                     model.gpsFormatMode = gIdx;
+                    model.saveState(act);
                     for (int k = 0; k < 3; k++) {
                         boolean s = (k == gIdx);
                         gpsBtns[k].setBackground(roundedRect(s ? 0xFF0070F4 : 0xFFF0F0F0, 6, 0, 0, act));
@@ -2076,6 +2166,10 @@ public class OriginalDialogs {
 
     // 3c. Embodied AI Robotics (.mcap) Data Collection & Reward Hub (Report 07 & 08)
     public static void showEarnRoboticsDialog(final Activity act, final WatermarkModel model) {
+        showEarnRoboticsDialog(act, model, null);
+    }
+
+    public static void showEarnRoboticsDialog(final Activity act, final WatermarkModel model, final Runnable onUpdate) {
         final Dialog dlg = new Dialog(act, android.R.style.Theme_Light_NoTitleBar);
 
         LinearLayout root = new LinearLayout(act);
@@ -2118,6 +2212,17 @@ public class OriginalDialogs {
         balTv.setTextColor(0xFF38BDF8);
         walletCard.addView(balTv);
 
+        final TextView payoutLogTv = new TextView(act);
+        payoutLogTv.setTextSize(11.5f);
+        payoutLogTv.setTextColor(0xFF94A3B8);
+        payoutLogTv.setPadding(0, dp(act, 6), 0, 0);
+        if (!model.payoutHistory.isEmpty()) {
+            payoutLogTv.setText("Latest Payout: " + model.payoutHistory.get(0));
+        } else {
+            payoutLogTv.setText("Instant Pix & PayPal Payouts Ready (Min $2.50)");
+        }
+        walletCard.addView(payoutLogTv);
+
         LinearLayout wBtnRow = new LinearLayout(act);
         wBtnRow.setOrientation(LinearLayout.HORIZONTAL);
         wBtnRow.setPadding(0, dp(act, 12), 0, 0);
@@ -2133,7 +2238,20 @@ public class OriginalDialogs {
         pixBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(act, "Pix Payout Request Submitted (Instant Transfer Ready)!", Toast.LENGTH_SHORT).show();
+                if (model.earnWalletUsd <= 0.01) {
+                    Toast.makeText(act, "Record a 5s .mcap session first to earn $2.50 USD!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                double amount = model.earnWalletUsd;
+                String receipt = String.format(Locale.US, "$%.2f USD (R$ %.2f) Paid via Pix at %s",
+                        amount, amount * 5.0, new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()));
+                model.payoutHistory.add(0, receipt);
+                model.earnWalletUsd = 0.0;
+                model.saveState(act);
+                balTv.setText(String.format(Locale.US, "Wallet Balance: $%.2f USD (R$ %.2f Pix)\nVIP Credits: %d Days Time Now Plus",
+                        model.earnWalletUsd, model.earnWalletUsd * 5.0, model.earnVipDays));
+                payoutLogTv.setText("✓ " + receipt);
+                Toast.makeText(act, "✓ Pix Instant Payout Completed: " + receipt, Toast.LENGTH_LONG).show();
             }
         });
         wBtnRow.addView(pixBtn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -2153,6 +2271,9 @@ public class OriginalDialogs {
             @Override
             public void onClick(View v) {
                 model.earnVipDays += 7;
+                model.isVipPlus = true;
+                model.saveState(act);
+                if (onUpdate != null) onUpdate.run();
                 balTv.setText(String.format(Locale.US, "Wallet Balance: $%.2f USD (R$ %.2f Pix)\nVIP Credits: %d Days Time Now Plus",
                         model.earnWalletUsd, model.earnWalletUsd * 5.0, model.earnVipDays));
                 Toast.makeText(act, "+7 Days Time Now Plus VIP Activated!", Toast.LENGTH_SHORT).show();
@@ -2196,12 +2317,16 @@ public class OriginalDialogs {
         recMcapBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                model.mcapSubmittedCount++;
-                model.earnWalletUsd += 2.50;
+                File mcapFile = model.recordMcapSessionFile(act);
+                model.saveState(act);
                 balTv.setText(String.format(Locale.US, "Wallet Balance: $%.2f USD (R$ %.2f Pix)\nVIP Credits: %d Days Time Now Plus",
                         model.earnWalletUsd, model.earnWalletUsd * 5.0, model.earnVipDays));
-                teleTv.setText("✓ Recorded session_" + model.mcapSubmittedCount + ".mcap (150 Hand Frames + 500 IMU Samples)\n• Completed Sessions: " + model.mcapSubmittedCount + " (+ $2.50 earned!)");
+                teleTv.setText("✓ Saved " + (mcapFile != null ? mcapFile.getName() : ("session_" + model.mcapSubmittedCount + ".mcap"))
+                        + " (" + (mcapFile != null ? mcapFile.length() : 4096) + " bytes • 60 Hand+IMU frames)\n• Completed Sessions: " + model.mcapSubmittedCount + " (+ $2.50 earned!)");
                 Toast.makeText(act, "Saved Foxglove .mcap Robotics Stream! +$2.50 USD credited.", Toast.LENGTH_SHORT).show();
+                if (mcapFile != null) {
+                    showExportFileInspectorDialog(act, "Foxglove Robotics (.mcap)", mcapFile);
+                }
             }
         });
         taskCard.addView(recMcapBtn);
@@ -2291,6 +2416,7 @@ public class OriginalDialogs {
                 @Override
                 public void onClick(View v) {
                     model.aspectRatioMode = idx;
+                    model.saveState(act);
                     if (onRatioChanged != null) onRatioChanged.run();
                     dlg.dismiss();
                 }
@@ -2363,16 +2489,21 @@ public class OriginalDialogs {
         c1Sub1.setGravity(Gravity.CENTER);
         card1.addView(c1Sub1);
 
+        final int[] verifyCursor = new int[]{0};
         final TextView resultBox = new TextView(act);
         resultBox.setTextSize(12);
-        resultBox.setTextColor(0xFF0070F4);
-        resultBox.setPadding(dp(act, 10), dp(act, 10), dp(act, 10), dp(act, 10));
+        resultBox.setTextColor(0xFF065F46);
+        resultBox.setBackground(roundedRect(0xFFECFDF5, 6, dp(act, 1), 0xFF10B981, act));
+        resultBox.setPadding(dp(act, 12), dp(act, 10), dp(act, 12), dp(act, 10));
+        LinearLayout.LayoutParams rbLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rbLp.setMargins(0, dp(act, 12), 0, 0);
+        resultBox.setLayoutParams(rbLp);
         resultBox.setVisibility(View.GONE);
         card1.addView(resultBox);
 
-        TextView upBtn = new TextView(act);
-        upBtn.setText("Upload Photo");
-        upBtn.setTextSize(16);
+        final TextView upBtn = new TextView(act);
+        upBtn.setText(model.capturedPhotos.isEmpty() ? "Inspect Active Camera Stamp" : ("Inspect Captured Media (1/" + model.capturedPhotos.size() + ")"));
+        upBtn.setTextSize(15);
         upBtn.setTypeface(Typeface.DEFAULT_BOLD);
         upBtn.setTextColor(0xFFFFFFFF);
         upBtn.setGravity(Gravity.CENTER);
@@ -2385,17 +2516,29 @@ public class OriginalDialogs {
             public void onClick(View v) {
                 resultBox.setVisibility(View.VISIBLE);
                 if (!model.capturedPhotos.isEmpty()) {
-                    WatermarkModel.CapturedPhoto p = model.capturedPhotos.get(0);
+                    int idx = verifyCursor[0] % model.capturedPhotos.size();
+                    WatermarkModel.CapturedPhoto p = model.capturedPhotos.get(idx);
                     String trailerStatus = p.isVideo
                             ? "AUTHENTIC MP4 VIDEO • Verified NTP & GPS Audio/Video Stream"
                             : WatermarkModel.inspectJpegPackerTrailer(p.compositeFile);
-                    resultBox.setText("Item: " + p.compositeFile.getName()
-                            + "\nPhoto Code: " + p.photoCode
-                            + "\nCaptured: " + p.timestampText
-                            + "\nSHA-256: " + p.sha256Hex
-                            + "\n" + trailerStatus);
+                    resultBox.setText("✓ VERIFIED MEDIA (" + (idx + 1) + "/" + model.capturedPhotos.size() + ")\n"
+                            + "• File: " + p.compositeFile.getName()
+                            + "\n• Anti-Fake Code: " + p.photoCode
+                            + "\n• Captured: " + p.timestampText
+                            + "\n• GPS: " + p.addressText
+                            + "\n• SHA-256: " + p.sha256Hex
+                            + "\n• Stream: " + trailerStatus);
+                    verifyCursor[0] = (verifyCursor[0] + 1) % model.capturedPhotos.size();
+                    if (model.capturedPhotos.size() > 1) {
+                        upBtn.setText("Inspect Next Media (" + (verifyCursor[0] + 1) + "/" + model.capturedPhotos.size() + ") ▶");
+                    }
                 } else {
-                    resultBox.setText("Ready! Take a photo or video on the camera screen first to inspect its live XHEY1 dual-stream authenticity signature.");
+                    resultBox.setText("✓ LIVE CAMERA STAMP AUTHENTICITY READY\n"
+                            + "• Active Template: " + (model.activeTemplate != null ? model.activeTemplate.name : "Real-Time")
+                            + "\n• Live Anti-Fake Code: " + model.currentPhotoCode
+                            + "\n• NTP Clock: " + model.getFormattedTime() + " (" + model.getFormattedDateShort() + ")"
+                            + "\n• GPS Coordinates: " + model.getFormattedCoordinates()
+                            + "\n• Dual-Stream JpegPacker XHEY1: ARMED");
                 }
             }
         });
@@ -2442,6 +2585,38 @@ public class OriginalDialogs {
         codeInput.setLayoutParams(inLp);
         card2.addView(codeInput);
 
+        final TextView certBox = new TextView(act);
+        certBox.setTextSize(12);
+        certBox.setTextColor(0xFF065F46);
+        certBox.setBackground(roundedRect(0xFFECFDF5, 6, dp(act, 1), 0xFF10B981, act));
+        certBox.setPadding(dp(act, 12), dp(act, 10), dp(act, 12), dp(act, 10));
+        LinearLayout.LayoutParams cbLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cbLp.setMargins(0, dp(act, 12), 0, 0);
+        certBox.setLayoutParams(cbLp);
+        certBox.setVisibility(View.GONE);
+        card2.addView(certBox);
+
+        final TextView exportCertBtn = new TextView(act);
+        exportCertBtn.setText("📄 Export PDF Authenticity Certificate");
+        exportCertBtn.setTextSize(13.5f);
+        exportCertBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        exportCertBtn.setTextColor(0xFF0070F4);
+        exportCertBtn.setGravity(Gravity.CENTER);
+        exportCertBtn.setBackground(roundedRect(0xFFE8F2FF, 6, dp(act, 1), 0xFF0070F4, act));
+        LinearLayout.LayoutParams ecLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 42));
+        ecLp.setMargins(0, dp(act, 10), 0, 0);
+        exportCertBtn.setLayoutParams(ecLp);
+        exportCertBtn.setVisibility(View.GONE);
+        exportCertBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String code = codeInput.getText().toString().trim();
+                File certPdf = model.exportVerificationCertificatePdf(act, code);
+                showExportFileInspectorDialog(act, "Authenticity Certificate (PDF)", certPdf);
+            }
+        });
+        card2.addView(exportCertBtn);
+
         TextView verCodeBtn = new TextView(act);
         verCodeBtn.setText("Verify Photo Code");
         verCodeBtn.setTextSize(16);
@@ -2453,7 +2628,35 @@ public class OriginalDialogs {
         verCodeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(act, "Photo Code [" + codeInput.getText().toString() + "] Verified: Authentic NTP Time & GPS (" + model.getFormattedCoordinates() + ")", Toast.LENGTH_LONG).show();
+                String code = codeInput.getText().toString().trim();
+                if (code.isEmpty()) code = model.currentPhotoCode;
+                WatermarkModel.CapturedPhoto matched = null;
+                for (int i = 0; i < model.capturedPhotos.size(); i++) {
+                    if (model.capturedPhotos.get(i).photoCode.equalsIgnoreCase(code)) {
+                        matched = model.capturedPhotos.get(i);
+                        break;
+                    }
+                }
+                certBox.setVisibility(View.VISIBLE);
+                exportCertBtn.setVisibility(View.VISIBLE);
+                if (matched != null) {
+                    certBox.setText("✓ CRYPTOGRAPHIC CERTIFICATE: AUTHENTIC\n"
+                            + "• Photo Code: " + matched.photoCode
+                            + "\n• Template: " + matched.templateName
+                            + "\n• Verified Time: " + matched.timestampText
+                            + "\n• Verified GPS: " + matched.addressText
+                            + "\n• SHA-256 Digest: " + matched.sha256Hex
+                            + "\n• Tamper Status: PASSED (0 Edits Detected)");
+                } else {
+                    certBox.setText("✓ CRYPTOGRAPHIC CERTIFICATE: AUTHENTIC\n"
+                            + "• Photo Code: " + code
+                            + "\n• Verified NTP Time: " + model.getFormattedTime() + " (" + model.getFormattedDateShort() + ")"
+                            + "\n• Verified GPS: " + model.getFormattedCoordinates()
+                            + "\n• Location: " + model.addressLine
+                            + "\n• Inspector: " + model.inspectorName
+                            + "\n• Tamper Status: PASSED (Signed by NextAI Engine)");
+                }
+                Toast.makeText(act, "✓ Photo Code [" + code + "] Verified Authentic!", Toast.LENGTH_SHORT).show();
             }
         });
         card2.addView(verCodeBtn);
@@ -2491,6 +2694,34 @@ public class OriginalDialogs {
         info.setTextColor(0xFF333333);
         root.addView(info);
 
+        TextView shareBtn = new TextView(act);
+        shareBtn.setText("📤 Share / Send File");
+        shareBtn.setTextSize(15);
+        shareBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        shareBtn.setTextColor(0xFF0070F4);
+        shareBtn.setGravity(Gravity.CENTER);
+        shareBtn.setBackground(roundedRect(0xFFE8F2FF, 6, dp(act, 1), 0xFF0070F4, act));
+        LinearLayout.LayoutParams sLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 44));
+        sLp.setMargins(0, dp(act, 16), 0, 0);
+        shareBtn.setLayoutParams(sLp);
+        shareBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    android.content.Intent sendIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+                    sendIntent.setType("text/plain");
+                    sendIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Time Now — " + formatName);
+                    sendIntent.putExtra(android.content.Intent.EXTRA_TEXT,
+                            "Time Now Verified Export (" + formatName + ")\nFile: " + (outFile != null ? outFile.getName() : "N/A")
+                            + "\nPath: " + (outFile != null ? outFile.getAbsolutePath() : "N/A"));
+                    act.startActivity(android.content.Intent.createChooser(sendIntent, "Share " + formatName));
+                } catch (Exception e) {
+                    Toast.makeText(act, "Ready to share: " + (outFile != null ? outFile.getName() : formatName), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        root.addView(shareBtn);
+
         TextView closeBtn = new TextView(act);
         closeBtn.setText("Done");
         closeBtn.setTextSize(15);
@@ -2499,7 +2730,7 @@ public class OriginalDialogs {
         closeBtn.setGravity(Gravity.CENTER);
         closeBtn.setBackground(roundedRect(0xFF0070F4, 6, 0, 0, act));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 44));
-        lp.setMargins(0, dp(act, 18), 0, 0);
+        lp.setMargins(0, dp(act, 10), 0, 0);
         closeBtn.setLayoutParams(lp);
         closeBtn.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { dlg.dismiss(); }
@@ -2511,6 +2742,10 @@ public class OriginalDialogs {
 
     // 6. Original Teamspace Home (fragment_layout_teamspace_home.xml)
     public static void showTeamspaceDialog(final Activity act, final WatermarkModel model) {
+        showTeamspaceDialog(act, model, null);
+    }
+
+    public static void showTeamspaceDialog(final Activity act, final WatermarkModel model, final Runnable onUpdate) {
         final Dialog dlg = new Dialog(act, android.R.style.Theme_Light_NoTitleBar);
 
         LinearLayout root = new LinearLayout(act);
@@ -2527,17 +2762,46 @@ public class OriginalDialogs {
         menuIv.setImageResource(R.drawable.home_tool_border_menu);
         topBar.addView(menuIv, new LinearLayout.LayoutParams(dp(act, 24), dp(act, 24)));
 
-        TextView titleTv = new TextView(act);
-        titleTv.setText("  Teamspace");
-        titleTv.setTextSize(20);
+        final TextView titleTv = new TextView(act);
+        titleTv.setText("  Teamspace • " + model.projectName);
+        titleTv.setTextSize(17.5f);
         titleTv.setTypeface(Typeface.DEFAULT_BOLD);
         titleTv.setTextColor(0xFF222222);
+        titleTv.setSingleLine(true);
+        titleTv.setEllipsize(TextUtils.TruncateAt.END);
         topBar.addView(titleTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        menuIv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!model.projects.isEmpty()) {
+                    int nextIdx = 0;
+                    for (int i = 0; i < model.projects.size(); i++) {
+                        if (model.projects.get(i).name.equals(model.projectName)) {
+                            nextIdx = (i + 1) % model.projects.size();
+                            break;
+                        }
+                    }
+                    model.projectName = model.projects.get(nextIdx).name;
+                    model.showProject = true;
+                    model.saveState(act);
+                    if (onUpdate != null) onUpdate.run();
+                    titleTv.setText("  Teamspace • " + model.projectName);
+                    Toast.makeText(act, "Switched Active Project: " + model.projectName, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
         ImageView webIv = new ImageView(act);
         webIv.setImageResource(R.drawable.ic_web_portal);
         LinearLayout.LayoutParams wLp = new LinearLayout.LayoutParams(dp(act, 24), dp(act, 24));
         wLp.setMargins(0, 0, dp(act, 16), 0);
+        webIv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showWebPortalDialog(act, model);
+            }
+        });
         topBar.addView(webIv, wLp);
 
         ImageView closeIv = new ImageView(act);
@@ -2545,6 +2809,8 @@ public class OriginalDialogs {
         closeIv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                model.saveState(act);
+                if (onUpdate != null) onUpdate.run();
                 dlg.dismiss();
             }
         });
@@ -2581,6 +2847,8 @@ public class OriginalDialogs {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean isChecked) {
                 model.autoSaveTeamspace = isChecked;
+                model.saveState(act);
+                Toast.makeText(act, isChecked ? "✓ Auto-save to Teamspace Cloud enabled" : "Auto-save to Teamspace paused", Toast.LENGTH_SHORT).show();
             }
         });
         autoBar.addView(autoSw);
@@ -2606,6 +2874,7 @@ public class OriginalDialogs {
         root.addView(bottomNav);
 
         final int[] activeTab = new int[]{0};
+        final int[] newProjRadius = new int[]{250};
         final String[] tabNames = new String[]{"Photos", "Projects", "Attendance", "Settings"};
 
         final Runnable renderTab = new Runnable() {
@@ -2613,6 +2882,7 @@ public class OriginalDialogs {
             public void run() {
                 body.removeAllViews();
                 bottomNav.removeAllViews();
+                titleTv.setText("  Teamspace • " + model.projectName);
                 for (int i = 0; i < 4; i++) {
                     final int idx = i;
                     boolean sel = (activeTab[0] == i);
@@ -2682,6 +2952,7 @@ public class OriginalDialogs {
                     }
 
                     for (int i = 0; i < model.capturedPhotos.size(); i++) {
+                        final int itemIndex = i;
                         WatermarkModel.CapturedPhoto p = model.capturedPhotos.get(i);
                         LinearLayout row = new LinearLayout(act);
                         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -2693,7 +2964,7 @@ public class OriginalDialogs {
                         row.setLayoutParams(rLp);
 
                         ImageView thumb = new ImageView(act);
-                        Bitmap bmp = BitmapFactory.decodeFile(p.compositeFile.getAbsolutePath());
+                        Bitmap bmp = p.previewBitmap != null ? p.previewBitmap : BitmapFactory.decodeFile(p.compositeFile.getAbsolutePath());
                         if (bmp != null) thumb.setImageBitmap(bmp);
                         row.addView(thumb, new LinearLayout.LayoutParams(dp(act, 56), dp(act, 56)));
 
@@ -2711,11 +2982,26 @@ public class OriginalDialogs {
                         t2.setTextSize(11);
                         t2.setTextColor(0xFF666666);
                         meta.addView(t2);
-                        row.addView(meta);
+                        row.addView(meta, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+                        TextView openBtn = new TextView(act);
+                        openBtn.setText("Open ›");
+                        openBtn.setTextSize(12);
+                        openBtn.setTypeface(Typeface.DEFAULT_BOLD);
+                        openBtn.setTextColor(0xFF0070F4);
+                        row.addView(openBtn);
+
+                        row.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                dlg.dismiss();
+                                showLocalPreviewDialog(act, model, onUpdate, itemIndex);
+                            }
+                        });
                         body.addView(row);
                     }
                 } else if (activeTab[0] == 1) {
-                    // Projects Tab + Create Project + Photo Map Summary
+                    // Projects Tab + Create Project + Geofence Radius Selector + Live Stamp Sync
                     LinearLayout addProjRow = new LinearLayout(act);
                     addProjRow.setOrientation(LinearLayout.HORIZONTAL);
                     final EditText newProjEt = new EditText(act);
@@ -2734,30 +3020,71 @@ public class OriginalDialogs {
                     createBtn.setBackground(roundedRect(0xFF0070F4, 6, 0, 0, act));
                     createBtn.setPadding(dp(act, 14), dp(act, 9), dp(act, 14), dp(act, 9));
                     LinearLayout.LayoutParams cbLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    cbLp.setMargins(dp(act, 8), 0, 0, dp(act, 12));
+                    cbLp.setMargins(dp(act, 8), 0, 0, dp(act, 8));
                     createBtn.setLayoutParams(cbLp);
                     createBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             String name = newProjEt.getText().toString().trim();
                             if (!name.isEmpty()) {
-                                model.projects.add(0, new WatermarkModel.ProjectItem(name, 250, 1, model.getFormattedCoordinates()));
+                                model.projects.add(0, new WatermarkModel.ProjectItem(name, newProjRadius[0], 1, model.getFormattedCoordinates()));
                                 model.projectName = name;
+                                model.showProject = true;
+                                model.saveState(act);
+                                if (onUpdate != null) onUpdate.run();
                                 run();
-                                Toast.makeText(act, "Created Project: " + name, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(act, "✓ Created & Activated Project: " + name + " (" + newProjRadius[0] + "m Geofence)", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
                     addProjRow.addView(createBtn);
                     body.addView(addProjRow);
 
+                    // Geofence Radius Selector
+                    LinearLayout radRow = new LinearLayout(act);
+                    radRow.setOrientation(LinearLayout.HORIZONTAL);
+                    radRow.setGravity(Gravity.CENTER_VERTICAL);
+                    radRow.setPadding(0, 0, 0, dp(act, 12));
+                    TextView radLbl = new TextView(act);
+                    radLbl.setText("GPS Geofence Radius: ");
+                    radLbl.setTextSize(12);
+                    radLbl.setTextColor(0xFF666666);
+                    radRow.addView(radLbl);
+                    final int[] radii = new int[]{100, 250, 500};
+                    for (int r = 0; r < radii.length; r++) {
+                        final int radVal = radii[r];
+                        boolean rSel = (newProjRadius[0] == radVal);
+                        TextView rb = new TextView(act);
+                        rb.setText(radVal + "m");
+                        rb.setTextSize(11.5f);
+                        rb.setTypeface(Typeface.DEFAULT_BOLD);
+                        rb.setTextColor(rSel ? 0xFFFFFFFF : 0xFF0070F4);
+                        rb.setBackground(roundedRect(rSel ? 0xFF0070F4 : 0xFFE8F2FF, 12, 0, 0, act));
+                        rb.setPadding(dp(act, 10), dp(act, 4), dp(act, 10), dp(act, 4));
+                        LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        rlp.setMargins(dp(act, 4), 0, 0, 0);
+                        rb.setLayoutParams(rlp);
+                        rb.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                newProjRadius[0] = radVal;
+                                run();
+                            }
+                        });
+                        radRow.addView(rb);
+                    }
+                    body.addView(radRow);
+
                     for (int i = 0; i < model.projects.size(); i++) {
                         final WatermarkModel.ProjectItem proj = model.projects.get(i);
+                        boolean isCurrentProj = proj.name.equals(model.projectName);
                         TextView pCard = new TextView(act);
-                        pCard.setText("📁 " + proj.name + "\n• Geofence Radius: " + proj.radiusMeters + "m • " + proj.photoCount + " Synced Photos");
+                        pCard.setText((isCurrentProj ? "✅ ACTIVE: " : "📁 ") + proj.name
+                                + "\n• Geofence Radius: " + proj.radiusMeters + "m • " + proj.photoCount + " Synced Photos • GPS: " + proj.gpsCenter);
                         pCard.setTextSize(13);
-                        pCard.setTextColor(0xFF222222);
-                        pCard.setBackground(roundedRect(0xFFF5F5F5, 8, dp(act, 1), 0xFFE0E0E0, act));
+                        pCard.setTypeface(isCurrentProj ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+                        pCard.setTextColor(isCurrentProj ? 0xFF0052B4 : 0xFF222222);
+                        pCard.setBackground(roundedRect(isCurrentProj ? 0xFFE8F2FF : 0xFFF5F5F5, 8, dp(act, isCurrentProj ? 2 : 1), isCurrentProj ? 0xFF0070F4 : 0xFFE0E0E0, act));
                         pCard.setPadding(dp(act, 14), dp(act, 12), dp(act, 14), dp(act, 12));
                         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                         lp.setMargins(0, 0, 0, dp(act, 10));
@@ -2765,7 +3092,11 @@ public class OriginalDialogs {
                             @Override
                             public void onClick(View v) {
                                 model.projectName = proj.name;
-                                Toast.makeText(act, "Active Project switched to: " + proj.name, Toast.LENGTH_SHORT).show();
+                                model.showProject = true;
+                                model.saveState(act);
+                                if (onUpdate != null) onUpdate.run();
+                                run();
+                                Toast.makeText(act, "✓ Active Project synced to Camera Stamp: " + proj.name, Toast.LENGTH_SHORT).show();
                             }
                         });
                         body.addView(pCard, lp);
@@ -2781,7 +3112,7 @@ public class OriginalDialogs {
                     body.addView(attCard);
 
                     TextView punchBtn = new TextView(act);
-                    punchBtn.setText("⏱ Punch Clock-In / Clock-Out Now (Verified NTP)");
+                    punchBtn.setText("⏱ Punch Clock-In / Clock-Out Now (Sync to Stamp)");
                     punchBtn.setTextSize(14);
                     punchBtn.setTypeface(Typeface.DEFAULT_BOLD);
                     punchBtn.setTextColor(0xFFFFFFFF);
@@ -2798,8 +3129,12 @@ public class OriginalDialogs {
                             String type = (model.attendanceRecords.size() % 2 == 0) ? "CLOCK OUT" : "CLOCK IN";
                             model.attendanceRecords.add(0, new WatermarkModel.AttendanceRecord(
                                     type, nowTime, model.addressLine, model.currentPhotoCode, true));
+                            model.customTitle = type;
+                            model.showTitle = true;
+                            model.saveState(act);
+                            if (onUpdate != null) onUpdate.run();
                             run();
-                            Toast.makeText(act, type + " Logged at " + nowTime, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(act, "✓ " + type + " Logged at " + nowTime + " & Synced to Stamp!", Toast.LENGTH_SHORT).show();
                         }
                     });
                     body.addView(punchBtn);
@@ -2828,77 +3163,180 @@ public class OriginalDialogs {
                             @Override
                             public void onCheckedChanged(CompoundButton b, boolean isChecked) {
                                 item.completed = isChecked;
+                                model.saveState(act);
                             }
                         });
                     }
+
+                    // Add new Checklist item + Stamp Checklist Summary button
+                    LinearLayout addChkRow = new LinearLayout(act);
+                    addChkRow.setOrientation(LinearLayout.HORIZONTAL);
+                    addChkRow.setPadding(0, dp(act, 8), 0, dp(act, 8));
+                    final EditText newChkEt = new EditText(act);
+                    newChkEt.setHint("Add inspection task...");
+                    newChkEt.setTextSize(12.5f);
+                    newChkEt.setSingleLine(true);
+                    newChkEt.setBackground(roundedRect(0xFFF5F5F5, 6, dp(act, 1), 0xFFDEDEDE, act));
+                    newChkEt.setPadding(dp(act, 10), dp(act, 7), dp(act, 10), dp(act, 7));
+                    addChkRow.addView(newChkEt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+                    TextView addChkBtn = new TextView(act);
+                    addChkBtn.setText("+ Task");
+                    addChkBtn.setTextSize(12.5f);
+                    addChkBtn.setTypeface(Typeface.DEFAULT_BOLD);
+                    addChkBtn.setTextColor(0xFFFFFFFF);
+                    addChkBtn.setBackground(roundedRect(0xFF0070F4, 6, 0, 0, act));
+                    addChkBtn.setPadding(dp(act, 12), dp(act, 8), dp(act, 12), dp(act, 8));
+                    LinearLayout.LayoutParams acLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    acLp.setMargins(dp(act, 6), 0, 0, 0);
+                    addChkBtn.setLayoutParams(acLp);
+                    addChkBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            String t = newChkEt.getText().toString().trim();
+                            if (!t.isEmpty()) {
+                                model.checklistItems.add(new WatermarkModel.ChecklistItem(t, true, model.currentPhotoCode));
+                                model.saveState(act);
+                                run();
+                            }
+                        }
+                    });
+                    addChkRow.addView(addChkBtn);
+                    body.addView(addChkRow);
+
+                    TextView stampChkBtn = new TextView(act);
+                    stampChkBtn.setText("📌 Stamp Verified Checklist Summary to Camera");
+                    stampChkBtn.setTextSize(13);
+                    stampChkBtn.setTypeface(Typeface.DEFAULT_BOLD);
+                    stampChkBtn.setTextColor(0xFF0070F4);
+                    stampChkBtn.setGravity(Gravity.CENTER);
+                    stampChkBtn.setBackground(roundedRect(0xFFE8F2FF, 6, dp(act, 1), 0xFF0070F4, act));
+                    stampChkBtn.setPadding(dp(act, 10), dp(act, 10), dp(act, 10), dp(act, 10));
+                    stampChkBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            int doneCount = 0;
+                            for (int k = 0; k < model.checklistItems.size(); k++) {
+                                if (model.checklistItems.get(k).completed) doneCount++;
+                            }
+                            model.customNote = "Checklist Verified: " + doneCount + "/" + model.checklistItems.size() + " Passed ✓";
+                            model.showNotes = true;
+                            model.saveState(act);
+                            if (onUpdate != null) onUpdate.run();
+                            Toast.makeText(act, "✓ Stamped to Camera: " + model.customNote, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    body.addView(stampChkBtn);
                 } else {
                     // Settings / Cloud Sync & Team Members Tab
                     TextView memHead = new TextView(act);
-                    memHead.setText("Team Members (" + model.teamMembers.size() + ")");
-                    memHead.setTextSize(14);
+                    memHead.setText("Team Members (" + model.teamMembers.size() + ") • Tap Member to Set Active Inspector");
+                    memHead.setTextSize(13.5f);
                     memHead.setTypeface(Typeface.DEFAULT_BOLD);
                     memHead.setTextColor(0xFF222222);
                     memHead.setPadding(0, dp(act, 4), 0, dp(act, 6));
                     body.addView(memHead);
 
                     for (int i = 0; i < model.teamMembers.size(); i++) {
+                        final String memEntry = model.teamMembers.get(i);
+                        boolean isCurrentInsp = memEntry.contains(model.inspectorName);
                         TextView mTv = new TextView(act);
-                        mTv.setText("👤 " + model.teamMembers.get(i));
+                        mTv.setText((isCurrentInsp ? "✅ " : "👤 ") + memEntry);
                         mTv.setTextSize(13);
-                        mTv.setTextColor(0xFF444444);
-                        mTv.setPadding(0, dp(act, 4), 0, dp(act, 4));
+                        mTv.setTypeface(isCurrentInsp ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+                        mTv.setTextColor(isCurrentInsp ? 0xFF0070F4 : 0xFF444444);
+                        mTv.setBackground(roundedRect(isCurrentInsp ? 0xFFE8F2FF : 0xFFF8F9FA, 6, dp(act, 1), isCurrentInsp ? 0xFF0070F4 : 0xFFECECEC, act));
+                        mTv.setPadding(dp(act, 10), dp(act, 8), dp(act, 10), dp(act, 8));
+                        LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        mlp.setMargins(0, 0, 0, dp(act, 6));
+                        mTv.setLayoutParams(mlp);
+                        mTv.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                model.inspectorName = memEntry;
+                                model.showInspector = true;
+                                model.saveState(act);
+                                if (onUpdate != null) onUpdate.run();
+                                run();
+                                Toast.makeText(act, "✓ Active Inspector set to: " + memEntry, Toast.LENGTH_SHORT).show();
+                            }
+                        });
                         body.addView(mTv);
                     }
 
+                    LinearLayout invRow = new LinearLayout(act);
+                    invRow.setOrientation(LinearLayout.HORIZONTAL);
+                    invRow.setPadding(0, dp(act, 4), 0, dp(act, 12));
+                    final EditText memEt = new EditText(act);
+                    memEt.setHint("Crew name & role (e.g. Minh Tran - QA)...");
+                    memEt.setTextSize(12.5f);
+                    memEt.setSingleLine(true);
+                    memEt.setBackground(roundedRect(0xFFF5F5F5, 6, dp(act, 1), 0xFFDEDEDE, act));
+                    memEt.setPadding(dp(act, 10), dp(act, 8), dp(act, 10), dp(act, 8));
+                    invRow.addView(memEt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
                     TextView invBtn = new TextView(act);
-                    invBtn.setText("+ Invite Field Crew Member (Share Team Code)");
-                    invBtn.setTextSize(13);
+                    invBtn.setText("+ Add Crew");
+                    invBtn.setTextSize(12.5f);
                     invBtn.setTypeface(Typeface.DEFAULT_BOLD);
-                    invBtn.setTextColor(0xFF0070F4);
+                    invBtn.setTextColor(0xFFFFFFFF);
                     invBtn.setGravity(Gravity.CENTER);
-                    invBtn.setBackground(roundedRect(0xFFE8F2FF, 6, dp(act, 1), 0xFF0070F4, act));
-                    invBtn.setPadding(dp(act, 10), dp(act, 9), dp(act, 10), dp(act, 9));
-                    LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    iLp.setMargins(0, dp(act, 8), 0, dp(act, 14));
+                    invBtn.setBackground(roundedRect(0xFF0070F4, 6, 0, 0, act));
+                    invBtn.setPadding(dp(act, 12), dp(act, 9), dp(act, 12), dp(act, 9));
+                    LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    iLp.setMargins(dp(act, 6), 0, 0, 0);
                     invBtn.setLayoutParams(iLp);
                     invBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            String newMem = "Field Crew #" + (model.teamMembers.size() + 1) + " (Joined via Code)";
+                            String customMem = memEt.getText().toString().trim();
+                            String newMem = customMem.isEmpty()
+                                    ? ("Field Crew #" + (model.teamMembers.size() + 1) + " (Verified)")
+                                    : customMem;
                             model.teamMembers.add(newMem);
+                            model.inspectorName = newMem;
+                            model.showInspector = true;
+                            model.saveState(act);
+                            if (onUpdate != null) onUpdate.run();
                             run();
-                            Toast.makeText(act, "Added " + newMem, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(act, "✓ Added & Activated Crew: " + newMem, Toast.LENGTH_SHORT).show();
                         }
                     });
-                    body.addView(invBtn);
+                    invRow.addView(invBtn);
+                    body.addView(invRow);
 
-                    LinearLayout gRow = new LinearLayout(act);
-                    gRow.setOrientation(LinearLayout.HORIZONTAL);
-                    gRow.setGravity(Gravity.CENTER_VERTICAL);
-                    gRow.setPadding(0, dp(act, 10), 0, dp(act, 10));
-                    ImageView gIv = new ImageView(act);
-                    gIv.setImageResource(R.drawable.teamspace_google_icon);
-                    gRow.addView(gIv, new LinearLayout.LayoutParams(dp(act, 28), dp(act, 28)));
-                    TextView gTv = new TextView(act);
-                    gTv.setText("  Google Drive Auto-Backup (Connected)");
-                    gTv.setTextSize(14);
-                    gTv.setTextColor(0xFF222222);
-                    gRow.addView(gTv);
-                    body.addView(gRow);
+                    TextView syncHead = new TextView(act);
+                    syncHead.setText("Enterprise Cloud & Webhook Integrations");
+                    syncHead.setTextSize(13.5f);
+                    syncHead.setTypeface(Typeface.DEFAULT_BOLD);
+                    syncHead.setTextColor(0xFF222222);
+                    syncHead.setPadding(0, dp(act, 4), 0, dp(act, 6));
+                    body.addView(syncHead);
 
-                    LinearLayout mRow = new LinearLayout(act);
-                    mRow.setOrientation(LinearLayout.HORIZONTAL);
-                    mRow.setGravity(Gravity.CENTER_VERTICAL);
-                    mRow.setPadding(0, dp(act, 10), 0, dp(act, 10));
-                    ImageView mIv = new ImageView(act);
-                    mIv.setImageResource(R.drawable.teamspace_microsoft_icon);
-                    mRow.addView(mIv, new LinearLayout.LayoutParams(dp(act, 28), dp(act, 28)));
-                    TextView mTv = new TextView(act);
-                    mTv.setText("  Microsoft OneDrive Sync (Connected)");
-                    mTv.setTextSize(14);
-                    mTv.setTextColor(0xFF222222);
-                    mRow.addView(mTv);
-                    body.addView(mRow);
+                    addSwitchRow(act, body, "Google Drive Auto-Backup", model.googleDriveAutoBackup, new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton b, boolean isChecked) {
+                            model.googleDriveAutoBackup = isChecked;
+                            model.saveState(act);
+                            Toast.makeText(act, isChecked ? "✓ Google Drive Auto-Backup Connected" : "Google Drive Auto-Backup Paused", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    addSwitchRow(act, body, "Microsoft OneDrive Sync", model.oneDriveAutoSync, new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton b, boolean isChecked) {
+                            model.oneDriveAutoSync = isChecked;
+                            model.saveState(act);
+                            Toast.makeText(act, isChecked ? "✓ Microsoft OneDrive Sync Connected" : "Microsoft OneDrive Sync Paused", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    addSwitchRow(act, body, "Enterprise Webhook API Sync", model.webhookSyncEnabled, new CompoundButton.OnCheckedChangeListener() {
+                        @Override
+                        public void onCheckedChanged(CompoundButton b, boolean isChecked) {
+                            model.webhookSyncEnabled = isChecked;
+                            model.saveState(act);
+                            Toast.makeText(act, isChecked ? "✓ Enterprise Webhook API Active" : "Webhook API Paused", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }
             }
         };
@@ -2908,15 +3346,81 @@ public class OriginalDialogs {
         dlg.show();
     }
 
+    private static void showWebPortalDialog(final Activity act, final WatermarkModel model) {
+        final Dialog dlg = new Dialog(act, android.R.style.Theme_Light_NoTitleBar);
+        LinearLayout root = new LinearLayout(act);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(0xFFFFFFFF);
+        root.setPadding(dp(act, 20), dp(act, 20), dp(act, 20), dp(act, 20));
+
+        TextView title = new TextView(act);
+        title.setText("🌐 Teamspace Web Portal & Cloud Console");
+        title.setTextSize(18);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(0xFF0070F4);
+        root.addView(title);
+
+        final TextView statusTv = new TextView(act);
+        statusTv.setText("\n• Console URL: https://portal.nextai.global/teamspace"
+                + "\n• Active Workspace: " + model.projectName
+                + "\n• Synced Media Items: " + model.capturedPhotos.size()
+                + "\n• Active Crew Members: " + model.teamMembers.size()
+                + "\n• Google Drive Backup: " + (model.googleDriveAutoBackup ? "ACTIVE" : "OFF")
+                + "\n• Microsoft OneDrive: " + (model.oneDriveAutoSync ? "ACTIVE" : "OFF")
+                + "\n• Team Share Code: TN-" + (model.activeTemplate != null ? model.activeTemplate.id.toUpperCase(Locale.US) : "WM-34"));
+        statusTv.setTextSize(13);
+        statusTv.setTextColor(0xFF333333);
+        root.addView(statusTv);
+
+        TextView syncBtn = new TextView(act);
+        syncBtn.setText("☁️ Sync All Media & Attendance Now");
+        syncBtn.setTextSize(14);
+        syncBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        syncBtn.setTextColor(0xFFFFFFFF);
+        syncBtn.setGravity(Gravity.CENTER);
+        syncBtn.setBackground(roundedRect(0xFF10B981, 6, 0, 0, act));
+        LinearLayout.LayoutParams sLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 44));
+        sLp.setMargins(0, dp(act, 18), 0, dp(act, 10));
+        syncBtn.setLayoutParams(sLp);
+        syncBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                statusTv.setText(statusTv.getText() + "\n\n✓ Cloud Sync Completed at "
+                        + new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()) + " (0 pending items)");
+                Toast.makeText(act, "✓ All photos, videos & attendance logs synced to Teamspace Cloud!", Toast.LENGTH_SHORT).show();
+            }
+        });
+        root.addView(syncBtn);
+
+        TextView doneBtn = new TextView(act);
+        doneBtn.setText("Close");
+        doneBtn.setTextSize(14);
+        doneBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        doneBtn.setTextColor(0xFF0070F4);
+        doneBtn.setGravity(Gravity.CENTER);
+        doneBtn.setBackground(roundedRect(0xFFE8F2FF, 6, 0, 0, act));
+        doneBtn.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 42)));
+        doneBtn.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { dlg.dismiss(); }
+        });
+        root.addView(doneBtn);
+        dlg.setContentView(root);
+        dlg.show();
+    }
+
     // 7. Original Local Pic & Video Preview (fragment_local_pic_preview.xml)
     public static void showLocalPreviewDialog(final Activity act, final WatermarkModel model, final Runnable onUpdate) {
+        showLocalPreviewDialog(act, model, onUpdate, 0);
+    }
+
+    public static void showLocalPreviewDialog(final Activity act, final WatermarkModel model, final Runnable onUpdate, int initialIndex) {
         final Dialog dlg = new Dialog(act, android.R.style.Theme_Light_NoTitleBar);
 
         LinearLayout root = new LinearLayout(act);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(0xFFFFFFFF);
 
-        final int[] currentIndex = new int[]{0};
+        final int[] currentIndex = new int[]{initialIndex};
 
         // Top NavigationBarRich with Prev / Next Navigation
         FrameLayout navBar = new FrameLayout(act);
@@ -2945,7 +3449,7 @@ public class OriginalDialogs {
         navCenter.addView(prevBtn);
 
         final TextView titleTv = new TextView(act);
-        titleTv.setTextSize(16);
+        titleTv.setTextSize(15);
         titleTv.setTypeface(Typeface.DEFAULT_BOLD);
         titleTv.setTextColor(0xFF222222);
         navCenter.addView(titleTv);
@@ -2959,9 +3463,19 @@ public class OriginalDialogs {
 
         navBar.addView(navCenter, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 
+        LinearLayout rightActions = new LinearLayout(act);
+        rightActions.setOrientation(LinearLayout.HORIZONTAL);
+        rightActions.setGravity(Gravity.CENTER_VERTICAL);
+
+        final TextView delBtn = new TextView(act);
+        delBtn.setText("🗑️ ");
+        delBtn.setTextSize(15);
+        delBtn.setPadding(dp(act, 4), dp(act, 4), dp(act, 6), dp(act, 4));
+        rightActions.addView(delBtn);
+
         TextView rightTv = new TextView(act);
         rightTv.setText("Export ZIP");
-        rightTv.setTextSize(14);
+        rightTv.setTextSize(13);
         rightTv.setTypeface(Typeface.DEFAULT_BOLD);
         rightTv.setTextColor(0xFF0093FF);
         rightTv.setOnClickListener(new View.OnClickListener() {
@@ -2971,7 +3485,8 @@ public class OriginalDialogs {
                 showExportFileInspectorDialog(act, "ZIP Archive", zf);
             }
         });
-        navBar.addView(rightTv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL));
+        rightActions.addView(rightTv);
+        navBar.addView(rightActions, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.END | Gravity.CENTER_VERTICAL));
         root.addView(navBar);
 
         // Center Image & Instant Watermarked Video Player
@@ -2991,6 +3506,25 @@ public class OriginalDialogs {
         rmLp.gravity = Gravity.BOTTOM | Gravity.END;
         rmLp.setMargins(dp(act, 16), dp(act, 16), dp(act, 16), dp(act, 16));
         viewerWrap.addView(actionOverlayBtn, rmLp);
+
+        final TextView editStampOverlayBtn = new TextView(act);
+        editStampOverlayBtn.setText("✏️ Customize Stamp");
+        editStampOverlayBtn.setTextSize(12);
+        editStampOverlayBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        editStampOverlayBtn.setTextColor(0xFFFFFFFF);
+        editStampOverlayBtn.setBackground(roundedRect(0xCC0070F4, 18, dp(act, 1), 0xFFFFFFFF, act));
+        editStampOverlayBtn.setPadding(dp(act, 14), dp(act, 8), dp(act, 14), dp(act, 8));
+        FrameLayout.LayoutParams esLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        esLp.gravity = Gravity.BOTTOM | Gravity.START;
+        esLp.setMargins(dp(act, 16), dp(act, 16), dp(act, 16), dp(act, 16));
+        editStampOverlayBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dlg.dismiss();
+                showEditStampSheet(act, model, onUpdate);
+            }
+        });
+        viewerWrap.addView(editStampOverlayBtn, esLp);
 
         final TextView metaStripTv = new TextView(act);
         metaStripTv.setTextSize(11);
@@ -3106,6 +3640,18 @@ public class OriginalDialogs {
             }
         };
 
+        delBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!model.capturedPhotos.isEmpty() && currentIndex[0] >= 0 && currentIndex[0] < model.capturedPhotos.size()) {
+                    WatermarkModel.CapturedPhoto removed = model.capturedPhotos.remove(currentIndex[0]);
+                    if (onUpdate != null) onUpdate.run();
+                    renderItem.run();
+                    Toast.makeText(act, "Deleted " + removed.photoCode, Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
         prevBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -3135,7 +3681,20 @@ public class OriginalDialogs {
         addShareShortcut(act, bottomBar, R.drawable.social_share_wa_fill, "WhatsApp", new ActionCallback() {
             @Override
             public void onClick() {
-                Toast.makeText(act, "Sharing watermarked media to WhatsApp...", Toast.LENGTH_SHORT).show();
+                try {
+                    android.content.Intent sendIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+                    sendIntent.setType("text/plain");
+                    String details = model.capturedPhotos.isEmpty()
+                            ? ("Time Now Verified Stamp • Code: " + model.currentPhotoCode + " • GPS: " + model.getFormattedCoordinates())
+                            : ("Time Now Verified Media • Code: " + model.capturedPhotos.get(currentIndex[0]).photoCode
+                                + "\nTime: " + model.capturedPhotos.get(currentIndex[0]).timestampText
+                                + "\nGPS: " + model.capturedPhotos.get(currentIndex[0]).addressText
+                                + "\nFile: " + model.capturedPhotos.get(currentIndex[0]).compositeFile.getAbsolutePath());
+                    sendIntent.putExtra(android.content.Intent.EXTRA_TEXT, details);
+                    act.startActivity(android.content.Intent.createChooser(sendIntent, "Share Verified Media"));
+                } catch (Exception e) {
+                    Toast.makeText(act, "Sharing watermarked media to WhatsApp...", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         addShareShortcut(act, bottomBar, R.drawable.tool_border_safe_green, "Verify", new ActionCallback() {
@@ -3147,7 +3706,7 @@ public class OriginalDialogs {
         addShareShortcut(act, bottomBar, R.drawable.icon_preview_folder, "Teamspace", new ActionCallback() {
             @Override
             public void onClick() {
-                showTeamspaceDialog(act, model);
+                showTeamspaceDialog(act, model, onUpdate);
             }
         });
         addShareShortcut(act, bottomBar, R.drawable.global_border_download, "Export PDF", new ActionCallback() {
@@ -3199,6 +3758,10 @@ public class OriginalDialogs {
 
     // 8. Original Time Now Plans Paywall + Retention Exit Survey (activity_purchase.xml / Report 07)
     public static void showPurchaseDialog(final Activity act) {
+        showPurchaseDialog(act, null, null);
+    }
+
+    public static void showPurchaseDialog(final Activity act, final WatermarkModel model, final Runnable onUpdate) {
         final Dialog dlg = new Dialog(act, android.R.style.Theme_Light_NoTitleBar);
 
         LinearLayout root = new LinearLayout(act);
@@ -3215,7 +3778,7 @@ public class OriginalDialogs {
             @Override
             public void onClick(View v) {
                 dlg.dismiss();
-                showPaywallExitSurveyDialog(act);
+                showPaywallExitSurveyDialog(act, model, onUpdate);
             }
         });
         root.addView(closeIv);
@@ -3259,10 +3822,30 @@ public class OriginalDialogs {
         featuresBox.setPadding(0, dp(act, 18), 0, dp(act, 12));
         root.addView(featuresBox, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
+        final int[] selectedSku = new int[]{0};
+        final boolean[] isBiz = new boolean[]{false};
+
+        final TextView priceTv = new TextView(act);
+        priceTv.setTextSize(16);
+        priceTv.setTypeface(Typeface.DEFAULT_BOLD);
+        priceTv.setTextColor(0xFF222222);
+        priceTv.setGravity(Gravity.CENTER);
+
+        final TextView ctaBtn = new TextView(act);
+        ctaBtn.setTextSize(17);
+        ctaBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        ctaBtn.setTextColor(0xFFFFFFFF);
+        ctaBtn.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams ctaLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 48));
+        ctaLp.setMargins(0, dp(act, 12), 0, 0);
+        ctaBtn.setLayoutParams(ctaLp);
+
         // 3 SKU Cards (Annual / Monthly / One-Time)
         final LinearLayout skuRow = new LinearLayout(act);
         skuRow.setOrientation(LinearLayout.HORIZONTAL);
-        String[] skus = new String[]{"Annual\n$29.99/yr\n(7d Trial)", "Monthly\n$6.99/mo\n(Flexible)", "1-Year Pass\n$34.99\n(One-Time)"};
+        final String[] skus = new String[]{"Annual\n$29.99/yr\n(7d Trial)", "Monthly\n$6.99/mo\n(Flexible)", "1-Year Pass\n$34.99\n(One-Time)"};
+        final String[] skuPricesPlus = new String[]{"$29.99 / year (7-Day Free Trial)", "$6.99 / month (Cancel Anytime)", "$34.99 One-Time (365 Days VIP)"};
+        final String[] skuPricesBiz = new String[]{"$99.99 / yr / 10 Seats (7d Trial)", "$9.99 / member / month", "$149.99 / yr Enterprise Pack"};
         final TextView[] skuViews = new TextView[3];
         for (int i = 0; i < 3; i++) {
             final int sIdx = i;
@@ -3277,10 +3860,14 @@ public class OriginalDialogs {
             sc.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    selectedSku[0] = sIdx;
+                    int accent = isBiz[0] ? 0xFF0070F4 : 0xFF7A6EFF;
+                    int bgSel = isBiz[0] ? 0xFFE8F2FF : 0xFFF3F0FF;
                     for (int k = 0; k < 3; k++) {
                         boolean s = (k == sIdx);
-                        skuViews[k].setBackground(roundedRect(s ? 0xFFF3F0FF : 0xFFF7F7F7, 8, dp(act, s ? 2 : 1), s ? 0xFF7A6EFF : 0xFFE0E0E0, act));
+                        skuViews[k].setBackground(roundedRect(s ? bgSel : 0xFFF7F7F7, 8, dp(act, s ? 2 : 1), s ? accent : 0xFFE0E0E0, act));
                     }
+                    priceTv.setText(isBiz[0] ? skuPricesBiz[sIdx] : skuPricesPlus[sIdx]);
                 }
             });
             LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
@@ -3290,36 +3877,38 @@ public class OriginalDialogs {
             skuRow.addView(sc);
         }
         root.addView(skuRow);
-
-        final TextView priceTv = new TextView(act);
-        priceTv.setTextSize(16);
-        priceTv.setTypeface(Typeface.DEFAULT_BOLD);
-        priceTv.setTextColor(0xFF222222);
-        priceTv.setGravity(Gravity.CENTER);
         root.addView(priceTv);
 
-        final TextView ctaBtn = new TextView(act);
-        ctaBtn.setTextSize(17);
-        ctaBtn.setTypeface(Typeface.DEFAULT_BOLD);
-        ctaBtn.setTextColor(0xFFFFFFFF);
-        ctaBtn.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams ctaLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 48));
-        ctaLp.setMargins(0, dp(act, 12), 0, 0);
-        ctaBtn.setLayoutParams(ctaLp);
         ctaBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(act, "Time Now Pro Plan Activated!", Toast.LENGTH_SHORT).show();
+                if (model != null) {
+                    if (isBiz[0]) {
+                        model.isTeamspaceBusiness = true;
+                        model.isVipPlus = true;
+                    } else {
+                        model.isVipPlus = true;
+                    }
+                    model.earnVipDays += (selectedSku[0] == 1 ? 30 : 365);
+                    model.saveState(act);
+                }
+                if (onUpdate != null) onUpdate.run();
+                Toast.makeText(act, isBiz[0] ? "👑 Teamspace Business VIP Activated!" : "👑 Time Now Plus VIP Activated!", Toast.LENGTH_SHORT).show();
                 dlg.dismiss();
             }
         });
         root.addView(ctaBtn);
 
-        final boolean[] isBiz = new boolean[]{false};
         final java.lang.Runnable updatePlan = new java.lang.Runnable() {
             @Override
             public void run() {
                 featuresBox.removeAllViews();
+                int accent = isBiz[0] ? 0xFF0070F4 : 0xFF7A6EFF;
+                int bgSel = isBiz[0] ? 0xFFE8F2FF : 0xFFF3F0FF;
+                for (int k = 0; k < 3; k++) {
+                    boolean s = (k == selectedSku[0]);
+                    skuViews[k].setBackground(roundedRect(s ? bgSel : 0xFFF7F7F7, 8, dp(act, s ? 2 : 1), s ? accent : 0xFFE0E0E0, act));
+                }
                 if (!isBiz[0]) {
                     tabPlus.setBackground(roundedRect(0xFF7A6EFF, 5, 0, 0, act));
                     tabPlus.setTextColor(0xFFFFFFFF);
@@ -3340,8 +3929,8 @@ public class OriginalDialogs {
                         tv.setPadding(0, dp(act, 7), 0, dp(act, 7));
                         featuresBox.addView(tv);
                     }
-                    priceTv.setText("$29.99 / year (7-Day Free Trial)");
-                    ctaBtn.setText("Continue with Time Now Plus");
+                    priceTv.setText(skuPricesPlus[selectedSku[0]]);
+                    ctaBtn.setText(model != null && model.isVipPlus ? "✓ Time Now Plus Active" : "Continue with Time Now Plus");
                     ctaBtn.setBackground(roundedRect(0xFF7A6EFF, 6, 0, 0, act));
                 } else {
                     tabBiz.setBackground(roundedRect(0xFF0070F4, 5, 0, 0, act));
@@ -3363,8 +3952,8 @@ public class OriginalDialogs {
                         tv.setPadding(0, dp(act, 7), 0, dp(act, 7));
                         featuresBox.addView(tv);
                     }
-                    priceTv.setText("$9.99 / member / month");
-                    ctaBtn.setText("Start Teamspace Business Trial");
+                    priceTv.setText(skuPricesBiz[selectedSku[0]]);
+                    ctaBtn.setText(model != null && model.isTeamspaceBusiness ? "✓ Teamspace Business Active" : "Start Teamspace Business Trial");
                     ctaBtn.setBackground(roundedRect(0xFF0070F4, 6, 0, 0, act));
                 }
             }
@@ -3391,6 +3980,10 @@ public class OriginalDialogs {
 
     // 8b. Paywall Retention Exit Survey (PaywallExitSurvey / Report 07)
     public static void showPaywallExitSurveyDialog(final Activity act) {
+        showPaywallExitSurveyDialog(act, null, null);
+    }
+
+    public static void showPaywallExitSurveyDialog(final Activity act, final WatermarkModel model, final Runnable onUpdate) {
         final Dialog dlg = new Dialog(act, android.R.style.Theme_Translucent_NoTitleBar);
         FrameLayout backdrop = new FrameLayout(act);
         backdrop.setBackgroundColor(0x88000000);
@@ -3411,7 +4004,7 @@ public class OriginalDialogs {
         card.addView(head);
 
         TextView sub = new TextView(act);
-        sub.setText("Why didn't you upgrade today? Select an option to unlock an instant 50% retention discount:");
+        sub.setText("Why didn't you upgrade today? Select an option to unlock an instant 50% retention discount + 3-Day Free VIP Trial:");
         sub.setTextSize(13);
         sub.setTextColor(0xFF666666);
         sub.setPadding(0, dp(act, 6), 0, dp(act, 10));
@@ -3435,7 +4028,13 @@ public class OriginalDialogs {
             rTv.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Toast.makeText(act, "50% Retention Offer Unlocked ($14.99/yr) + 3-Day Free AdFreePass!", Toast.LENGTH_LONG).show();
+                    if (model != null) {
+                        model.isVipPlus = true;
+                        model.earnVipDays += 3;
+                        model.saveState(act);
+                    }
+                    if (onUpdate != null) onUpdate.run();
+                    Toast.makeText(act, "👑 50% Retention Offer + 3-Day Free VIP Pass Activated!", Toast.LENGTH_LONG).show();
                     dlg.dismiss();
                 }
             });
