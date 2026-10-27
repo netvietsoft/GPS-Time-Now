@@ -130,10 +130,14 @@ public class WatermarkModel {
     public TemplateInfo activeTemplate;
 
     // Live Watermark Toggles (matching default_watermarks_global.json items)
+    public boolean showTitle = true;
     public boolean showTime = true;
     public boolean showAddress = true;
     public boolean showLatLong = true;
     public boolean showWeather = true;
+    public boolean showProject = false;
+    public boolean showArea = false;
+    public boolean showInspector = false;
     public boolean showMap = false;
     public boolean showCompass = false;
     public boolean showAltitude = false;
@@ -145,15 +149,17 @@ public class WatermarkModel {
     public boolean saveOriginalPhoto = true;
     public boolean autoSaveTeamspace = true;
 
-    // Advanced Camera & Format Toggles (from SettingActivity)
+    // Advanced Camera & Format Toggles (from SettingActivity & Edit Stamp)
     public boolean showGridLines = false;
     public boolean showLeveler = false;
     public boolean nightModeZeroDce = false;
     public boolean shutterSoundEnabled = true;
     public boolean use24HourFormat = true;
     public boolean showSecondsInClock = false;
-    public int gpsFormatMode = 0;   // 0 = Decimal, 1 = DMS, 2 = UTM
-    public int clockFontIndex = 0;  // 0 = BebasNeue, 1 = Segment7 LED, 2 = RobotoMono
+    public int dateFormatIndex = 0;    // 0 = Auto/Template, 1 = dd/MM/yyyy, 2 = dd MMM yyyy, 3 = yyyy-MM-dd, 4 = MM/dd/yyyy
+    public int gpsFormatMode = 0;      // 0 = Decimal, 1 = DMS, 2 = UTM
+    public int clockFontIndex = 0;     // 0 = BebasNeue, 1 = Segment7 LED, 2 = RobotoMono
+    public int stampPositionIndex = 0; // 0 = Bottom-Left, 1 = Bottom-Right, 2 = Top-Left, 3 = Top-Right
 
     // AI Count & Collage Mode State
     public String aiCountCategory = "Steel Pipes";
@@ -186,6 +192,10 @@ public class WatermarkModel {
     public String altitudeLine = "18.4m ASL";
     public String compassLine = "142° SE";
     public int customAccentColor = 0xFFFFC233;
+
+    // User-added Custom Extra Fields ("Label: Value") & Recent Note History
+    public final List<String> customExtraFields = new ArrayList<String>();
+    public final List<String> recentNotes = new ArrayList<String>();
 
     // Camera settings
     public int aspectRatioMode = 0; // 0 = 3:4, 1 = 9:16, 2 = 1:1, 3 = Full
@@ -247,6 +257,13 @@ public class WatermarkModel {
         teamMembers.add("Supervisor Tran Minh B (Site Lead)");
         teamMembers.add("Inspector Le Hoang C (Field Crew)");
 
+        recentNotes.add("Site inspection passed");
+        recentNotes.add("Material delivery verified");
+        recentNotes.add("Before work started");
+        recentNotes.add("Completed & sanitized");
+        recentNotes.add("Patrol checkpoint clear");
+        recentNotes.add("Safety PPE & helmet check OK");
+
         selectTemplate(templates.get(0));
         regeneratePhotoCode();
     }
@@ -256,6 +273,79 @@ public class WatermarkModel {
         this.customAccentColor = info.accentColor;
         this.showMap = info.defaultShowMap;
         this.customTitle = (info.headerBadge != null) ? info.headerBadge : "";
+        this.showTitle = (info.headerBadge != null && !info.headerBadge.trim().isEmpty());
+        this.showProject = info.hasTableFields || "service01".equals(info.id);
+        this.showArea = "120".equals(info.id);
+        this.showInspector = "dasher01".equals(info.id) || "120".equals(info.id) || "20".equals(info.id);
+        if (info.hasTableFields || "service01".equals(info.id)) {
+            this.showNotes = true;
+        }
+    }
+
+    public void resetActiveTemplateDefaults() {
+        if (activeTemplate != null) {
+            selectTemplate(activeTemplate);
+        }
+        this.stampScale = 1.0f;
+        this.stampPositionIndex = 0;
+        this.clockFontIndex = 0;
+        this.dateFormatIndex = 0;
+        this.gpsFormatMode = 0;
+        this.use24HourFormat = true;
+        this.showSecondsInClock = false;
+        this.showTime = true;
+        this.showAddress = true;
+        this.showLatLong = true;
+        this.showWeather = true;
+        this.showCompass = "60".equals(activeTemplate != null ? activeTemplate.id : "")
+                || "130".equals(activeTemplate != null ? activeTemplate.id : "");
+        this.showAltitude = false;
+        this.showBrandLogo = false;
+        this.showQrCode = false;
+        this.showTimeNowLogo = true;
+        this.showPhotoCode = true;
+        this.customNote = "Site inspection & verification";
+        this.projectName = "Metro Line 1 Station B";
+        this.areaName = "Zone A - Main Structure";
+        this.inspectorName = "Eng. Nguyen Van A";
+        this.brandLogoText = "NEXTAI CORP";
+        this.addressLine = "113 Trần Đăng Ninh, Làng Quốc tế Thăng Long, Cầu Giấy, Hà Nội";
+        this.weatherLine = "29°C Sunny";
+        this.compassLine = "142° SE";
+        this.altitudeLine = "18.4m ASL";
+        this.customExtraFields.clear();
+    }
+
+    public String getEffectiveDatePattern(String templateDefaultPattern) {
+        boolean includeTime = templateDefaultPattern != null && templateDefaultPattern.contains("HH:mm");
+        String baseDate;
+        switch (dateFormatIndex) {
+            case 1:
+                baseDate = "dd/MM/yyyy";
+                break;
+            case 2:
+                baseDate = "dd MMM yyyy";
+                break;
+            case 3:
+                baseDate = "yyyy-MM-dd";
+                break;
+            case 4:
+                baseDate = "MM/dd/yyyy";
+                break;
+            default:
+                return templateDefaultPattern != null ? templateDefaultPattern : "dd MMM yyyy";
+        }
+        return includeTime ? (baseDate + " " + getClockPattern()) : baseDate;
+    }
+
+    public String generateSmartAiNote() {
+        String tmplName = (activeTemplate != null) ? activeTemplate.name : "Time & Location";
+        String shortCoord = getFormattedCoordinates();
+        String note = "AI Verified [" + tmplName + "]: " + projectName + " (" + areaName + ") • " + weatherLine + " • " + shortCoord;
+        if (!recentNotes.contains(note)) {
+            recentNotes.add(0, note);
+        }
+        return note;
     }
 
     public String getFormattedCoordinates() {

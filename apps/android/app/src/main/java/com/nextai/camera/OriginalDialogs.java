@@ -10,6 +10,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -313,63 +314,277 @@ public class OriginalDialogs {
     }
 
     // 2. Original Edit Stamp BottomSheet (layout_watermark_edit_header_global.xml)
+    //    Upgraded with Live Interactive Stamp Preview, Synced Toggles + Inputs, and 1-Tap Suggested Chips
     public static void showEditStampSheet(final Activity act, final WatermarkModel model, final Runnable onUpdate) {
         final Dialog dlg = new Dialog(act);
         dlg.requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         LinearLayout root = new LinearLayout(act);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackground(topRoundedSheet(0xFFFFFFFF, 12, act));
+        root.setBackground(topRoundedSheet(0xFFFFFFFF, 14, act));
         int screenH = act.getResources().getDisplayMetrics().heightPixels;
 
-        // Header (#FAFAFA top radius 10, height 60dp)
-        FrameLayout header = new FrameLayout(act);
-        header.setBackground(topRoundedSheet(0xFFFAFAFA, 12, act));
-        header.setPadding(dp(act, 20), 0, dp(act, 12), 0);
-        header.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 58)));
+        // Forward reference for refreshing the live preview card inside Edit Stamp + camera overlay
+        final Runnable[] refreshPreviewHolder = new Runnable[1];
+        final Runnable notifyChange = new Runnable() {
+            @Override
+            public void run() {
+                if (refreshPreviewHolder[0] != null) refreshPreviewHolder[0].run();
+                if (onUpdate != null) onUpdate.run();
+            }
+        };
+
+        // Header (#FAFAFA top radius 14, height 56dp) with Reset & Done buttons
+        LinearLayout header = new LinearLayout(act);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setBackground(topRoundedSheet(0xFFFAFAFA, 14, act));
+        header.setPadding(dp(act, 16), 0, dp(act, 12), 0);
+        header.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 56)));
 
         TextView titleTv = new TextView(act);
-        titleTv.setText("Edit Stamp — " + model.activeTemplate.name);
-        titleTv.setTextSize(18);
+        titleTv.setText("Edit Stamp — " + (model.activeTemplate != null ? model.activeTemplate.name : "Custom"));
+        titleTv.setTextSize(16.5f);
         titleTv.setTypeface(Typeface.DEFAULT_BOLD);
         titleTv.setTextColor(0xFF222222);
-        FrameLayout.LayoutParams tLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        tLp.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
-        header.addView(titleTv, tLp);
+        titleTv.setSingleLine(true);
+        titleTv.setEllipsize(TextUtils.TruncateAt.END);
+        header.addView(titleTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        ImageView closeIv = new ImageView(act);
-        closeIv.setImageResource(R.drawable.btn_close_on_light);
-        FrameLayout.LayoutParams cLp = new FrameLayout.LayoutParams(dp(act, 32), dp(act, 32));
-        cLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        closeIv.setOnClickListener(new View.OnClickListener() {
+        TextView resetBtn = new TextView(act);
+        resetBtn.setText("↺ Reset");
+        resetBtn.setTextSize(12f);
+        resetBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        resetBtn.setTextColor(0xFF666666);
+        resetBtn.setBackground(roundedRect(0xFFEEEEEE, 6, dp(act, 1), 0xFFD0D0D0, act));
+        resetBtn.setPadding(dp(act, 10), dp(act, 5), dp(act, 10), dp(act, 5));
+        LinearLayout.LayoutParams rLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rLp.setMargins(dp(act, 6), 0, dp(act, 6), 0);
+        resetBtn.setLayoutParams(rLp);
+        resetBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                model.resetActiveTemplateDefaults();
+                if (onUpdate != null) onUpdate.run();
+                dlg.dismiss();
+                showEditStampSheet(act, model, onUpdate);
+                Toast.makeText(act, "↺ Stamp reset to default settings", Toast.LENGTH_SHORT).show();
+            }
+        });
+        header.addView(resetBtn);
+
+        TextView doneBtn = new TextView(act);
+        doneBtn.setText("Done ✓");
+        doneBtn.setTextSize(12.5f);
+        doneBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        doneBtn.setTextColor(0xFFFFFFFF);
+        doneBtn.setBackground(roundedRect(0xFF0093FF, 6, 0, 0, act));
+        doneBtn.setPadding(dp(act, 12), dp(act, 5), dp(act, 12), dp(act, 5));
+        doneBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (onUpdate != null) onUpdate.run();
                 dlg.dismiss();
             }
         });
-        header.addView(closeIv, cLp);
+        header.addView(doneBtn);
         root.addView(header);
 
         View div = new View(act);
         div.setBackgroundColor(0xFFECECEC);
         root.addView(div, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 1)));
 
-        ScrollView scroll = new ScrollView(act);
-        LinearLayout body = new LinearLayout(act);
-        body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(dp(act, 18), dp(act, 12), dp(act, 18), dp(act, 24));
+        // =====================================================================================
+        // Pinned Live Interactive Stamp Preview Card (Always visible at top of Edit Stamp)
+        // =====================================================================================
+        final LinearLayout livePreviewBox = new LinearLayout(act);
+        livePreviewBox.setOrientation(LinearLayout.VERTICAL);
+        livePreviewBox.setBackground(roundedRect(0xFF141E2B, 10, dp(act, 1.5f), 0xFF2E47A0, act));
+        livePreviewBox.setPadding(dp(act, 12), dp(act, 8), dp(act, 12), dp(act, 8));
+        LinearLayout.LayoutParams lpBoxParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpBoxParams.setMargins(dp(act, 14), dp(act, 8), dp(act, 14), dp(act, 6));
+        livePreviewBox.setLayoutParams(lpBoxParams);
+        root.addView(livePreviewBox);
 
-        // Stamp Size / Auto-Fit Scale Selector (layout_seek_bar_for_watermark_size.xml)
+        refreshPreviewHolder[0] = new Runnable() {
+            @Override
+            public void run() {
+                livePreviewBox.removeAllViews();
+
+                // Top status row: Live Preview tag + Scale + Position + Font
+                LinearLayout topMeta = new LinearLayout(act);
+                topMeta.setOrientation(LinearLayout.HORIZONTAL);
+                topMeta.setGravity(Gravity.CENTER_VERTICAL);
+
+                TextView liveTag = new TextView(act);
+                liveTag.setText("● LIVE STAMP PREVIEW");
+                liveTag.setTextSize(10f);
+                liveTag.setTypeface(Typeface.DEFAULT_BOLD);
+                liveTag.setTextColor(0xFF00E676);
+                topMeta.addView(liveTag, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+                String[] posShort = new String[]{"Bottom-Left", "Bottom-Right", "Top-Left", "Top-Right"};
+                String posName = posShort[Math.max(0, Math.min(3, model.stampPositionIndex))];
+                int scalePct = Math.round(model.stampScale * 100f);
+                TextView metaRight = new TextView(act);
+                metaRight.setText(scalePct + "% • " + posName);
+                metaRight.setTextSize(10f);
+                metaRight.setTextColor(0xFF93C5FD);
+                topMeta.addView(metaRight);
+                livePreviewBox.addView(topMeta);
+
+                // Preview Content Row: [Accent Vertical Bar] + [Live Fields]
+                LinearLayout contentRow = new LinearLayout(act);
+                contentRow.setOrientation(LinearLayout.HORIZONTAL);
+                contentRow.setPadding(0, dp(act, 4), 0, 0);
+
+                View accentBar = new View(act);
+                accentBar.setBackground(roundedRect(model.customAccentColor, 2, 0, 0, act));
+                LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(act, 4), ViewGroup.LayoutParams.MATCH_PARENT);
+                barLp.setMargins(0, dp(act, 2), dp(act, 8), dp(act, 2));
+                contentRow.addView(accentBar, barLp);
+
+                LinearLayout col = new LinearLayout(act);
+                col.setOrientation(LinearLayout.VERTICAL);
+
+                // Title Badge + Clock + Date
+                LinearLayout clockRow = new LinearLayout(act);
+                clockRow.setOrientation(LinearLayout.HORIZONTAL);
+                clockRow.setGravity(Gravity.CENTER_VERTICAL);
+
+                if (model.showTitle && model.customTitle != null && !model.customTitle.trim().isEmpty()) {
+                    TextView badgeTv = new TextView(act);
+                    badgeTv.setText(model.customTitle.trim());
+                    badgeTv.setTextSize(11f);
+                    badgeTv.setTypeface(Typeface.DEFAULT_BOLD);
+                    badgeTv.setTextColor(0xFF111111);
+                    badgeTv.setBackground(roundedRect(model.customAccentColor, 4, 0, 0, act));
+                    badgeTv.setPadding(dp(act, 6), dp(act, 2), dp(act, 6), dp(act, 2));
+                    LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    bLp.setMargins(0, 0, dp(act, 8), 0);
+                    clockRow.addView(badgeTv, bLp);
+                }
+
+                java.util.Date now = new java.util.Date();
+                if (model.showTime) {
+                    String clockStr = new java.text.SimpleDateFormat(model.getClockPattern(), java.util.Locale.US).format(now);
+                    String dateStr = new java.text.SimpleDateFormat(model.getEffectiveDatePattern("dd MMM yyyy"), java.util.Locale.US).format(now);
+                    TextView timeTv = new TextView(act);
+                    timeTv.setText(clockStr + "  •  " + dateStr + (model.showWeather ? ("  •  " + model.weatherLine) : ""));
+                    timeTv.setTextSize(12.5f);
+                    timeTv.setTypeface(model.clockFontIndex == 2 ? Typeface.MONOSPACE : Typeface.DEFAULT_BOLD);
+                    timeTv.setTextColor(0xFFFFFFFF);
+                    clockRow.addView(timeTv);
+                }
+                col.addView(clockRow);
+
+                if (model.showAddress && model.addressLine != null && !model.addressLine.trim().isEmpty()) {
+                    TextView addrTv = new TextView(act);
+                    addrTv.setText("📍 " + model.addressLine.trim());
+                    addrTv.setTextSize(11f);
+                    addrTv.setTextColor(0xFFE2E8F0);
+                    addrTv.setSingleLine(true);
+                    addrTv.setEllipsize(TextUtils.TruncateAt.END);
+                    col.addView(addrTv);
+                }
+
+                StringBuilder metaLine = new StringBuilder();
+                if (model.showLatLong) metaLine.append(model.getFormattedCoordinates());
+                if (model.showCompass) {
+                    if (metaLine.length() > 0) metaLine.append(" • ");
+                    metaLine.append(model.compassLine);
+                }
+                if (model.showAltitude) {
+                    if (metaLine.length() > 0) metaLine.append(" • ");
+                    metaLine.append(model.altitudeLine);
+                }
+                if (metaLine.length() > 0) {
+                    TextView geoTv = new TextView(act);
+                    geoTv.setText(metaLine.toString());
+                    geoTv.setTextSize(10.5f);
+                    geoTv.setTypeface(Typeface.MONOSPACE);
+                    geoTv.setTextColor(0xFF94A3B8);
+                    col.addView(geoTv);
+                }
+
+                StringBuilder workLine = new StringBuilder();
+                if (model.showProject && model.projectName != null && !model.projectName.trim().isEmpty()) {
+                    workLine.append("Project: ").append(model.projectName.trim());
+                }
+                if (model.showArea && model.areaName != null && !model.areaName.trim().isEmpty()) {
+                    if (workLine.length() > 0) workLine.append(" | ");
+                    workLine.append("Area: ").append(model.areaName.trim());
+                }
+                if (model.showInspector && model.inspectorName != null && !model.inspectorName.trim().isEmpty()) {
+                    if (workLine.length() > 0) workLine.append(" | ");
+                    workLine.append("By: ").append(model.inspectorName.trim());
+                }
+                if (workLine.length() > 0) {
+                    TextView wkTv = new TextView(act);
+                    wkTv.setText(workLine.toString());
+                    wkTv.setTextSize(10.5f);
+                    wkTv.setTextColor(0xFFBAE6FD);
+                    wkTv.setSingleLine(true);
+                    wkTv.setEllipsize(TextUtils.TruncateAt.END);
+                    col.addView(wkTv);
+                }
+
+                if (model.showNotes && model.customNote != null && !model.customNote.trim().isEmpty()) {
+                    TextView noteTv = new TextView(act);
+                    noteTv.setText("📝 " + model.customNote.trim());
+                    noteTv.setTextSize(11f);
+                    noteTv.setTextColor(0xFFFFE082);
+                    noteTv.setSingleLine(true);
+                    noteTv.setEllipsize(TextUtils.TruncateAt.END);
+                    col.addView(noteTv);
+                }
+
+                if (model.showBrandLogo && model.brandLogoText != null && !model.brandLogoText.trim().isEmpty()) {
+                    TextView brTv = new TextView(act);
+                    brTv.setText("🏢 " + model.brandLogoText.trim());
+                    brTv.setTextSize(10.5f);
+                    brTv.setTypeface(Typeface.DEFAULT_BOLD);
+                    brTv.setTextColor(0xFF93C5FD);
+                    col.addView(brTv);
+                }
+
+                if (!model.customExtraFields.isEmpty()) {
+                    TextView exTv = new TextView(act);
+                    exTv.setText("➕ " + TextUtils.join("  •  ", model.customExtraFields));
+                    exTv.setTextSize(10.5f);
+                    exTv.setTextColor(0xFFA7F3D0);
+                    exTv.setSingleLine(true);
+                    exTv.setEllipsize(TextUtils.TruncateAt.END);
+                    col.addView(exTv);
+                }
+
+                contentRow.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                livePreviewBox.addView(contentRow);
+            }
+        };
+        refreshPreviewHolder[0].run();
+
+        ScrollView scroll = new ScrollView(act);
+        final LinearLayout body = new LinearLayout(act);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(act, 16), dp(act, 6), dp(act, 16), dp(act, 28));
+
+        // =====================================================================================
+        // SECTION 1: STAMP STYLE, POSITION, FONT, COLOR & FORMAT PRESETS
+        // =====================================================================================
+        addSectionHeader(act, body, "🎨 Stamp Style, Position & Format Presets");
+
+        // 1A. Stamp Size Selector (85% | 100% | 115%)
         TextView scaleLabel = new TextView(act);
         scaleLabel.setText("Stamp Size (Auto-Fit Text)");
-        scaleLabel.setTextSize(14);
+        scaleLabel.setTextSize(13);
         scaleLabel.setTypeface(Typeface.DEFAULT_BOLD);
         scaleLabel.setTextColor(0xFF222222);
         body.addView(scaleLabel);
 
         final LinearLayout scaleRow = new LinearLayout(act);
         scaleRow.setOrientation(LinearLayout.HORIZONTAL);
-        scaleRow.setPadding(0, dp(act, 6), 0, dp(act, 12));
+        scaleRow.setPadding(0, dp(act, 5), 0, dp(act, 10));
         final float[] scaleValues = new float[]{0.85f, 1.0f, 1.15f};
         final String[] scaleNames = new String[]{"Small (85%)", "Standard (100%)", "Large (115%)"};
         final Runnable renderScalePills = new Runnable() {
@@ -379,23 +594,16 @@ public class OriginalDialogs {
                 for (int i = 0; i < scaleValues.length; i++) {
                     final float sv = scaleValues[i];
                     boolean active = Math.abs(model.stampScale - sv) < 0.03f;
-                    TextView pill = new TextView(act);
-                    pill.setText(scaleNames[i]);
-                    pill.setTextSize(12);
-                    pill.setTypeface(active ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-                    pill.setTextColor(active ? 0xFFFFFFFF : 0xFF333333);
-                    pill.setGravity(Gravity.CENTER);
-                    pill.setBackground(roundedRect(active ? 0xFF0093FF : 0xFFF0F0F0, 6, dp(act, 1), active ? 0xFF0093FF : 0xFFDEDEDE, act));
-                    pill.setPadding(dp(act, 8), dp(act, 7), dp(act, 8), dp(act, 7));
+                    TextView pill = buildOptionPill(act, scaleNames[i], active);
                     LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-                    if (i < scaleValues.length - 1) pLp.setMargins(0, 0, dp(act, 8), 0);
+                    if (i < scaleValues.length - 1) pLp.setMargins(0, 0, dp(act, 6), 0);
                     pill.setLayoutParams(pLp);
                     pill.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             model.stampScale = sv;
                             run();
-                            if (onUpdate != null) onUpdate.run();
+                            notifyChange.run();
                         }
                     });
                     scaleRow.addView(pill);
@@ -405,17 +613,55 @@ public class OriginalDialogs {
         renderScalePills.run();
         body.addView(scaleRow);
 
-        // Clock Font Selector (BebasNeue | Segment7 LED | RobotoMono)
+        // 1B. Stamp Corner Position Selector (Bottom-Left | Bottom-Right | Top-Left | Top-Right)
+        TextView posLabel = new TextView(act);
+        posLabel.setText("Stamp Position on Screen (or Drag on Camera)");
+        posLabel.setTextSize(13);
+        posLabel.setTypeface(Typeface.DEFAULT_BOLD);
+        posLabel.setTextColor(0xFF222222);
+        body.addView(posLabel);
+
+        final LinearLayout posRow = new LinearLayout(act);
+        posRow.setOrientation(LinearLayout.HORIZONTAL);
+        posRow.setPadding(0, dp(act, 5), 0, dp(act, 10));
+        final String[] posNames = new String[]{"↙ Bot-Left", "↘ Bot-Right", "↖ Top-Left", "↗ Top-Right"};
+        final Runnable renderPosPills = new Runnable() {
+            @Override
+            public void run() {
+                posRow.removeAllViews();
+                for (int i = 0; i < posNames.length; i++) {
+                    final int pIdx = i;
+                    boolean active = (model.stampPositionIndex == i);
+                    TextView pill = buildOptionPill(act, posNames[i], active);
+                    LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                    if (i < posNames.length - 1) pLp.setMargins(0, 0, dp(act, 6), 0);
+                    pill.setLayoutParams(pLp);
+                    pill.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            model.stampPositionIndex = pIdx;
+                            run();
+                            notifyChange.run();
+                        }
+                    });
+                    posRow.addView(pill);
+                }
+            }
+        };
+        renderPosPills.run();
+        body.addView(posRow);
+
+        // 1C. Clock Font Selector (BebasNeue | Segment7 LED | RobotoMono)
         TextView fontLabel = new TextView(act);
         fontLabel.setText("Clock Font Style");
-        fontLabel.setTextSize(14);
+        fontLabel.setTextSize(13);
         fontLabel.setTypeface(Typeface.DEFAULT_BOLD);
         fontLabel.setTextColor(0xFF222222);
         body.addView(fontLabel);
 
         final LinearLayout fontRow = new LinearLayout(act);
         fontRow.setOrientation(LinearLayout.HORIZONTAL);
-        fontRow.setPadding(0, dp(act, 6), 0, dp(act, 12));
+        fontRow.setPadding(0, dp(act, 5), 0, dp(act, 10));
         final String[] fontNames = new String[]{"BebasNeue", "Segment7 LED", "RobotoMono"};
         final Runnable renderFontPills = new Runnable() {
             @Override
@@ -424,23 +670,16 @@ public class OriginalDialogs {
                 for (int i = 0; i < fontNames.length; i++) {
                     final int fIdx = i;
                     boolean active = (model.clockFontIndex == i);
-                    TextView pill = new TextView(act);
-                    pill.setText(fontNames[i]);
-                    pill.setTextSize(12);
-                    pill.setTypeface(active ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-                    pill.setTextColor(active ? 0xFFFFFFFF : 0xFF333333);
-                    pill.setGravity(Gravity.CENTER);
-                    pill.setBackground(roundedRect(active ? 0xFF0093FF : 0xFFF0F0F0, 6, dp(act, 1), active ? 0xFF0093FF : 0xFFDEDEDE, act));
-                    pill.setPadding(dp(act, 8), dp(act, 7), dp(act, 8), dp(act, 7));
+                    TextView pill = buildOptionPill(act, fontNames[i], active);
                     LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-                    if (i < fontNames.length - 1) pLp.setMargins(0, 0, dp(act, 8), 0);
+                    if (i < fontNames.length - 1) pLp.setMargins(0, 0, dp(act, 6), 0);
                     pill.setLayoutParams(pLp);
                     pill.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             model.clockFontIndex = fIdx;
                             run();
-                            if (onUpdate != null) onUpdate.run();
+                            notifyChange.run();
                         }
                     });
                     fontRow.addView(pill);
@@ -450,239 +689,717 @@ public class OriginalDialogs {
         renderFontPills.run();
         body.addView(fontRow);
 
-        // Theme Color Swatches
+        // 1D. Time & Date Format Selector
+        TextView fmtLabel = new TextView(act);
+        fmtLabel.setText("Time & Date Format");
+        fmtLabel.setTextSize(13);
+        fmtLabel.setTypeface(Typeface.DEFAULT_BOLD);
+        fmtLabel.setTextColor(0xFF222222);
+        body.addView(fmtLabel);
+
+        final LinearLayout timeFmtRow = new LinearLayout(act);
+        timeFmtRow.setOrientation(LinearLayout.HORIZONTAL);
+        timeFmtRow.setPadding(0, dp(act, 5), 0, dp(act, 6));
+        final Runnable renderTimeFmtPills = new Runnable() {
+            @Override
+            public void run() {
+                timeFmtRow.removeAllViews();
+                TextView p24 = buildOptionPill(act, "24-Hour (14:30)", model.use24HourFormat);
+                LinearLayout.LayoutParams lp1 = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                lp1.setMargins(0, 0, dp(act, 6), 0);
+                p24.setLayoutParams(lp1);
+                p24.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        model.use24HourFormat = true;
+                        run();
+                        notifyChange.run();
+                    }
+                });
+                timeFmtRow.addView(p24);
+
+                TextView p12 = buildOptionPill(act, "12-Hour (AM/PM)", !model.use24HourFormat);
+                LinearLayout.LayoutParams lp2 = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                lp2.setMargins(0, 0, dp(act, 6), 0);
+                p12.setLayoutParams(lp2);
+                p12.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        model.use24HourFormat = false;
+                        run();
+                        notifyChange.run();
+                    }
+                });
+                timeFmtRow.addView(p12);
+
+                TextView pSec = buildOptionPill(act, model.showSecondsInClock ? "⏱ Secs: ON" : "⏱ Secs: OFF", model.showSecondsInClock);
+                pSec.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 0.9f));
+                pSec.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        model.showSecondsInClock = !model.showSecondsInClock;
+                        run();
+                        notifyChange.run();
+                    }
+                });
+                timeFmtRow.addView(pSec);
+            }
+        };
+        renderTimeFmtPills.run();
+        body.addView(timeFmtRow);
+
+        final LinearLayout dateFmtRow = new LinearLayout(act);
+        dateFmtRow.setOrientation(LinearLayout.HORIZONTAL);
+        dateFmtRow.setPadding(0, 0, 0, dp(act, 10));
+        final String[] dateFmtNames = new String[]{"Auto", "dd/MM/yyyy", "dd MMM yyyy", "yyyy-MM-dd", "MM/dd/yyyy"};
+        final Runnable renderDateFmtPills = new Runnable() {
+            @Override
+            public void run() {
+                dateFmtRow.removeAllViews();
+                for (int i = 0; i < dateFmtNames.length; i++) {
+                    final int dIdx = i;
+                    boolean active = (model.dateFormatIndex == i);
+                    TextView pill = buildOptionPill(act, dateFmtNames[i], active);
+                    pill.setTextSize(10.5f);
+                    pill.setPadding(dp(act, 4), dp(act, 6), dp(act, 4), dp(act, 6));
+                    LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                    if (i < dateFmtNames.length - 1) pLp.setMargins(0, 0, dp(act, 4), 0);
+                    pill.setLayoutParams(pLp);
+                    pill.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            model.dateFormatIndex = dIdx;
+                            run();
+                            notifyChange.run();
+                        }
+                    });
+                    dateFmtRow.addView(pill);
+                }
+            }
+        };
+        renderDateFmtPills.run();
+        body.addView(dateFmtRow);
+
+        // 1E. GPS Coordinate Format Selector (Decimal | DMS | UTM)
+        TextView gpsLabel = new TextView(act);
+        gpsLabel.setText("GPS Coordinate Format");
+        gpsLabel.setTextSize(13);
+        gpsLabel.setTypeface(Typeface.DEFAULT_BOLD);
+        gpsLabel.setTextColor(0xFF222222);
+        body.addView(gpsLabel);
+
+        final LinearLayout gpsFmtRow = new LinearLayout(act);
+        gpsFmtRow.setOrientation(LinearLayout.HORIZONTAL);
+        gpsFmtRow.setPadding(0, dp(act, 5), 0, dp(act, 10));
+        final String[] gpsFmtNames = new String[]{"Decimal (21.0403°N)", "DMS (21°02'25\"N)", "UTM Grid"};
+        final Runnable renderGpsFmtPills = new Runnable() {
+            @Override
+            public void run() {
+                gpsFmtRow.removeAllViews();
+                for (int i = 0; i < gpsFmtNames.length; i++) {
+                    final int gIdx = i;
+                    boolean active = (model.gpsFormatMode == i);
+                    TextView pill = buildOptionPill(act, gpsFmtNames[i], active);
+                    pill.setTextSize(11f);
+                    LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                    if (i < gpsFmtNames.length - 1) pLp.setMargins(0, 0, dp(act, 6), 0);
+                    pill.setLayoutParams(pLp);
+                    pill.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            model.gpsFormatMode = gIdx;
+                            model.showLatLong = true;
+                            run();
+                            notifyChange.run();
+                        }
+                    });
+                    gpsFmtRow.addView(pill);
+                }
+            }
+        };
+        renderGpsFmtPills.run();
+        body.addView(gpsFmtRow);
+
+        // 1F. Theme Color Swatches (with live active ring & checkmark update!)
         TextView colorLabel = new TextView(act);
-        colorLabel.setText("Theme Color");
-        colorLabel.setTextSize(14);
+        colorLabel.setText("Theme Accent Color");
+        colorLabel.setTextSize(13);
         colorLabel.setTypeface(Typeface.DEFAULT_BOLD);
         colorLabel.setTextColor(0xFF222222);
         body.addView(colorLabel);
 
-        LinearLayout colorRow = new LinearLayout(act);
+        final LinearLayout colorRow = new LinearLayout(act);
         colorRow.setOrientation(LinearLayout.HORIZONTAL);
-        colorRow.setPadding(0, dp(act, 8), 0, dp(act, 14));
-        final int[] colors = new int[]{0xFFFFC233, 0xFF0070F4, 0xFFD98A36, 0xFF00C48C, 0xFF2E47A0, 0xFFFF1717, 0xFF222222};
-        for (int i = 0; i < colors.length; i++) {
-            final int c = colors[i];
-            View swatch = new View(act);
-            swatch.setBackground(roundedRect(c, 16, dp(act, 2), (model.customAccentColor == c) ? 0xFF222222 : 0x00000000, act));
-            LinearLayout.LayoutParams swLp = new LinearLayout.LayoutParams(dp(act, 32), dp(act, 32));
-            swLp.setMargins(0, 0, dp(act, 12), 0);
-            swatch.setLayoutParams(swLp);
-            swatch.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    model.customAccentColor = c;
-                    if (onUpdate != null) onUpdate.run();
+        colorRow.setPadding(0, dp(act, 6), 0, dp(act, 12));
+        final int[] colors = new int[]{0xFFFFC233, 0xFF0070F4, 0xFFD98A36, 0xFF00C48C, 0xFF2E47A0, 0xFFFF1717, 0xFF9C27B0, 0xFF222222};
+        final Runnable renderColorSwatches = new Runnable() {
+            @Override
+            public void run() {
+                colorRow.removeAllViews();
+                for (int i = 0; i < colors.length; i++) {
+                    final int c = colors[i];
+                    boolean selected = (model.customAccentColor == c);
+                    TextView swatch = new TextView(act);
+                    swatch.setText(selected ? "✓" : "");
+                    swatch.setTextSize(14);
+                    swatch.setTypeface(Typeface.DEFAULT_BOLD);
+                    swatch.setTextColor(c == 0xFFFFC233 ? 0xFF111111 : 0xFFFFFFFF);
+                    swatch.setGravity(Gravity.CENTER);
+                    swatch.setBackground(roundedRect(c, 16, dp(act, selected ? 2.5f : 1f), selected ? 0xFF111111 : 0x33000000, act));
+                    LinearLayout.LayoutParams swLp = new LinearLayout.LayoutParams(dp(act, 32), dp(act, 32));
+                    swLp.setMargins(0, 0, dp(act, 10), 0);
+                    swatch.setLayoutParams(swLp);
+                    swatch.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            model.customAccentColor = c;
+                            run();
+                            notifyChange.run();
+                        }
+                    });
+                    colorRow.addView(swatch);
                 }
-            });
-            colorRow.addView(swatch);
-        }
+            }
+        };
+        renderColorSwatches.run();
         body.addView(colorRow);
 
-        // Quick Note History Chips (recently_edited_table in original app)
-        TextView qNoteLabel = new TextView(act);
-        qNoteLabel.setText("Quick Note Templates (1-Tap Fill)");
-        qNoteLabel.setTextSize(12);
-        qNoteLabel.setTextColor(0xFF666666);
-        body.addView(qNoteLabel);
+        // =====================================================================================
+        // SECTION 2: INTERACTIVE STAMP FIELDS & SUGGESTED 1-TAP PRESETS ("CÁC CHỨC NĂNG ĐỀ XUẤT")
+        // =====================================================================================
+        addSectionHeader(act, body, "✏️ Customize Stamp Content & Suggested Presets");
 
-        HorizontalScrollView qScroll = new HorizontalScrollView(act);
-        qScroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout qRow = new LinearLayout(act);
-        qRow.setOrientation(LinearLayout.HORIZONTAL);
-        qRow.setPadding(0, dp(act, 4), 0, dp(act, 10));
-        final String[] quickNotes = new String[]{
-            "Site inspection passed",
-            "Material delivery verified",
-            "Before work started",
-            "Completed & sanitized",
-            "Patrol checkpoint clear"
+        // Field 1: Title / Header Badge
+        addInteractiveFieldCard(
+                act, body,
+                "Title / Header Badge (Auto-Fit)",
+                "Enter custom header title...",
+                model.showTitle,
+                model.customTitle,
+                new String[]{
+                    "CLOCK IN", "CLOCK OUT", "Work Record", "Construction Record",
+                    "Site Inspection", "Completed", "Before Work", "After Work",
+                    "Delivery Verified", "Patrol Clear"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showTitle = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.customTitle = text;
+                        if (autoEnabled) model.showTitle = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 2: Notes / Work Description + AI Smart Note Generator
+        addInteractiveFieldCard(
+                act, body,
+                "Notes / Work Description",
+                "Enter inspection note or tap a suggestion below...",
+                model.showNotes,
+                model.customNote,
+                new String[]{
+                    "✨ AI Smart Note",
+                    "Site inspection passed",
+                    "Material delivery verified",
+                    "Before work started",
+                    "Completed & sanitized",
+                    "Patrol checkpoint clear",
+                    "Safety PPE & helmet check OK",
+                    "Quality check 100% approved"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showNotes = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.customNote = text;
+                        if (autoEnabled) model.showNotes = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        if (chipLabel.startsWith("✨ AI Smart Note")) {
+                            return model.generateSmartAiNote();
+                        }
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 3: Address / Location + Live GPS POI Suggestions
+        addInteractiveFieldCard(
+                act, body,
+                "Address / Location",
+                "Enter location address...",
+                model.showAddress,
+                model.addressLine,
+                new String[]{
+                    "📍 113 Trần Đăng Ninh, Cầu Giấy, Hà Nội",
+                    "📍 Metro Line 1 Station B, Ba Son, TP.HCM",
+                    "📍 Logistics Hub Warehouse C, Long Biên",
+                    "📍 District 1 Patrol Route, Nguyễn Huệ",
+                    "📍 Khu Công Nghệ Cao Hòa Lạc, Hà Nội"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showAddress = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.addressLine = text;
+                        if (autoEnabled) model.showAddress = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel.replaceFirst("^📍\\s*", "");
+                    }
+                }
+        );
+
+        // Field 4: Project / Company
+        addInteractiveFieldCard(
+                act, body,
+                "Project / Company Name",
+                "Enter project or company name...",
+                model.showProject,
+                model.projectName,
+                new String[]{
+                    "Metro Line 1 Station B",
+                    "District 1 Patrol Route",
+                    "Logistics Hub Warehouse C",
+                    "NextAI Smart Infrastructure",
+                    "Solar Farm Phase 2"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showProject = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.projectName = text;
+                        if (autoEnabled) model.showProject = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 5: Area / Department
+        addInteractiveFieldCard(
+                act, body,
+                "Area / Department / Zone",
+                "Enter area, zone, or department...",
+                model.showArea,
+                model.areaName,
+                new String[]{
+                    "Zone A - Main Structure",
+                    "Basement B2 - MEP",
+                    "Tower 1 - Floor 12",
+                    "Gate 3 - Security Post",
+                    "Warehouse Receiving Bay"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showArea = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.areaName = text;
+                        if (autoEnabled) model.showArea = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 6: Inspector / Worker Name
+        addInteractiveFieldCard(
+                act, body,
+                "Inspector / Worker / Driver Name",
+                "Enter worker or inspector name...",
+                model.showInspector,
+                model.inspectorName,
+                new String[]{
+                    "Eng. Nguyen Van A",
+                    "Supervisor Tran Minh B",
+                    "Inspector Le Hoang C",
+                    "Security Team Alpha",
+                    "Delivery Driver #108"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showInspector = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.inspectorName = text;
+                        if (autoEnabled) model.showInspector = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 7: Weather & Temperature
+        addInteractiveFieldCard(
+                act, body,
+                "Weather & Temperature",
+                "Enter weather & temperature...",
+                model.showWeather,
+                model.weatherLine,
+                new String[]{
+                    "29°C Sunny",
+                    "32°C Clear Sky",
+                    "26°C Partly Cloudy",
+                    "24°C Light Rain",
+                    "84°F Sunny",
+                    "21°C Cool Breeze"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showWeather = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.weatherLine = text;
+                        if (autoEnabled) model.showWeather = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 8: Brand Logo Text (AI Cutout Badge)
+        addInteractiveFieldCard(
+                act, body,
+                "Brand Logo Badge (AI Cutout)",
+                "Enter company brand badge text...",
+                model.showBrandLogo,
+                model.brandLogoText,
+                new String[]{
+                    "NEXTAI CORP",
+                    "VINCONS QA/QC",
+                    "COTECCONS SITE",
+                    "DHL EXPRESS",
+                    "SECURITAS 24/7"
+                },
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showBrandLogo = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.brandLogoText = text;
+                        if (autoEnabled) model.showBrandLogo = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 9: Compass Orientation
+        addInteractiveFieldCard(
+                act, body,
+                "Compass Direction",
+                "Enter compass heading...",
+                model.showCompass,
+                model.compassLine,
+                new String[]{"142° SE", "0° N", "45° NE", "90° E", "180° S", "270° W"},
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showCompass = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.compassLine = text;
+                        if (autoEnabled) model.showCompass = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // Field 10: Altitude ASL
+        addInteractiveFieldCard(
+                act, body,
+                "Altitude (Elevation ASL)",
+                "Enter altitude...",
+                model.showAltitude,
+                model.altitudeLine,
+                new String[]{"18.4m ASL", "45.0m ASL", "120.5m ASL", "350.0m ASL"},
+                new FieldSyncCallback() {
+                    @Override
+                    public void onToggleChanged(boolean checked) {
+                        model.showAltitude = checked;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public void onTextChanged(String text, boolean autoEnabled) {
+                        model.altitudeLine = text;
+                        if (autoEnabled) model.showAltitude = true;
+                        notifyChange.run();
+                    }
+                    @Override
+                    public String resolveChipValue(String chipLabel) {
+                        return chipLabel;
+                    }
+                }
+        );
+
+        // =====================================================================================
+        // SECTION 3: USER-ADDED CUSTOM EXTRA FIELDS ("+ ADD CUSTOM FIELD")
+        // =====================================================================================
+        addSectionHeader(act, body, "➕ Custom Extra Fields (Add Your Own Rows)");
+
+        final LinearLayout customFieldsContainer = new LinearLayout(act);
+        customFieldsContainer.setOrientation(LinearLayout.VERTICAL);
+        body.addView(customFieldsContainer);
+
+        final Runnable renderCustomFields = new Runnable() {
+            @Override
+            public void run() {
+                customFieldsContainer.removeAllViews();
+                for (int i = 0; i < model.customExtraFields.size(); i++) {
+                    final int idx = i;
+                    String item = model.customExtraFields.get(i);
+                    LinearLayout r = new LinearLayout(act);
+                    r.setOrientation(LinearLayout.HORIZONTAL);
+                    r.setGravity(Gravity.CENTER_VERTICAL);
+                    r.setBackground(roundedRect(0xFFF0F9FF, 8, dp(act, 1), 0xFFBAE6FD, act));
+                    r.setPadding(dp(act, 10), dp(act, 6), dp(act, 10), dp(act, 6));
+                    LinearLayout.LayoutParams rLp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    rLp2.setMargins(0, 0, 0, dp(act, 6));
+                    r.setLayoutParams(rLp2);
+
+                    TextView tv = new TextView(act);
+                    tv.setText("✓ " + item);
+                    tv.setTextSize(13f);
+                    tv.setTypeface(Typeface.DEFAULT_BOLD);
+                    tv.setTextColor(0xFF0369A1);
+                    r.addView(tv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+                    TextView delBtn = new TextView(act);
+                    delBtn.setText("✕ Remove");
+                    delBtn.setTextSize(11.5f);
+                    delBtn.setTypeface(Typeface.DEFAULT_BOLD);
+                    delBtn.setTextColor(0xFFDC2626);
+                    delBtn.setPadding(dp(act, 8), dp(act, 2), dp(act, 4), dp(act, 2));
+                    delBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if (idx >= 0 && idx < model.customExtraFields.size()) {
+                                model.customExtraFields.remove(idx);
+                                run();
+                                notifyChange.run();
+                            }
+                        }
+                    });
+                    r.addView(delBtn);
+                    customFieldsContainer.addView(r);
+                }
+            }
         };
-        for (int i = 0; i < quickNotes.length; i++) {
-            final String qn = quickNotes[i];
+        renderCustomFields.run();
+
+        // Add Custom Field Input Row + Quick Custom Field Chips
+        LinearLayout addCustomRow = new LinearLayout(act);
+        addCustomRow.setOrientation(LinearLayout.HORIZONTAL);
+        addCustomRow.setGravity(Gravity.CENTER_VERTICAL);
+        addCustomRow.setPadding(0, dp(act, 2), 0, dp(act, 6));
+
+        final EditText customInputEt = new EditText(act);
+        customInputEt.setHint("e.g. Contractor: NextAI Build");
+        customInputEt.setTextSize(13f);
+        customInputEt.setTextColor(0xFF222222);
+        customInputEt.setHintTextColor(0xFF999999);
+        customInputEt.setSingleLine(true);
+        customInputEt.setBackground(roundedRect(0xFFF5F5F5, 6, dp(act, 1), 0xFFDEDEDE, act));
+        customInputEt.setPadding(dp(act, 10), dp(act, 7), dp(act, 10), dp(act, 7));
+        LinearLayout.LayoutParams ciLp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        ciLp.setMargins(0, 0, dp(act, 8), 0);
+        customInputEt.setLayoutParams(ciLp);
+        addCustomRow.addView(customInputEt);
+
+        TextView addCustomBtn = new TextView(act);
+        addCustomBtn.setText("+ Add Field");
+        addCustomBtn.setTextSize(12.5f);
+        addCustomBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        addCustomBtn.setTextColor(0xFFFFFFFF);
+        addCustomBtn.setBackground(roundedRect(0xFF0093FF, 6, 0, 0, act));
+        addCustomBtn.setPadding(dp(act, 12), dp(act, 8), dp(act, 12), dp(act, 8));
+        addCustomBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String val = customInputEt.getText().toString().trim();
+                if (!val.isEmpty()) {
+                    model.customExtraFields.add(val);
+                    customInputEt.setText("");
+                    renderCustomFields.run();
+                    notifyChange.run();
+                } else {
+                    Toast.makeText(act, "Type a custom field or tap a preset chip below", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        addCustomRow.addView(addCustomBtn);
+        body.addView(addCustomRow);
+
+        HorizontalScrollView customPresetScroll = new HorizontalScrollView(act);
+        customPresetScroll.setHorizontalScrollBarEnabled(false);
+        LinearLayout customPresetRow = new LinearLayout(act);
+        customPresetRow.setOrientation(LinearLayout.HORIZONTAL);
+        customPresetRow.setPadding(0, dp(act, 2), 0, dp(act, 10));
+        final String[] customFieldPresets = new String[]{
+            "Contractor: NextAI Build",
+            "Batch ID: #STL-2026-09",
+            "Shift: Morning Shift",
+            "Vehicle: 29A-886.88",
+            "Order ID: #ORD-99214",
+            "Safety Score: 100/100"
+        };
+        for (int i = 0; i < customFieldPresets.length; i++) {
+            final String preset = customFieldPresets[i];
             TextView chip = new TextView(act);
-            chip.setText(qn);
+            chip.setText("+ " + preset);
             chip.setTextSize(11.5f);
-            chip.setTextColor(0xFF0070F4);
-            chip.setBackground(roundedRect(0xFFE8F2FF, 14, dp(act, 1), 0xFF93C5FD, act));
-            chip.setPadding(dp(act, 10), dp(act, 5), dp(act, 10), dp(act, 5));
+            chip.setTextColor(0xFF0369A1);
+            chip.setBackground(roundedRect(0xFFE0F2FE, 12, dp(act, 1), 0xFF7DD3FC, act));
+            chip.setPadding(dp(act, 10), dp(act, 4), dp(act, 10), dp(act, 4));
             LinearLayout.LayoutParams cLp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             cLp2.setMargins(0, 0, dp(act, 6), 0);
             chip.setLayoutParams(cLp2);
             chip.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    model.customNote = qn;
-                    model.showNotes = true;
-                    if (onUpdate != null) onUpdate.run();
-                    Toast.makeText(act, "Applied Note: " + qn, Toast.LENGTH_SHORT).show();
+                    if (!model.customExtraFields.contains(preset)) {
+                        model.customExtraFields.add(preset);
+                        renderCustomFields.run();
+                        notifyChange.run();
+                    }
                 }
             });
-            qRow.addView(chip);
+            customPresetRow.addView(chip);
         }
-        qScroll.addView(qRow);
-        body.addView(qScroll);
+        customPresetScroll.addView(customPresetRow);
+        body.addView(customPresetScroll);
 
-        // Editable Text Inputs (Live Auto-Resize & Fill Text)
-        addEditField(act, body, "Title / Header (Auto-Fit Badge)", model.customTitle, new TextCallback() {
-            @Override
-            public void onText(String s) {
-                model.customTitle = s;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addEditField(act, body, "Project / Company", model.projectName, new TextCallback() {
-            @Override
-            public void onText(String s) {
-                model.projectName = s;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addEditField(act, body, "Area / Department", model.areaName, new TextCallback() {
-            @Override
-            public void onText(String s) {
-                model.areaName = s;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addEditField(act, body, "Inspector / Worker Name", model.inspectorName, new TextCallback() {
-            @Override
-            public void onText(String s) {
-                model.inspectorName = s;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addEditField(act, body, "Brand Logo Text (AI Cutout Badge)", model.brandLogoText, new TextCallback() {
-            @Override
-            public void onText(String s) {
-                model.brandLogoText = s;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addEditField(act, body, "Notes / Description", model.customNote, new TextCallback() {
-            @Override
-            public void onText(String s) {
-                model.customNote = s;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addEditField(act, body, "Address", model.addressLine, new TextCallback() {
-            @Override
-            public void onText(String s) {
-                model.addressLine = s;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
+        // =====================================================================================
+        // SECTION 4: ADDITIONAL STAMP COMPONENT SWITCHES
+        // =====================================================================================
+        addSectionHeader(act, body, "⚙️ Stamp Verification & Map Components");
 
-        // Field Switches (matching default_watermarks_global.json items)
-        addSwitchRow(act, body, "Time (100% Real-Time Verified)", model.showTime, new CompoundButton.OnCheckedChangeListener() {
+        addSwitchRow(act, body, "Time & Date (100% Real-Time Verified)", model.showTime, new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {
                 model.showTime = checked;
-                if (onUpdate != null) onUpdate.run();
+                notifyChange.run();
             }
         });
-        addSwitchRow(act, body, "Address", model.showAddress, new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton b, boolean checked) {
-                model.showAddress = checked;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addSwitchRow(act, body, "Lat/Long (" + model.getFormattedCoordinates() + ")", model.showLatLong, new CompoundButton.OnCheckedChangeListener() {
+        addSwitchRow(act, body, "Lat/Long Coordinates (" + model.getFormattedCoordinates() + ")", model.showLatLong, new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {
                 model.showLatLong = checked;
-                if (onUpdate != null) onUpdate.run();
+                notifyChange.run();
             }
         });
-        addSwitchRow(act, body, "Weather (" + model.weatherLine + ")", model.showWeather, new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton b, boolean checked) {
-                model.showWeather = checked;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addSwitchRow(act, body, "Satellite Mini-Map", model.showMap, new CompoundButton.OnCheckedChangeListener() {
+        addSwitchRow(act, body, "Satellite Mini-Map Box", model.showMap, new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {
                 model.showMap = checked;
-                if (onUpdate != null) onUpdate.run();
+                notifyChange.run();
             }
         });
-        addSwitchRow(act, body, "Compass (" + model.compassLine + ")", model.showCompass, new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton b, boolean checked) {
-                model.showCompass = checked;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addSwitchRow(act, body, "Altitude (" + model.altitudeLine + ")", model.showAltitude, new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton b, boolean checked) {
-                model.showAltitude = checked;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addSwitchRow(act, body, "Notes", model.showNotes, new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton b, boolean checked) {
-                model.showNotes = checked;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addSwitchRow(act, body, "Brand Logo Badge (AI Cutout)", model.showBrandLogo, new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton b, boolean checked) {
-                model.showBrandLogo = checked;
-                if (onUpdate != null) onUpdate.run();
-            }
-        });
-        addSwitchRow(act, body, "QR Code Stamp", model.showQrCode, new CompoundButton.OnCheckedChangeListener() {
+        addSwitchRow(act, body, "QR Code Verification Badge", model.showQrCode, new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {
                 model.showQrCode = checked;
-                if (onUpdate != null) onUpdate.run();
+                notifyChange.run();
             }
         });
-        addSwitchRow(act, body, "Show Time Now Logo", model.showTimeNowLogo, new CompoundButton.OnCheckedChangeListener() {
+        addSwitchRow(act, body, "Show Time Now Verified Footer", model.showTimeNowLogo, new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {
                 model.showTimeNowLogo = checked;
-                if (onUpdate != null) onUpdate.run();
+                notifyChange.run();
             }
         });
-        addSwitchRow(act, body, "Photo Code: verify authenticity", model.showPhotoCode, new CompoundButton.OnCheckedChangeListener() {
+        addSwitchRow(act, body, "Anti-Fake Photo Code: " + model.currentPhotoCode, model.showPhotoCode, new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton b, boolean checked) {
                 model.showPhotoCode = checked;
-                if (onUpdate != null) onUpdate.run();
+                notifyChange.run();
             }
         });
 
         // Share Template Code Button (watermark/share/public/register)
         TextView shareCodeBtn = new TextView(act);
-        shareCodeBtn.setText("🔗 Share Template Code (TN-WM-" + model.activeTemplate.id.toUpperCase() + ")");
-        shareCodeBtn.setTextSize(14);
+        String tmplId = (model.activeTemplate != null) ? model.activeTemplate.id.toUpperCase() : "34";
+        shareCodeBtn.setText("🔗 Share Template Code (TN-WM-" + tmplId + ")");
+        shareCodeBtn.setTextSize(13.5f);
         shareCodeBtn.setTypeface(Typeface.DEFAULT_BOLD);
         shareCodeBtn.setTextColor(0xFF0070F4);
         shareCodeBtn.setGravity(Gravity.CENTER);
         shareCodeBtn.setBackground(roundedRect(0xFFE8F2FF, 8, dp(act, 1), 0xFF0070F4, act));
-        shareCodeBtn.setPadding(dp(act, 12), dp(act, 12), dp(act, 12), dp(act, 12));
+        shareCodeBtn.setPadding(dp(act, 12), dp(act, 11), dp(act, 12), dp(act, 11));
         LinearLayout.LayoutParams scLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         scLp.setMargins(0, dp(act, 12), 0, dp(act, 4));
         shareCodeBtn.setLayoutParams(scLp);
         shareCodeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(act, "Template Share Code Copied: TN-WM-" + model.activeTemplate.id.toUpperCase(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(act, "Template Share Code Copied: TN-WM-" + (model.activeTemplate != null ? model.activeTemplate.id.toUpperCase() : "34"), Toast.LENGTH_SHORT).show();
             }
         });
         body.addView(shareCodeBtn);
 
         scroll.addView(body);
-        root.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (screenH * 0.68f)));
+        root.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (screenH * 0.54f)));
 
         dlg.setContentView(root);
         Window w = dlg.getWindow();
@@ -690,60 +1407,209 @@ public class OriginalDialogs {
             w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             w.setGravity(Gravity.BOTTOM);
+            w.setDimAmount(0.18f);
         }
         dlg.show();
     }
 
-    private interface TextCallback {
-        void onText(String s);
+    private interface FieldSyncCallback {
+        void onToggleChanged(boolean checked);
+        void onTextChanged(String text, boolean autoEnabled);
+        String resolveChipValue(String chipLabel);
     }
 
-    private static void addEditField(Context ctx, LinearLayout parent, String label, String initial, final TextCallback cb) {
+    private static void addSectionHeader(Context ctx, LinearLayout parent, String title) {
         TextView tv = new TextView(ctx);
-        tv.setText(label);
-        tv.setTextSize(12);
-        tv.setTextColor(0xFF666666);
+        tv.setText(title);
+        tv.setTextSize(13.5f);
+        tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setTextColor(0xFF0070F4);
+        tv.setPadding(0, dp(ctx, 6), 0, dp(ctx, 6));
         parent.addView(tv);
+    }
 
-        EditText et = new EditText(ctx);
-        et.setText(initial);
-        et.setTextSize(14);
-        et.setTextColor(0xFF222222);
+    private static TextView buildOptionPill(Context ctx, String text, boolean active) {
+        TextView pill = new TextView(ctx);
+        pill.setText(text);
+        pill.setTextSize(11.5f);
+        pill.setTypeface(active ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+        pill.setTextColor(active ? 0xFFFFFFFF : 0xFF333333);
+        pill.setGravity(Gravity.CENTER);
+        pill.setBackground(roundedRect(active ? 0xFF0093FF : 0xFFF0F0F0, 6, dp(ctx, 1), active ? 0xFF0093FF : 0xFFDEDEDE, ctx));
+        pill.setPadding(dp(ctx, 8), dp(ctx, 7), dp(ctx, 8), dp(ctx, 7));
+        return pill;
+    }
+
+    private static void addInteractiveFieldCard(
+            final Context ctx,
+            LinearLayout parent,
+            String label,
+            String hint,
+            boolean initialChecked,
+            String initialText,
+            String[] suggestions,
+            final FieldSyncCallback cb) {
+
+        LinearLayout card = new LinearLayout(ctx);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(roundedRect(0xFFFAFAFA, 8, dp(ctx, 1), 0xFFE5E7EB, ctx));
+        card.setPadding(dp(ctx, 10), dp(ctx, 8), dp(ctx, 10), dp(ctx, 8));
+        LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cardLp.setMargins(0, 0, 0, dp(ctx, 10));
+        card.setLayoutParams(cardLp);
+
+        // Top Row: Checkbox Icon + Label + Switch
+        LinearLayout topRow = new LinearLayout(ctx);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        topRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        final ImageView checkIv = new ImageView(ctx);
+        checkIv.setImageResource(initialChecked ? R.drawable.check_box_select : R.drawable.check_box_unselect);
+        topRow.addView(checkIv, new LinearLayout.LayoutParams(dp(ctx, 18), dp(ctx, 18)));
+
+        TextView labelTv = new TextView(ctx);
+        labelTv.setText("  " + label);
+        labelTv.setTextSize(13.5f);
+        labelTv.setTypeface(Typeface.DEFAULT_BOLD);
+        labelTv.setTextColor(0xFF222222);
+        topRow.addView(labelTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        final Switch sw = new Switch(ctx);
+        sw.setChecked(initialChecked);
+        final boolean[] suppressSwitchCallback = new boolean[]{false};
+        sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                checkIv.setImageResource(isChecked ? R.drawable.check_box_select : R.drawable.check_box_unselect);
+                if (!suppressSwitchCallback[0]) {
+                    cb.onToggleChanged(isChecked);
+                }
+            }
+        });
+        topRow.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sw.setChecked(!sw.isChecked());
+            }
+        });
+        topRow.addView(sw);
+        card.addView(topRow);
+
+        // Editable Input Box
+        final EditText et = new EditText(ctx);
+        et.setText(initialText != null ? initialText : "");
+        et.setHint(hint);
+        et.setTextSize(13.5f);
+        et.setTextColor(0xFF111111);
+        et.setHintTextColor(0xFF999999);
         et.setSingleLine(true);
-        et.setBackground(roundedRect(0xFFF5F5F5, 6, dp(ctx, 1), 0xFFE0E0E0, ctx));
-        et.setPadding(dp(ctx, 10), dp(ctx, 8), dp(ctx, 10), dp(ctx, 8));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, dp(ctx, 4), 0, dp(ctx, 10));
-        et.setLayoutParams(lp);
+        et.setBackground(roundedRect(0xFFFFFFFF, 6, dp(ctx, 1), 0xFFD1D5DB, ctx));
+        et.setPadding(dp(ctx, 10), dp(ctx, 7), dp(ctx, 10), dp(ctx, 7));
+        LinearLayout.LayoutParams etLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        etLp.setMargins(0, dp(ctx, 6), 0, dp(ctx, 4));
+        et.setLayoutParams(etLp);
+
+        final boolean[] programmaticTextChange = new boolean[]{false};
         et.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) {
-                cb.onText(s.toString());
+                String text = s.toString();
+                boolean shouldAutoEnable = !text.trim().isEmpty() && !sw.isChecked();
+                if (shouldAutoEnable) {
+                    suppressSwitchCallback[0] = true;
+                    sw.setChecked(true);
+                    checkIv.setImageResource(R.drawable.check_box_select);
+                    suppressSwitchCallback[0] = false;
+                }
+                if (!programmaticTextChange[0]) {
+                    cb.onTextChanged(text, shouldAutoEnable || sw.isChecked());
+                }
             }
         });
-        parent.addView(et);
+        card.addView(et);
+
+        // Suggested 1-Tap Chips Row
+        if (suggestions != null && suggestions.length > 0) {
+            HorizontalScrollView chipScroll = new HorizontalScrollView(ctx);
+            chipScroll.setHorizontalScrollBarEnabled(false);
+            LinearLayout chipRow = new LinearLayout(ctx);
+            chipRow.setOrientation(LinearLayout.HORIZONTAL);
+            chipRow.setPadding(0, dp(ctx, 2), 0, dp(ctx, 2));
+
+            for (int i = 0; i < suggestions.length; i++) {
+                final String sug = suggestions[i];
+                boolean isAiChip = sug.startsWith("✨");
+                TextView chip = new TextView(ctx);
+                chip.setText(sug);
+                chip.setTextSize(11f);
+                chip.setTypeface(isAiChip ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+                chip.setTextColor(isAiChip ? 0xFF6D28D9 : 0xFF0070F4);
+                chip.setBackground(roundedRect(
+                        isAiChip ? 0xFFF3E8FF : 0xFFE8F2FF,
+                        12, dp(ctx, 1),
+                        isAiChip ? 0xFFC084FC : 0xFF93C5FD, ctx));
+                chip.setPadding(dp(ctx, 9), dp(ctx, 4), dp(ctx, 9), dp(ctx, 4));
+                LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                cLp.setMargins(0, 0, dp(ctx, 6), 0);
+                chip.setLayoutParams(cLp);
+                chip.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String resolved = cb.resolveChipValue(sug);
+                        programmaticTextChange[0] = true;
+                        et.setText(resolved);
+                        et.setSelection(resolved.length());
+                        programmaticTextChange[0] = false;
+
+                        suppressSwitchCallback[0] = true;
+                        sw.setChecked(true);
+                        checkIv.setImageResource(R.drawable.check_box_select);
+                        suppressSwitchCallback[0] = false;
+
+                        cb.onTextChanged(resolved, true);
+                    }
+                });
+                chipRow.addView(chip);
+            }
+            chipScroll.addView(chipRow);
+            card.addView(chipScroll);
+        }
+
+        parent.addView(card);
     }
 
-    private static void addSwitchRow(Context ctx, LinearLayout parent, String title, boolean checked, CompoundButton.OnCheckedChangeListener listener) {
+    private static void addSwitchRow(Context ctx, LinearLayout parent, String title, boolean checked, final CompoundButton.OnCheckedChangeListener listener) {
         LinearLayout row = new LinearLayout(ctx);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, dp(ctx, 10), 0, dp(ctx, 10));
 
-        ImageView checkIv = new ImageView(ctx);
+        final ImageView checkIv = new ImageView(ctx);
         checkIv.setImageResource(checked ? R.drawable.check_box_select : R.drawable.check_box_unselect);
         row.addView(checkIv, new LinearLayout.LayoutParams(dp(ctx, 20), dp(ctx, 20)));
 
         TextView tv = new TextView(ctx);
         tv.setText("  " + title);
-        tv.setTextSize(15);
+        tv.setTextSize(14.5f);
         tv.setTextColor(0xFF222222);
         row.addView(tv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        Switch sw = new Switch(ctx);
+        final Switch sw = new Switch(ctx);
         sw.setChecked(checked);
-        sw.setOnCheckedChangeListener(listener);
+        sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                checkIv.setImageResource(isChecked ? R.drawable.check_box_select : R.drawable.check_box_unselect);
+                if (listener != null) listener.onCheckedChanged(buttonView, isChecked);
+            }
+        });
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sw.setChecked(!sw.isChecked());
+            }
+        });
         row.addView(sw);
         parent.addView(row);
 

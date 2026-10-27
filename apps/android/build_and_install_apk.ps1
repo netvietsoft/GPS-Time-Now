@@ -71,13 +71,15 @@ function Invoke-NativeTool {
     )
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
+    $outputLines = @()
     try {
-        & $Command 2>&1 | ForEach-Object { $_ } | Out-Null
+        $outputLines = & $Command 2>&1 | ForEach-Object { "$_" }
         $code = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prevEap
     }
     if ($code -ne 0) {
+        foreach ($line in $outputLines) { Write-Host "  [ERR] $line" }
         throw "$StepName failed with exit code $code"
     }
 }
