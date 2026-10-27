@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.22.1)
+cmake_minimum_required(VERSION 3.22.1)
 project("NextAI_native_reconstructed" LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,7 +7,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 add_compile_options(-ffunction-sections -fdata-sections)
-add_link_options(-fuse-ld=lld -Wl,--exclude-libs,ALL -Wl,--gc-sections)
+add_link_options(-fuse-ld=lld -Wl,--exclude-libs,ALL -Wl,--gc-sections -Wl,-z,max-page-size=16384)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -79,16 +79,16 @@ target_compile_definitions(nextaimediav8 PRIVATE NEXTAI_BUILD_MEDIAV8=1)
 target_link_libraries(nextaimediav8 ${NEXTAI_COMMON_LIBS})
 
 # ==============================================================================
-# 3. libNEXTAI_videoedit.so
-#    FFmpeg Video/Audio Muxer, YUV420 Decoder & CLI Command Executor
+# 3. libnextai_videoedit.so
+#    MediaCodec Video/Audio Muxer & YUV420 Transcoder
 # ==============================================================================
 add_library(
-    NEXTAI_videoedit
+    nextai_videoedit
     SHARED
     src/nextai_media_and_security_jni.cpp
 )
-target_compile_definitions(NEXTAI_videoedit PRIVATE NEXTAI_BUILD_VIDEOEDIT=1)
-target_link_libraries(NEXTAI_videoedit ${NEXTAI_COMMON_LIBS})
+target_compile_definitions(nextai_videoedit PRIVATE NEXTAI_BUILD_VIDEOEDIT=1)
+target_link_libraries(nextai_videoedit ${NEXTAI_COMMON_LIBS})
 
 # ==============================================================================
 # 4. libnative-lib.so

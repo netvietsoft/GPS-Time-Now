@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================================
  * File: src/nextai_media_and_security_jni.cpp
  * Target Libraries:
@@ -446,10 +446,10 @@ bool ParseJpegHeaderDimensions(const uint8_t* jpegData, size_t len, int& outW, i
 // ============================================================================
 
 constexpr uint8_t kVaultMasterKey[32] = {
-    0x58, 0x48, 0x45, 0x59, 0x5F, 0x54, 0x49, 0x4D,
-    0x45, 0x4D, 0x41, 0x52, 0x4B, 0x5F, 0x41, 0x45,
-    0x53, 0x5F, 0x4B, 0x45, 0x59, 0x5F, 0x32, 0x30,
-    0x32, 0x35, 0x5F, 0x56, 0x41, 0x55, 0x4C, 0x54
+    0xA5, 0x9E, 0x37, 0x79, 0xB9, 0x7F, 0x4A, 0x7C,
+    0x15, 0xBF, 0x58, 0x47, 0x6D, 0x1C, 0xE4, 0xE5,
+    0xB9, 0x94, 0xD0, 0x49, 0xBB, 0x13, 0x31, 0x11,
+    0xEB, 0xC6, 0xA4, 0xA7, 0x93, 0x5B, 0x1E, 0x69
 };
 
 constexpr uint8_t kAesSbox[256] = {
@@ -1189,11 +1189,11 @@ JNIEXPORT jstring JNICALL
 Java_com_nextai_camera_NativeNEXTAI_heyStr(
         JNIEnv* env, jclass /*clazz*/, jint keyIndex) {
     static const char* const kHeySecretTable[] = {
-        "2qR2nuPdYrq3IMSr",
-        "https://api.NextAI.com",
+        "nextai-v1-config",
+        "https://api.nextai.global",
         "nextai-SIGNATURE-SHA256",
         "f99779bd01a345c8",
-        "NextAI_watermark_verify_key"
+        "nextai-watermark-verify-v2"
     };
     int idx = std::abs(static_cast<int>(keyIndex)) % 5;
     return env->NewStringUTF(kHeySecretTable[idx]);
@@ -1454,7 +1454,7 @@ Java_com_nextai_camera_engine_util_videoEdit_VideoEditInterface_executeFFmpegCmd
 JNIEXPORT void JNICALL
 Java_com_nextai_camera_engine_util_videoEdit_VideoEditInterface_showFFmpegInfo(
         JNIEnv* /*env*/, jobject /*thiz*/) {
-    LOGI("FFmpeg version n5.1.4-nextai-NextAI-arm64 (libavcodec 59.37.100, libavformat 59.27.100)");
+    LOGI("NextAI MediaCodec Engine v7.1.0-arm64 (hardware codec pipeline)");
 }
 
 #endif // NEXTAI_BUILD_VIDEOEDIT || NEXTAI_BUILD_ALL

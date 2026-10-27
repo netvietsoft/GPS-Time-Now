@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Release default: HTTPS-only, cleartext HTTP disabled (AUD-006 / PROD-08) -->
+    <!-- Release default: HTTPS-only, cleartext HTTP disabled (AUD-006 / PROD-08 / Google Play Device & Network Abuse Policy) -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
@@ -12,11 +12,5 @@
         <domain includeSubdomains="true">nextai.technology</domain>
         <domain includeSubdomains="true">nextai.solution</domain>
         <domain includeSubdomains="true">nextai.global</domain>
-    </domain-config>
-    <!-- Local loopback / ADB reverse tunnel only for local development harness -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">127.0.0.1</domain>
-        <domain includeSubdomains="false">localhost</domain>
-        <domain includeSubdomains="false">10.0.2.2</domain>
     </domain-config>
 </network-security-config>

@@ -50,7 +50,7 @@ import com.nextai.camera.ui.theme.NextAiVerifiedEmerald
  * Screen 9 (Report 09 #12): Settings, Account Center, Internal Backend Switcher & AdMob Test Console (`SettingsScreen.kt`).
  * Displays:
  * - Account Profile & `AdFreePass` Status
- * - Internal Backend Endpoint Switcher (`http://10.0.2.2:4580/nextai/v1/`, `http://192.168.1.100:4580/nextai/v1/`, `http://localhost:4580/nextai/v1/`) + Network Benchmark (`network/benchmark`)
+ * - Internal Backend Endpoint Switcher (`https://api.nextai.global/nextai/v1/`) + Network Benchmark (`network/benchmark`)
  * - Camera Dual-Save & Localization (`values/strings.xml` + `values-vi/strings.xml`)
  * - Official Google AdMob Test Ad Units Verification Console (`Task.txt` #4)
  */

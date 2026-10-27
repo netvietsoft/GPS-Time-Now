@@ -15,8 +15,8 @@ public class NextAiApplication extends Application {
             "jpeg",
             "mp3lame",
             "ffmpeg",
-            "xheymediav8",
-            "xhey_videoedit",
+            "nextaimediav8",
+            "nextai_videoedit",
             "native-lib",
             "nnpackage-f99779bd"
         };

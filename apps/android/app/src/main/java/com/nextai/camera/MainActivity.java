@@ -2587,7 +2587,7 @@ public class MainActivity extends Activity {
         return compositeBmp;
     }
 
-    // Captures the real Camera2 frame + composites the live Watermark + saves XHEY1 Dual-Stream JPEG
+    // Captures the real Camera2 frame + composites the live Watermark + saves NXAI1 Dual-Stream JPEG
     private void captureWatermarkedPhoto() {
         playShutterSound();
 

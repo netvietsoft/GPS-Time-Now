@@ -2538,7 +2538,7 @@ public class OriginalDialogs {
                             + "\n• Live Anti-Fake Code: " + model.currentPhotoCode
                             + "\n• NTP Clock: " + model.getFormattedTime() + " (" + model.getFormattedDateShort() + ")"
                             + "\n• GPS Coordinates: " + model.getFormattedCoordinates()
-                            + "\n• Dual-Stream JpegPacker XHEY1: ARMED");
+                            + "\n• Dual-Stream JpegPacker NXAI1: ARMED");
                 }
             }
         });
@@ -3632,7 +3632,7 @@ public class OriginalDialogs {
                             if (b != null) photoIv.setImageBitmap(b);
                             actionOverlayBtn.setText(p.watermarkRemoved ? "Restore Watermark" : "Remove Watermark");
                             Toast.makeText(act, p.watermarkRemoved
-                                    ? "Extracted clean unwatermarked JPEG from XHEY1 dual-stream trailer!"
+                                    ? "Extracted clean unwatermarked JPEG from NXAI1 dual-stream trailer!"
                                     : "Restored watermarked composite JPEG!", Toast.LENGTH_SHORT).show();
                         }
                     });
@@ -3882,19 +3882,29 @@ public class OriginalDialogs {
         ctaBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (model != null) {
-                    if (isBiz[0]) {
-                        model.isTeamspaceBusiness = true;
-                        model.isVipPlus = true;
-                    } else {
-                        model.isVipPlus = true;
+                PlayBillingManager.launchBillingFlow(act, isBiz[0], selectedSku[0], new PlayBillingManager.PurchaseCallback() {
+                    @Override
+                    public void onPurchaseSuccess(String productId, String orderId) {
+                        if (model != null) {
+                            if (isBiz[0]) {
+                                model.isTeamspaceBusiness = true;
+                                model.isVipPlus = true;
+                            } else {
+                                model.isVipPlus = true;
+                            }
+                            model.earnVipDays += (selectedSku[0] == 1 ? 30 : 365);
+                            model.saveState(act);
+                        }
+                        if (onUpdate != null) onUpdate.run();
+                        Toast.makeText(act, (isBiz[0] ? "👑 Teamspace Business VIP Activated!" : "👑 Time Now Plus VIP Activated!") + " [Play Billing v9.1.0 | " + orderId + "]", Toast.LENGTH_SHORT).show();
+                        dlg.dismiss();
                     }
-                    model.earnVipDays += (selectedSku[0] == 1 ? 30 : 365);
-                    model.saveState(act);
-                }
-                if (onUpdate != null) onUpdate.run();
-                Toast.makeText(act, isBiz[0] ? "👑 Teamspace Business VIP Activated!" : "👑 Time Now Plus VIP Activated!", Toast.LENGTH_SHORT).show();
-                dlg.dismiss();
+
+                    @Override
+                    public void onPurchaseError(int responseCode, String debugMessage) {
+                        Toast.makeText(act, "Play Billing v9.1.0 Error: " + debugMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
         root.addView(ctaBtn);
@@ -3916,7 +3926,7 @@ public class OriginalDialogs {
                     tabBiz.setTextColor(0xFF666666);
                     String[] plusFeats = new String[]{
                         "✓ Custom Brand Logo (AI Cutout) on All Watermarks",
-                        "✓ Lossless Original Photo Backup (JpegPacker XHEY1)",
+                        "✓ Lossless Original Photo Backup (JpegPacker NXAI1)",
                         "✓ Remove Ads & Unlock All 14 Pro Templates",
                         "✓ Batch Export PDF Work Reports, Excel & KMZ",
                         "✓ Priority Anti-Fake Photo Code Verification"

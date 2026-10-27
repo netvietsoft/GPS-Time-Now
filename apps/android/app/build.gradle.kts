@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.nextai.camera"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.nextai.camera"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 100028100
         versionName = "10.0.281"
 
@@ -28,13 +28,17 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += listOf("-std=c++17", "-fvisibility=hidden", "-ffunction-sections", "-fdata-sections")
-                arguments += listOf("-DANDROID_STL=c++_shared")
+                arguments += listOf(
+                    "-DANDROID_STL=c++_shared",
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                    "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
+                )
             }
         }
 
-        buildConfigField("String", "BACKEND_EMULATOR_URL", "\"http://10.0.2.2:4580/nextai/v1/\"")
-        buildConfigField("String", "BACKEND_LAN_URL", "\"http://192.168.1.100:4580/nextai/v1/\"")
-        buildConfigField("String", "BACKEND_LOCAL_URL", "\"http://localhost:4580/nextai/v1/\"")
+        buildConfigField("String", "BACKEND_EMULATOR_URL", "\"https://api.nextai.global/nextai/v1/\"")
+        buildConfigField("String", "BACKEND_LAN_URL", "\"https://api.nextai.global/nextai/v1/\"")
+        buildConfigField("String", "BACKEND_LOCAL_URL", "\"https://api.nextai.global/nextai/v1/\"")
         buildConfigField("String", "ADMOB_APP_ID", "\"ca-app-pub-3940256099942544~3347511713\"")
     }
 
@@ -79,12 +83,15 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs {
-            useLegacyPackaging = true
+            useLegacyPackaging = false
         }
     }
 }
 
 dependencies {
+    // Google Play Billing Library (Latest Stable Release 9.1.0 - https://developer.android.com/google/play/billing/release-notes)
+    implementation("com.android.billingclient:billing:9.1.0")
+    implementation("com.android.billingclient:billing-ktx:9.1.0")
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)

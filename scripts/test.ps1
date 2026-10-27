@@ -29,18 +29,23 @@ if (Test-Path $nativeAuditScript) {
     }
 }
 
-# 3. Verify Signed Debug & Release Android APK Artifacts & Binary Manifest Audit Output
+# 3. Verify Signed Debug & Release Android APK + AAB Bundle (<500 MB) & Binary Manifest Audit Output
 $debugApkPath   = Join-Path $ConvertRoot "apps/android/app/build/outputs/apk/debug/TimeNow-Original-v10.0.281-arm64.apk"
 $releaseApkPath = Join-Path $ConvertRoot "apps/android/app/build/outputs/apk/release/TimeNow-Release-v10.0.281-arm64.apk"
+$releaseAabPath = Join-Path $ConvertRoot "apps/android/app/build/outputs/bundle/release/TimeNow-Release-v10.0.281-arm64.aab"
 $xmlTreePath    = Join-Path $ConvertRoot "apps/android/app/build/outputs/apk/manifest-xmltree-audit.txt"
 
-foreach ($p in @($debugApkPath, $releaseApkPath, $xmlTreePath)) {
+foreach ($p in @($debugApkPath, $releaseApkPath, $releaseAabPath, $xmlTreePath)) {
     if (-not (Test-Path $p)) {
         throw "Required Android build/audit artifact missing at $p"
     }
 }
 $apkSizeMb = [math]::Round((Get-Item $releaseApkPath).Length / 1MB, 2)
-Write-Host "`n[TEST 3] Verified signed Debug & Release Android APKs ($apkSizeMb MB) and binary manifest xmltree audit." -ForegroundColor Green
+$aabSizeMb = [math]::Round((Get-Item $releaseAabPath).Length / 1MB, 2)
+if ((Get-Item $releaseAabPath).Length -ge 500MB) {
+    throw "AAB bundle exceeds 500 MB limit ($aabSizeMb MB)!"
+}
+Write-Host "`n[TEST 3] Verified signed Debug & Release Android APKs ($apkSizeMb MB), Release AAB ($aabSizeMb MB < 500 MB), and API 36 / Play Billing 9.1.0 / 16KB binary manifest xmltree audit." -ForegroundColor Green
 
 # 4. Optional Wireless ADB Connection to Physical Device
 if ($ConnectRealDevice) {

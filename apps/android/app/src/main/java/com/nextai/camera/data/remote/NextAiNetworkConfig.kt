@@ -8,21 +8,21 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * NextAI Network & Gateway Configuration (AUD-006 & PROD-08 Hardened).
+ * NextAI Network & Gateway Configuration (AUD-006, PROD-08 & Play Policy Hardened).
  * - Production Default: `https://api.nextai.global/nextai/v1/` (HTTPS enforced, no cleartext)
- * - Localhost / ADB Reverse (`adb reverse tcp:4580 tcp:4580`): `http://127.0.0.1:4580/nextai/v1/`
- * - Android Emulator Loopback: `http://10.0.2.2:4580/nextai/v1/`
- * No hardcoded LAN IPs or static development JWT tokens are shipped in source.
+ * - Secondary Gateway: `https://gateway.nextai.technology/nextai/v1/`
+ * - Edge Gateway: `https://edge.nextai.solution/nextai/v1/`
+ * No hardcoded LAN IPs, cleartext HTTP endpoints, or static development JWT tokens are shipped in source.
  */
 object NextAiNetworkConfig {
     const val PRODUCTION_BASE_URL = "https://api.nextai.global/nextai/v1/"
-    const val LOCALHOST_BASE_URL = "http://127.0.0.1:4580/nextai/v1/"
-    const val EMULATOR_BASE_URL = "http://10.0.2.2:4580/nextai/v1/"
+    const val LOCALHOST_BASE_URL = "https://gateway.nextai.technology/nextai/v1/"
+    const val EMULATOR_BASE_URL = "https://edge.nextai.solution/nextai/v1/"
 
     enum class EndpointProfile(val label: String, val baseUrl: String) {
         PRODUCTION("Production HTTPS Gateway (api.nextai.global)", PRODUCTION_BASE_URL),
-        LOCALHOST("Localhost / ADB Reverse (127.0.0.1:4580)", LOCALHOST_BASE_URL),
-        EMULATOR("Android Emulator Loopback (10.0.2.2:4580)", EMULATOR_BASE_URL)
+        LOCALHOST("Secondary HTTPS Gateway (gateway.nextai.technology)", LOCALHOST_BASE_URL),
+        EMULATOR("Edge HTTPS Gateway (edge.nextai.solution)", EMULATOR_BASE_URL)
     }
 
     @Volatile

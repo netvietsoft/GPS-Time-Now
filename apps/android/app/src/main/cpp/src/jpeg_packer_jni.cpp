@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================================
  * Module: JpegPacker (Reversible Watermark Steganography Engine)
  * Library: libnnpackage-f99779bd.so
@@ -19,7 +19,7 @@
 
 namespace {
 
-constexpr char kPackerMagic[8] = {'X', 'H', 'E', 'Y', 'P', 'K', '0', '1'};
+constexpr char kPackerMagic[8] = {'N', 'X', 'A', 'I', 'P', 'K', '0', '1'};
 constexpr uint8_t kXorKey = 0x5Au;
 constexpr uint32_t kMaxSliceCount = 256u;
 constexpr uint32_t kMaxSlicePayloadBytes = 50u * 1024u * 1024u; // 50 MiB

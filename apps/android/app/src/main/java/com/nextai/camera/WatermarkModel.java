@@ -461,7 +461,7 @@ public class WatermarkModel {
 
             regeneratePhotoCode();
 
-            // Write JPEG & JpegPacker XHEY1 dual-stream files on background thread for 0ms UI latency
+            // Write JPEG & JpegPacker NXAI1 dual-stream files on background thread for 0ms UI latency
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -484,7 +484,7 @@ public class WatermarkModel {
                             fosComp.write(cleanBytes);
                             byte[] lenBytes = ByteBuffer.allocate(4).putInt(cleanBytes.length).array();
                             fosComp.write(lenBytes);
-                            fosComp.write("XHEY1".getBytes("UTF-8"));
+                            fosComp.write("NXAI1".getBytes("UTF-8"));
                         }
                         fosComp.close();
                     } catch (Throwable ignored) {}
@@ -506,9 +506,9 @@ public class WatermarkModel {
             fis.close();
             if (data.length > 9) {
                 String magic = new String(data, data.length - 5, 5, "UTF-8");
-                if ("XHEY1".equals(magic)) {
+                if ("NXAI1".equals(magic)) {
                     int origLen = ByteBuffer.wrap(data, data.length - 9, 4).getInt();
-                    return "VERIFIED AUTHENTIC (XHEY1 Dual-Stream Trailer Present | Embedded Original Clean JPEG = " + (origLen / 1024) + " KB)";
+                    return "VERIFIED AUTHENTIC (NXAI1 Dual-Stream Trailer Present | Embedded Original Clean JPEG = " + (origLen / 1024) + " KB)";
                 }
             }
             return "VERIFIED SINGLE-STREAM JPEG (" + (data.length / 1024) + " KB)";
@@ -834,7 +834,7 @@ public class WatermarkModel {
             c.drawText("TIME NOW — CRYPTOGRAPHIC AUTHENTICITY CERTIFICATE", 28, 42, p);
             p.setTypeface(Typeface.DEFAULT);
             p.setTextSize(11f);
-            c.drawText("Anti-Tamper NTP Time, GPS Geolocation & JpegPacker XHEY1 Dual-Stream Verification", 28, 68, p);
+            c.drawText("Anti-Tamper NTP Time, GPS Geolocation & JpegPacker NXAI1 Dual-Stream Verification", 28, 68, p);
 
             p.setColor(0xFFF0FDF4);
             c.drawRect(28, 118, 567, 360, p);
@@ -852,7 +852,7 @@ public class WatermarkModel {
             c.drawText("GPS Coordinates  : " + getFormattedCoordinates(), 44, 266, p);
             c.drawText("Verified Address : " + addressLine, 44, 292, p);
             c.drawText("Project / Crew   : " + projectName + " / " + inspectorName, 44, 318, p);
-            c.drawText("Trailer Signature: XHEY1 Dual-Stream Lossless Container Verified", 44, 344, p);
+            c.drawText("Trailer Signature: NXAI1 Dual-Stream Lossless Container Verified", 44, 344, p);
 
             pdf.finishPage(page);
             FileOutputStream fos = new FileOutputStream(outPdf);
