@@ -2,6 +2,8 @@
 
 Audit ID: `AUDIT-20261026-001`
 
+Latest independent review: [REVIEW-16502ec.md](REVIEW-16502ec.md) (`AUDIT-20261027-001`, changes requested).
+
 Baseline: `4ba4cbe` (`main`, 2026-10-26)
 Nguồn gốc: **sản phẩm tái dựng từ ứng dụng Time mark v10.0.281**. Theo `Docs/Reconstruction/overview.md`, camera, Teamspace, Earn và các luồng khác có tham chiếu từ ứng dụng gốc; backend phía server chủ yếu được suy luận từ hợp đồng client, còn CMS, OLAP và games là phần bổ sung. Audit phải kiểm tra cả độ tương đương với bản gốc và khả năng vận hành của phần mới.
 
