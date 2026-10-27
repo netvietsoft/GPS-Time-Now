@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.nextai.camera">
+    package="com.nextai.camera"
+    android:versionCode="100028100"
+    android:versionName="10.0.281">
+
+    <uses-sdk
+        android:minSdkVersion="26"
+        android:targetSdkVersion="34" />
 
     <!-- Camera, Microphone & Hardware Sensors (Embodied AI .mcap + Live Watermark) -->
     <uses-feature android:name="android.hardware.camera" android:required="true" />

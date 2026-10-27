@@ -1,6 +1,6 @@
 # ============================================================================
 # test.ps1 - Unified Strict Test Runner (Backend :4580, Native C++, Android APK)
-# Enforces AUD-007 strict fail-on-error behavior (never skips missing deps)
+# Enforces AUD-007 & REV-003..004 reproducible clean-clone execution
 # ============================================================================
 param(
     [switch]$ConnectRealDevice = $false
@@ -13,7 +13,7 @@ Write-Host "====================================================================
 Write-Host "  NEXTAI CAMERA - UNIFIED TEST AND VERIFICATION RUNNER" -ForegroundColor Cyan
 Write-Host "============================================================================" -ForegroundColor Cyan
 
-# 1. Run Master Quality Gate (includes Project Memory, Security Scans, Backend Build & 15 Test Groups)
+# 1. Run Master Quality Gate (includes Project Memory, Reference Hash Audit, Canonical APK Build + aapt2 xmltree, Backend Build & 16 Test Groups)
 & "$PSScriptRoot\verify.ps1"
 if ($LASTEXITCODE -ne 0) {
     throw "verify.ps1 failed with exit code $LASTEXITCODE"
@@ -29,13 +29,18 @@ if (Test-Path $nativeAuditScript) {
     }
 }
 
-# 3. Verify Signed Android APK Artifact Integrity
-$apkPath = Join-Path $ConvertRoot "apps\android\app\build\outputs\apk\debug\TimeNow-Original-v10.0.281-arm64.apk"
-if (-not (Test-Path $apkPath)) {
-    throw "Android APK artifact missing at $apkPath"
+# 3. Verify Signed Debug & Release Android APK Artifacts & Binary Manifest Audit Output
+$debugApkPath   = Join-Path $ConvertRoot "apps/android/app/build/outputs/apk/debug/TimeNow-Original-v10.0.281-arm64.apk"
+$releaseApkPath = Join-Path $ConvertRoot "apps/android/app/build/outputs/apk/release/TimeNow-Release-v10.0.281-arm64.apk"
+$xmlTreePath    = Join-Path $ConvertRoot "apps/android/app/build/outputs/apk/manifest-xmltree-audit.txt"
+
+foreach ($p in @($debugApkPath, $releaseApkPath, $xmlTreePath)) {
+    if (-not (Test-Path $p)) {
+        throw "Required Android build/audit artifact missing at $p"
+    }
 }
-$apkSizeMb = [math]::Round((Get-Item $apkPath).Length / 1MB, 2)
-Write-Host "`n[TEST 3] Verified signed Android APK artifact: $apkPath ($apkSizeMb MB)" -ForegroundColor Green
+$apkSizeMb = [math]::Round((Get-Item $releaseApkPath).Length / 1MB, 2)
+Write-Host "`n[TEST 3] Verified signed Debug & Release Android APKs ($apkSizeMb MB) and binary manifest xmltree audit." -ForegroundColor Green
 
 # 4. Optional Wireless ADB Connection to Physical Device
 if ($ConnectRealDevice) {

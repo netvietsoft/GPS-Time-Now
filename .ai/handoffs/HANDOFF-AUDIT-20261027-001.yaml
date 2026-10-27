@@ -14,3 +14,19 @@ verification:
   android_build_and_device_parity: not_reproduced
 remaining:
   - "Dev to resolve REV-001..006 and provide independently repeatable evidence."
+dev_remediation_submission:
+  submitted_at_utc: "2026-10-27T02:05:00Z"
+  status: "ready_for_auditor_reverification"
+  resolved_items:
+    - id: REV-001
+      summary: "Added server-side durable account store with salted SHA-256 credential verification; denied unknown accounts (401 ERR_UNKNOWN_ACCOUNT) and client-supplied role/tenantId escalation (403 ERR_CLIENT_ROLE_OR_TENANT_OVERRIDE_FORBIDDEN) on center/app/login and auth/token."
+    - id: REV-002
+      summary: "Set billingEnabled=false by default (fails closed 503); removed local HMAC receipt helper; rejected client-supplied purchaseState/expiryTimeMs (400 ERR_CLIENT_STATE_INJECTION_FORBIDDEN); verified purchase state, SKU, account binding, and refund revocation against providerPlayPurchases ledger."
+    - id: REV-003
+      summary: "Unified build_and_install_apk.ps1 to link canonical apps/android/app/src/main/AndroidManifest.xml (usesCleartextTraffic=false, targetSdkVersion=34), removed hardcoded E:\\ path, added aapt2 dump xmltree binary manifest inspection on the signed APK, and integrated into verify.ps1, test.ps1, and CI."
+    - id: REV-004
+      summary: "Added cross-process file lock (.lock), unique per-write .tmp files, Windows EPERM retry, transactional .bak recovery from interrupted writes, backup/restore helpers, schema v1->v2 migration, and 6-process concurrent write stress test in verify_backend.js [16/16]."
+    - id: REV-005
+      summary: "Set earnEnabled=false and payoutEnabled=false by default (fails closed 503); required webhook reconciliation against providerPayoutTransfers (422 ERR_PROVIDER_TRANSFER_RECONCILIATION_FAILED when unmatched)."
+    - id: REV-006
+      summary: "Added machine-verifiable Git-audit/reference-manifest.json with SHA-256 hashes and byte sizes of original Timemark.apk, timemark.db, 7 ARM64 .so libraries, and WatermarkDefaultList.json, verified automatically in scripts/verify.ps1."

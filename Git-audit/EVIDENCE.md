@@ -42,33 +42,47 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\test.ps1
 ```
 
-### 3. Kết quả chạy thực tế (`15/15` nhóm test Backend + Security Gate)
+### 3. Kết quả chạy thực tế (`16/16` nhóm test Backend + Canonical APK `aapt2 dump xmltree` + Concurrent Shared DB Gate)
 ```text
-[1/15] Server started cleanly on port 4580 (range 1000..10000)
-[2/15] PASS: /health runtime probes verified (42 OLTP, 6 OLAP, durable storage, keyRing)
-[3/15] PASS: Web interfaces (/cms, /truth, /teamspace, /api/catalog) verified
-[4/15] PASS: Official Google AdMob Test IDs verified on AdX config endpoint
-[5/15] PASS: Haversine Geofence math verified (Inside=8.62m, Outside=5642.94m)
-[6/15] PASS: HMAC-SHA256 Anti-Fake generation & verification (NX9X-9794-C3E7 -> AUTHENTIC)
-[7/15] PASS: Embodied AI .mcap submission approved (+1500 Fen -> 20000 Fen)
-[8/15] PASS: All 177 API endpoints returned HTTP 200 + valid BaseResponse<T> envelope
-[9/15] PASS: 42 Relational Tables & 8 OLAP Tables/Views verified in Backend/schema/
-[10/15] PASS: Zero legacy brand leaks across all 13 source files in CONVERT/Backend/
-[11/15] PASS: AUD-001 Auth (401), RBAC (403), Tenant Isolation (403), CORS & Audit Logs verified
-[12/15] PASS: AUD-002 Billing Receipt Verification, Anti-Replay (409), Refund Revocation (402) & Idempotency verified
-[13/15] PASS: AUD-003 Key Rotation, Key Revocation (403), Clock Skew (422) & Tamper Rejection verified
-[14/15] PASS: AUD-004 & PROD-01 Feature Flags, .mcap QA (422/409), Ledger, Idempotent Withdrawal & Signed Webhook verified
-[15/15] PASS: AUD-005 Strict 404/405 Routing & Durable Disk Persistence Across Server Restart verified
-ALL 15/15 TEST GROUPS (177 ENDPOINTS + AUD-001..005 + DURABLE DB) PASSED 100%!
+[1/16] Server started cleanly on port 4588 (range 1000..10000)
+[2/16] PASS: /health runtime probes & fail-closed defaults verified (42 OLTP, 6 OLAP, durable storage, keyRing)
+[3/16] PASS: Web interfaces (/cms, /truth, /teamspace, /api/catalog) verified
+[4/16] PASS: Official Google AdMob Test IDs verified on AdX config endpoint
+[5/16] PASS: Haversine Geofence math verified (Inside=8.62m, Outside=5642.94m)
+[6/16] PASS: HMAC-SHA256 Anti-Fake generation & verification (NX9X-3822-DB27 -> AUTHENTIC)
+[7/16] PASS: Embodied AI .mcap submission approved (+1500 Fen -> 20000 Fen)
+[8/16] PASS: All 177 API endpoints returned HTTP 200 + valid BaseResponse<T> envelope
+[9/16] PASS: 42 Relational Tables & 8 OLAP Tables/Views verified in Backend/schema/
+[10/16] PASS: Zero legacy brand leaks across all 13 source files in CONVERT/Backend/
+[11/16] PASS: REV-001 & AUD-001 Unknown Account (401), Role/Tenant Override (403), RBAC & Tenant Isolation verified
+[12/16] PASS: REV-002 & AUD-002 Provider-Sourced Play Verification, Anti-Replay (409) & Refund Revocation (402) verified
+[13/16] PASS: AUD-003 Key Rotation, Key Revocation (403), Clock Skew (422) & Tamper Rejection verified
+[14/16] PASS: REV-005 & AUD-004 Provider Transfer Reconciliation (422->200), Feature Flags & Ledger verified
+[15/16] PASS: AUD-005 Strict 404/405 Routing & Durable Disk Persistence Across Server Restart verified
+[16/16] PASS: REV-004 Concurrent Multi-Process Writes (6x12), Interrupted-Write .bak Recovery, Backup/Restore & v1->v2 Migration verified
+ALL 16/16 TEST GROUPS (177 ENDPOINTS + REV-001..005 + CONCURRENT DB) PASSED 100%!
 ```
 
-### 4. Trả lời trực tiếp 8 câu hỏi phản biện của Auditor
+### 4. Giải trình chi tiết 6 điểm phản biện trong `REVIEW-16502ec.md` (`REV-001` .. `REV-006`)
 
-1. **API và CMS**: Mọi route nghiệp vụ (trừ 5 route public bootstrap: `android/config`, `realtime`, `center/app/login`, `center/app/login/sendcode`, `auth/token`) bắt buộc có `Authorization: Bearer <signed_jwt>`. Payload tự đặt `teamId` khác `claims.tenantId` của token bị chặn với HTTP `403 ERR_CROSS_TENANT_FORBIDDEN`. Role `member`/`guest` gọi `/cms` hoặc các route quản trị bị chặn với HTTP `403`.
-2. **Thanh toán và entitlement**: Không thể kích hoạt VIP bằng payload tự tạo. Server kiểm tra chữ ký HMAC của biên lai (`createSignedPlayReceipt`), khớp `packageName === 'com.nextai.camera'`, khớp danh mục SKU, chặn replay sang tài khoản khác (`409`), xử lý idempotent cho cùng tài khoản (`200`), và thu hồi quyền khi `REFUNDED`/`EXPIRED` (`402`).
-3. **Ảnh chống giả**: Đã xóa hoàn toàn `HMAC_SECRET` cứng khỏi mã nguồn; sử dụng `RuntimeKeyRing` theo `kid` nạp từ biến môi trường hoặc khóa runtime ngẫu nhiên. Ảnh lệch thời gian `> 5 phút` hoặc `isMockGps: true` bị từ chối (`422`), sửa tọa độ/địa chỉ/chữ ký trả `verified: false, verdict: 'TAMPERED'`, khóa bị thu hồi trả `403`.
-4. **Earn và payout**: Submit `.mcap` phải đạt `handRatio >= 0.80`, `durationMs` trong `5000..600000`, định dạng `.mcap` hợp lệ và không trùng lặp (`422`/`409`). Rút tiền kiểm tra số dư và `idempotencyKey`, khởi tạo ở trạng thái `PENDING_PROVIDER` và chỉ chuyển sang `COMPLETED` khi nhận webhook có chữ ký `X-NextAI-Webhook-Signature` hợp lệ (`401` nếu giả mạo).
-5. **Dữ liệu**: Trạng thái nghiệp vụ được ghi nguyên tử (atomic `.tmp` rename) xuống `Backend/data/runtime/nextai_durable_db.json`. Test nhóm `[15/15]` đóng server, xóa sạch RAM, mở server mới và xác nhận VIP, số dư ví, lịch sử rút tiền, mã ảnh chống giả còn nguyên vẹn.
-6. **Android**: Đã kiểm chứng chụp ảnh, quay video đóng dấu watermark trực tiếp (0ms preview lag), AI Count, Attendance, VerifyAuth, Splice, Work Report trên 2 máy thật Samsung Galaxy A07 và Samsung Galaxy A50s.
-7. **Bảo mật release**: `AndroidManifest.xml` đặt `android:usesCleartextTraffic="false"`, `network_security_config.xml` đặt `<base-config cleartextTrafficPermitted="false">` và xóa toàn bộ IP LAN `192.168.*`. `NextAiNetworkConfig.kt` dùng mặc định `https://api.nextai.global/nextai/v1/` và không chứa token dev tĩnh.
-8. **Vận hành**: `/health` thực thi probe thật kiểm tra file DB bền vững, 42 bảng OLTP, 6 bảng OLAP, trạng thái `keyRing` và `featureFlags`; `.github/workflows/ci-quality-gate.yml` tự động chặn PR nếu bất kỳ kiểm tra nào thất bại.
+1. **`REV-001` (`AUD-001` — Chặn cấp quyền `super_admin` từ client input trên `auth/token` và `center/app/login`)**:
+   - Đã bổ sung kho định danh tài khoản bền vững `dbState.accounts` lưu mật khẩu băm muối (`hashAccountCredential`).
+   - Mọi request tới `center/app/login` hoặc `auth/token` với `userId` không tồn tại (ví dụ `{"userId":"audit_unknown_user","role":"super_admin","tenantId":"foreign_tenant"}`) bị từ chối ngay với HTTP `401 ERR_UNKNOWN_ACCOUNT`.
+   - Nếu client gửi `role` hoặc `tenantId` khác với bản ghi server của tài khoản đó, server từ chối với HTTP `403 ERR_CLIENT_ROLE_OR_TENANT_OVERRIDE_FORBIDDEN`.
+   - Sai hoặc thiếu mật khẩu bị từ chối với HTTP `401 ERR_INVALID_CREDENTIALS`. `role` và `tenantId` trong JWT luôn lấy 100% từ bản ghi tài khoản trên server (kiểm tra tự động tại Nhóm `[11/16]`).
+2. **`REV-002` (`AUD-002` — Fail-closed mặc định cho Billing & Xác thực trạng thái từ Provider Ledger, xóa local HMAC receipt helper)**:
+   - `featureFlags.billingEnabled` mặc định là `false` (trả về HTTP `503 ERR_BILLING_FEATURE_DISABLED` cho mọi request tạo đơn hoặc xác thực biên lai khi chưa bật).
+   - Đã xóa hàm ký biên lai nội bộ `createSignedPlayReceipt` và `NEXTAI_PLAY_BILLING_SECRET`.
+   - Khi bật chế độ sandbox kiểm thử, `order/google/receipts` và `business/subscription/gp/receipt/verify` từ chối mọi request cố tình truyền `purchaseState` hoặc `expiryTimeMs` từ phía client (`400 ERR_CLIENT_STATE_INJECTION_FORBIDDEN`), và đối chiếu trực tiếp với sổ cái nhà cung cấp `dbState.providerPlayPurchases` (`400 ERR_PROVIDER_PURCHASE_NOT_FOUND` nếu không tồn tại, `409` nếu khác tài khoản `obfuscatedExternalAccountId`, `402` và thu hồi VIP khi trạng thái nhà cung cấp chuyển sang `REFUNDED`).
+3. **`REV-003` (`AUD-006`, `AUD-007` — Hợp nhất 1 đường build APK duy nhất từ `apps/android/app/src/main/AndroidManifest.xml` & Kiểm tra binary APK bằng `aapt2 dump xmltree`)**:
+   - Đã xóa hoàn toàn đoạn sinh `AndroidManifest.xml` tạm có `usesCleartextTraffic="true"` và đường dẫn cứng `E:\...` trong `apps/android/build_and_install_apk.ps1`.
+   - `apps/android/build_and_install_apk.ps1` liên kết trực tiếp với file chuẩn `apps/android/app/src/main/AndroidManifest.xml` (`usesCleartextTraffic="false"`, `networkSecurityConfig="@xml/network_security_config"`, `targetSdkVersion="34"`), xuất cả APK debug và release, và chạy `aapt2 dump xmltree` ngay trên file `.apk` đã đóng gói để xác nhận `usesCleartextTraffic(0x010104ec)=false`, `networkSecurityConfig(0x01010527)=@0x7f070000`, `targetSdkVersion(0x01010270)=34` (lưu kết quả tại `apps/android/app/build/outputs/apk/manifest-xmltree-audit.txt`).
+   - `.github/workflows/ci-quality-gate.yml`, `scripts/verify.ps1`, và `scripts/test.ps1` đều tự động chạy `build_and_install_apk.ps1 -SkipDeploy` để tái tạo APK từ bản clone sạch.
+4. **`REV-004` (`AUD-005`, `AUD-008` — Khóa file liên tiến trình, chống xung đột `EPERM` khi chạy song song, khôi phục từ `.bak`, backup/restore & migration v1->v2)**:
+   - `saveDurableState()` và `loadDurableState()` sử dụng khóa liên tiến trình `withCrossProcessFileLock` (`${dbPath}.lock`), tên file `.tmp` duy nhất theo `PID + timestamp + random`, cơ chế retry `EPERM`/`EACCES`/`EBUSY` trên Windows, bản sao lưu giao dịch `${dbPath}.bak`, và hàm nâng cấp `migrateDurableStatePayload` (`schemaVersion: 2`).
+   - Nhóm test `[16/16]` khởi chạy đồng thời 6 tiến trình con Node.js ghi 72 lần liên tiếp vào cùng 1 file DB chia sẻ (0 lỗi `EPERM`), kiểm tra khôi phục tự động từ `.bak` khi file chính bị hỏng giữa chừng, kiểm tra `backupDurableState`/`restoreDurableState`, và kiểm tra migration `schemaVersion: 1 -> 2`. Đã kiểm chứng chạy song song `npm test` và `scripts/verify.ps1` cùng lúc đạt 100% PASS.
+5. **`REV-005` (`AUD-004` — Fail-closed mặc định cho Earn/Payout & Đối soát giao dịch nhà cung cấp trước khi tất toán Webhook)**:
+   - `featureFlags.earnEnabled` và `featureFlags.payoutEnabled` mặc định là `false` (trả về HTTP `503` mặc định).
+   - Khi bật sandbox kiểm thử, `app/reward/video/withdrawal/webhook` không chỉ kiểm tra chữ ký HMAC mà còn bắt buộc đối soát `withdrawalId`, `providerTxId`, `amountFen` và trạng thái chuyển khoản trong `dbState.providerPayoutTransfers` (`422 ERR_PROVIDER_TRANSFER_RECONCILIATION_FAILED` nếu chưa có xác nhận từ nhà cung cấp).
+6. **`REV-006` (`PAR-001..004` — Manifest SHA-256 của bộ tham chiếu gốc `Git-audit/reference-manifest.json`)**:
+   - Đã tạo [`Git-audit/reference-manifest.json`](reference-manifest.json) lưu kích thước byte và mã băm SHA-256 của `Timemark.apk` gốc (`2a7893bc8fada904126ff4aacd1d061b80e0f614057894601af6e05476fc1e9b`), `timemark.db` gốc (`160dde7c72c93e2265baa72e6ce5e38e7e1dfda166024bd132c7b3ab73fe03c2`), 7 thư viện ARM64 `.so`, `WatermarkDefaultList.json`, và các file schema SQL; được `scripts/verify.ps1` kiểm tra tự động.

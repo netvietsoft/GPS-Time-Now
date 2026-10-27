@@ -1,0 +1,145 @@
+﻿{
+    "manifestVersion":  "1.0.0",
+    "generatedAtUtc":  "2026-10-27T02:00:00Z",
+    "originalReferenceApp":  {
+                                 "packageName":  "com.xhey.xcamera",
+                                 "versionName":  "10.0.281",
+                                 "versionCode":  100028100,
+                                 "apkFileName":  "Timemark.apk",
+                                 "apkSizeBytes":  107839532,
+                                 "apkSha256":  "2a7893bc8fada904126ff4aacd1d061b80e0f614057894601af6e05476fc1e9b"
+                             },
+    "reconstructedTargetApp":  {
+                                   "packageName":  "com.nextai.camera",
+                                   "versionName":  "10.0.281",
+                                   "versionCode":  100028100,
+                                   "canonicalManifest":  "apps/android/app/src/main/AndroidManifest.xml",
+                                   "usesCleartextTraffic":  false,
+                                   "targetSdkVersion":  34
+                               },
+    "evidenceClassification":  {
+                                   "observedFromOriginalApkAndDb":  [
+                                                                        "PAR-001 (Camera \u0026 Watermark): 21 watermark template IDs (10, 20, 21, 34, 43, 60, 80, 90, 100, 110, 120, 130, 150, etc.) observed in Timemark.apk assets/WatermarkDefaultList.json and timemark.db",
+                                                                        "PAR-002 (Video \u0026 Native JNI): 7 ARM64 JNI .so libraries and 24 exported JNI function signatures observed in Timemark.apk lib/arm64-v8a/*.so",
+                                                                        "PAR-003 (UI \u0026 Branding): 32 screen flows and template sheets observed in Timemark.apk resources and decompiled activities/fragments",
+                                                                        "PAR-004 (Data \u0026 Schema): 42 Room SQLite entities observed in timemark.db (sha256: 160dde7c72c93e2265baa72e6ce5e38e7e1dfda166024bd132c7b3ab73fe03c2) and 177 Retrofit HTTP interface paths observed in com.xhey.xcamera.network.service.*"
+                                                                    ],
+                                   "inferredServerSideReconstruction":  [
+                                                                            "PAR-004 (Backend Server Implementation): The original cloud server is external/proprietary and not included in Timemark.apk; Backend/src/server.ts is an inferred server-side reconstruction built to satisfy the 177 client Retrofit contracts and sample response fixtures (sample_api_today_core_response.json, sample_teamspace_and_earn_payload.json, sample_watermark_preset.json)"
+                                                                        ]
+                               },
+    "artifacts":  [
+                      {
+                          "role":  "original_apk",
+                          "fileName":  "Timemark.apk",
+                          "repoRelativePath":  null,
+                          "sizeBytes":  107839532,
+                          "sha256":  "2a7893bc8fada904126ff4aacd1d061b80e0f614057894601af6e05476fc1e9b"
+                      },
+                      {
+                          "role":  "original_room_sqlite_db",
+                          "fileName":  "timemark.db",
+                          "repoRelativePath":  null,
+                          "sizeBytes":  339968,
+                          "sha256":  "160dde7c72c93e2265baa72e6ce5e38e7e1dfda166024bd132c7b3ab73fe03c2"
+                      },
+                      {
+                          "role":  "original_watermark_preset_sample",
+                          "fileName":  "sample_watermark_preset.json",
+                          "repoRelativePath":  null,
+                          "sizeBytes":  45303,
+                          "sha256":  "07a0df467a2d9958a7e2c65a20c15d378f9472b5dbdfe3f852b73fbffbef6823"
+                      },
+                      {
+                          "role":  "original_api_today_core_sample",
+                          "fileName":  "sample_api_today_core_response.json",
+                          "repoRelativePath":  null,
+                          "sizeBytes":  1262,
+                          "sha256":  "aff24b486bb7ab3eddcffcda6fd5deefd8b1f5b2ab58fadd448743d8a7ada992"
+                      },
+                      {
+                          "role":  "original_teamspace_earn_sample",
+                          "fileName":  "sample_teamspace_and_earn_payload.json",
+                          "repoRelativePath":  null,
+                          "sizeBytes":  1766,
+                          "sha256":  "6a94b73c7e3750f770e66f4aa5e822fd6a4ec4bce7088a91bfc15766ca21da68"
+                      },
+                      {
+                          "role":  "reconstructed_watermark_default_list",
+                          "fileName":  "WatermarkDefaultList.json",
+                          "repoRelativePath":  "apps/android/app/src/main/assets/WatermarkDefaultList.json",
+                          "sizeBytes":  45308,
+                          "sha256":  "c863fa68a6951f6191ebf743e017663aabb2a39eb2c084eded850dace73a77f3"
+                      },
+                      {
+                          "role":  "reconstructed_default_watermarks_global",
+                          "fileName":  "default_watermarks_global.json",
+                          "repoRelativePath":  "apps/android/app/src/main/assets/watermark/default_watermarks_global.json",
+                          "sizeBytes":  45303,
+                          "sha256":  "07a0df467a2d9958a7e2c65a20c15d378f9472b5dbdfe3f852b73fbffbef6823"
+                      },
+                      {
+                          "role":  "reconstructed_jni_libnative_lib",
+                          "fileName":  "libnative-lib.so",
+                          "repoRelativePath":  "apps/android/app/src/main/jniLibs/arm64-v8a/libnative-lib.so",
+                          "sizeBytes":  200248,
+                          "sha256":  "fbfb1f50191edc110a9027d61ac1dc28bce0e3ade3afa28d935ada5b21689037"
+                      },
+                      {
+                          "role":  "reconstructed_jni_libxheymediav8",
+                          "fileName":  "libxheymediav8.so",
+                          "repoRelativePath":  "apps/android/app/src/main/jniLibs/arm64-v8a/libxheymediav8.so",
+                          "sizeBytes":  195784,
+                          "sha256":  "fc47e3a2a1aedfd733301b82dac28fdb4d662583bc32de30926bc78b6974ff6e"
+                      },
+                      {
+                          "role":  "reconstructed_jni_libxhey_videoedit",
+                          "fileName":  "libxhey_videoedit.so",
+                          "repoRelativePath":  "apps/android/app/src/main/jniLibs/arm64-v8a/libxhey_videoedit.so",
+                          "sizeBytes":  183872,
+                          "sha256":  "22b9e1b9274989b2acd9b4bec7683929956eb6de34c82a7179063841fbe96a75"
+                      },
+                      {
+                          "role":  "reconstructed_jni_libnnpackage",
+                          "fileName":  "libnnpackage-f99779bd.so",
+                          "repoRelativePath":  "apps/android/app/src/main/jniLibs/arm64-v8a/libnnpackage-f99779bd.so",
+                          "sizeBytes":  633960,
+                          "sha256":  "452367c9487df123e05c53a3b1ca2942858a2aa7394769979d38af8aef7b53a5"
+                      },
+                      {
+                          "role":  "reconstructed_jni_libffmpeg",
+                          "fileName":  "libffmpeg.so",
+                          "repoRelativePath":  "apps/android/app/src/main/jniLibs/arm64-v8a/libffmpeg.so",
+                          "sizeBytes":  171096,
+                          "sha256":  "04410e88e3e45b03e5db084996e492c3e30cd84336d3f45c6434842a5a4b65db"
+                      },
+                      {
+                          "role":  "reconstructed_jni_libjpeg",
+                          "fileName":  "libjpeg.so",
+                          "repoRelativePath":  "apps/android/app/src/main/jniLibs/arm64-v8a/libjpeg.so",
+                          "sizeBytes":  192024,
+                          "sha256":  "95826715ce8148b3a59405a2b60b33d21a5fc9b3b791fb225fe88d48c1fbd1e9"
+                      },
+                      {
+                          "role":  "reconstructed_jni_libmp3lame",
+                          "fileName":  "libmp3lame.so",
+                          "repoRelativePath":  "apps/android/app/src/main/jniLibs/arm64-v8a/libmp3lame.so",
+                          "sizeBytes":  171056,
+                          "sha256":  "10beedbfe5dffdb5dcd78df390a89e0189fe3c3645afc589b8a50d27bb42b054"
+                      },
+                      {
+                          "role":  "reconstructed_relational_schema_sql",
+                          "fileName":  "relational_schema_42_tables.sql",
+                          "repoRelativePath":  "Backend/schema/relational_schema_42_tables.sql",
+                          "sizeBytes":  22949,
+                          "sha256":  "a6d794f80d6e34f14f40535efdd10b90db15e5dce7b5c7c1c726c1a789114d0d"
+                      },
+                      {
+                          "role":  "reconstructed_olap_schema_sql",
+                          "fileName":  "olap_analytics_schema.sql",
+                          "repoRelativePath":  "Backend/schema/olap_analytics_schema.sql",
+                          "sizeBytes":  8727,
+                          "sha256":  "f27aa0add52cc9d2dc4c54f3df85aabf2e249779b82b764268ef1df78f0f9e2b"
+                      }
+                  ]
+}

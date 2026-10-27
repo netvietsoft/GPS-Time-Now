@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  backend-and-security-gate:
-    name: Backend Build, 15-Group Audit Suite & Android Security Gate
+  backend-and-android-security-gate:
+    name: Backend 16-Group Audit, Android APK Build & Binary Manifest Gate
     runs-on: ubuntu-latest
 
     steps:
@@ -22,22 +22,28 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Backend/package-lock.json
 
+      - name: Setup Java JDK 17 for Android Compilation & Signing
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Install Backend Dependencies (Clean Lockfile)
         working-directory: Backend
-        run: npm ci
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Build Backend TypeScript
         working-directory: Backend
         run: npm run build
 
-      - name: Run 15-Group Backend Security, Billing, Anti-Fake, Earn & Persistence Suite
+      - name: Run 16-Group Backend Security, Billing, Anti-Fake, Earn & Concurrency Suite
         working-directory: Backend
         run: npm test
 
-      - name: Verify Android HTTPS-Only Manifest & Network Security Config (AUD-006)
-        run: |
-          grep -q 'android:usesCleartextTraffic="false"' apps/android/app/src/main/AndroidManifest.xml
-          grep -q '<base-config cleartextTrafficPermitted="false">' apps/android/app/src/main/res/xml/network_security_config.xml
-          ! grep -q '192\.168\.' apps/android/app/src/main/res/xml/network_security_config.xml
-          ! grep -q 'nextai-dev-jwt-token-v1' apps/android/app/src/main/java/com/nextai/camera/data/remote/NextAiNetworkConfig.kt
-          ! grep -q 'export const HMAC_SECRET' Backend/src/server.ts
+      - name: Build Android APK from Canonical Manifest & Inspect Binary Manifest with aapt2 (REV-003)
+        shell: pwsh
+        run: ./apps/android/build_and_install_apk.ps1 -SkipDeploy
+
+      - name: Run Full Master Quality Gate & Unified Test Runner (REV-003, REV-004, REV-006)
+        shell: pwsh
+        run: ./scripts/test.ps1

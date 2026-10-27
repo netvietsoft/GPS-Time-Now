@@ -41,9 +41,26 @@ So sánh từng màn hình/chế độ ở cùng độ phân giải, mật độ
 
 ## Hồ sơ bằng chứng Parity (`PAR-001` .. `PAR-004`) do Đội Dev đệ trình
 
-### 1. `PAR-001` — Danh mục tham chiếu bản gốc & Phân loại `OBSERVED` / `INFERRED` / `NEW_DESIGN`
-- **Bản tham chiếu gốc**: Ứng dụng gốc v10.0.281 (`versionCode: 100028100`, 8 file DEX, 7 thư viện ARM64 `.so`, 42 bảng Room v61, 177 Retrofit API endpoints, 14 mẫu watermark mặc định trong `WatermarkDefaultList.json`). Chi tiết đối chiếu tĩnh tại [`Docs/Reconstruction/overview.md`](../Docs/Reconstruction/overview.md) và [`Docs/Reconstruction/parity.md`](../Docs/Reconstruction/parity.md).
-- **Bảng phân loại minh bạch theo chuẩn `PAR-001`**:
+### 1. `PAR-001` & `REV-006` — Danh mục tham chiếu bản gốc kèm SHA-256 (`Git-audit/reference-manifest.json`) & Phân loại `OBSERVED` / `INFERRED` / `NEW_DESIGN`
+- **File manifest máy kiểm tra tự động**: [`Git-audit/reference-manifest.json`](reference-manifest.json) (được `scripts/verify.ps1` kiểm tra SHA-256 tự động mỗi lần chạy).
+- **Bảng SHA-256 của các Artifact tham chiếu gốc (`com.xhey.xcamera` v10.0.281) & Bản tái dựng (`com.nextai.camera` v10.0.281)**:
+  | Vai trò (`role`) | Tên file | Kích thước (Bytes) | SHA-256 |
+  |---|---|---:|---|
+  | `original_apk` | `Timemark.apk` | `107,839,532` | `2a7893bc8fada904126ff4aacd1d061b80e0f614057894601af6e05476fc1e9b` |
+  | `original_room_sqlite_db` | `timemark.db` | `339,968` | `160dde7c72c93e2265baa72e6ce5e38e7e1dfda166024bd132c7b3ab73fe03c2` |
+  | `original_watermark_preset_sample` | `sample_watermark_preset.json` | `45,303` | `07a0df467a2d9958a7e2c65a20c15d378f9472b5dbdfe3f852b73fbffbef6823` |
+  | `original_api_today_core_sample` | `sample_api_today_core_response.json` | `1,262` | `aff24b486bb7ab3eddcffcda6fd5deefd8b1f5b2ab58fadd448743d8a7ada992` |
+  | `original_teamspace_earn_sample` | `sample_teamspace_and_earn_payload.json` | `1,766` | `6a94b73c7e3750f770e66f4aa5e822fd6a4ec4bce7088a91bfc15766ca21da68` |
+  | `reconstructed_watermark_default_list` | `WatermarkDefaultList.json` | `390,948` | `9eb8b6c3069f92e149bf07567213bc0dc106bb73d9fa16f98bd623718db1f525` |
+  | `reconstructed_default_watermarks_global` | `default_watermarks_global.json` | `45,303` | `07a0df467a2d9958a7e2c65a20c15d378f9472b5dbdfe3f852b73fbffbef6823` |
+  | `reconstructed_jni_libnative_lib` | `libnative-lib.so` | `200,248` | `fbfb1f50191edc110a9027d61ac1dc28bce0e3ade3afa28d935ada5b21689037` |
+  | `reconstructed_jni_libxheymediav8` | `libxheymediav8.so` | `195,784` | `fc47e3a2a1aedfd733301b82dac28fdb4d662583bc32de30926bc78b6974ff6e` |
+  | `reconstructed_jni_libxhey_videoedit` | `libxhey_videoedit.so` | `183,872` | `22b9e1b9274989b2acd9b4bec7683929956eb6de34c82a7179063841fbe96a75` |
+  | `reconstructed_jni_libnnpackage` | `libnnpackage-f99779bd.so` | `633,960` | `452367c9487df123e05c53a3b1ca2942858a2aa7394769979d38af8aef7b53a5` |
+  | `reconstructed_jni_libffmpeg` | `libffmpeg.so` | `171,096` | `04410e88e3e45b03e5db084996e492c3e30cd84336d3f45c6434842a5a4b65db` |
+  | `reconstructed_jni_libjpeg` | `libjpeg.so` | `192,024` | `95826715ce8148b3a59405a2b60b33d21a5fc9b3b791fb225fe88d48c1fbd1e9` |
+  | `reconstructed_jni_libmp3lame` | `libmp3lame.so` | `171,056` | `10beedbfe5dffdb5dcd78df390a89e0189fe3c3645afc589b8a50d27bb42b054` |
+- **Bảng phân loại minh bạch theo chuẩn `PAR-001` & `REV-006`**:
   | Thành phần / Tính năng | Phân loại | Nguồn tham chiếu / Lý giải |
   |---|:---:|---|
   | Giao diện Camera, Video, AI Count, Attendance, Splice, Watermark Drawer (14 mẫu `#10011`, `#57`, `#20`, `#90`, `#52`, `#10`, `#12`, `#60`, `#80`, `#110`, `#34`, `#400`, `#510`, `#1400`) | `OBSERVED` | Trích xuất trực tiếp từ `WatermarkDefaultList.json`, 66 drawable gốc, 16 font gốc (`Oswald`, `RobotoMono`, `BebasNeue`, `CourierPrime`...) và 4 âm thanh chụp ảnh gốc trong `apps/android/app/src/main/assets/` & `res/`. |

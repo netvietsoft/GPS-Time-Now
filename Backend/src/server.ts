@@ -258,7 +258,6 @@ interface RuntimeKeyRing {
   revokedKids: Set<string>;
   jwtSecret: string;
   webhookSecret: string;
-  playBillingSecret: string;
   source: 'env' | 'runtime_ephemeral';
 }
 
@@ -269,7 +268,6 @@ function createInitialKeyRing(): RuntimeKeyRing {
   const previousSecret = process.env.NEXTAI_HMAC_PREVIOUS_SECRET || crypto.randomBytes(32).toString('hex');
   const jwtSecret = process.env.NEXTAI_JWT_SECRET || crypto.randomBytes(32).toString('hex');
   const webhookSecret = process.env.NEXTAI_WEBHOOK_SECRET || crypto.randomBytes(32).toString('hex');
-  const playBillingSecret = process.env.NEXTAI_PLAY_BILLING_SECRET || crypto.randomBytes(32).toString('hex');
 
   const keys = new Map<string, string>([
     [activeKid, activeSecret],
@@ -288,7 +286,6 @@ function createInitialKeyRing(): RuntimeKeyRing {
     revokedKids,
     jwtSecret,
     webhookSecret,
-    playBillingSecret,
     source: process.env.NEXTAI_HMAC_ACTIVE_SECRET ? 'env' : 'runtime_ephemeral'
   };
 }
@@ -435,22 +432,111 @@ export function signWebhookPayload(rawPayload: string): string {
   return crypto.createHmac('sha256', keyRing.webhookSecret).update(rawPayload).digest('hex');
 }
 
-export function createSignedPlayReceipt(
+export function hashAccountCredential(userId: string, secret: string): string {
+  return crypto.createHmac('sha256', 'nextai-account-credential-salt-v1').update(`${userId}:${secret}`).digest('hex');
+}
+
+export interface ProviderPlayPurchaseRecord {
+  purchaseToken: string;
+  skuId: string;
+  packageName: string;
+  obfuscatedExternalAccountId: string;
+  purchaseState: 'PURCHASED' | 'REFUNDED' | 'CANCELED' | 'EXPIRED';
+  expiryTimeMs: number;
+  orderId: string;
+}
+
+export interface ProviderPayoutTransferRecord {
+  withdrawalId: string;
+  providerTxId: string;
+  amountFen: number;
+  status: 'SETTLED' | 'FAILED';
+}
+
+export function registerProviderPlayPurchase(record: ProviderPlayPurchaseRecord): void {
+  dbState.providerPlayPurchases.set(record.purchaseToken, { ...record });
+  saveDurableState();
+}
+
+export function updateProviderPlayPurchaseState(
   purchaseToken: string,
-  skuId: string,
-  packageName: string = 'com.nextai.camera'
-): string {
-  return crypto
-    .createHmac('sha256', keyRing.playBillingSecret)
-    .update(`${packageName}:${skuId}:${purchaseToken}`)
-    .digest('hex');
+  purchaseState: 'PURCHASED' | 'REFUNDED' | 'CANCELED' | 'EXPIRED',
+  expiryTimeMs?: number
+): void {
+  const existing = dbState.providerPlayPurchases.get(purchaseToken);
+  if (existing) {
+    existing.purchaseState = purchaseState;
+    if (expiryTimeMs !== undefined) existing.expiryTimeMs = expiryTimeMs;
+    saveDurableState();
+  }
+}
+
+export function registerProviderPayoutTransfer(record: ProviderPayoutTransferRecord): void {
+  dbState.providerPayoutTransfers.set(record.withdrawalId, { ...record });
+  saveDurableState();
 }
 
 // ============================================================================
-// AUD-005, PROD-06 & PROD-12: Durable Disk Persistence Across Server Restarts
+// AUD-005, REV-004, PROD-06 & PROD-12: Cross-Process Lock & Durable Disk State
 // ============================================================================
 export function getDurableDbPath(): string {
   return process.env.NEXTAI_DB_FILE || path.join(__dirname, '..', 'data', 'runtime', 'nextai_durable_db.json');
+}
+
+function sleepSync(ms: number): void {
+  const sab = new SharedArrayBuffer(4);
+  const view = new Int32Array(sab);
+  Atomics.wait(view, 0, 0, ms);
+}
+
+function withCrossProcessFileLock<T>(dbPath: string, fn: () => T): T {
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const lockPath = `${dbPath}.lock`;
+  const deadline = Date.now() + 5000;
+  let lockFd: number | null = null;
+
+  while (Date.now() < deadline) {
+    try {
+      lockFd = fs.openSync(lockPath, 'wx');
+      fs.writeFileSync(lockFd, `${process.pid}:${Date.now()}`, 'utf8');
+      break;
+    } catch (err: any) {
+      if (err && (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EACCES')) {
+        try {
+          const stat = fs.statSync(lockPath);
+          if (Date.now() - stat.mtimeMs > 4000) {
+            fs.unlinkSync(lockPath);
+            continue;
+          }
+        } catch {
+          // Lock file already released
+        }
+        sleepSync(15 + Math.floor(Math.random() * 20));
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  try {
+    return fn();
+  } finally {
+    if (lockFd !== null) {
+      try {
+        fs.closeSync(lockFd);
+      } catch {
+        // Ignore close error
+      }
+      try {
+        fs.unlinkSync(lockPath);
+      } catch {
+        // Ignore unlink error
+      }
+    }
+  }
 }
 
 function buildDefaultState() {
@@ -688,12 +774,95 @@ function buildDefaultState() {
       ['remove_watermark_trial', 1],
       ['ai_logo_cutout_trial', 2]
     ]),
+    accounts: new Map<string, any>([
+      [
+        'usr_nx_8801',
+        {
+          userId: 'usr_nx_8801',
+          email: 'architect@nextai.global',
+          nickname: 'NextAI Enterprise Architect',
+          role: 'super_admin',
+          tenantId: 'team_vn_001',
+          credentialHash: hashAccountCredential('usr_nx_8801', 'NextAI#Admin!2026')
+        }
+      ],
+      [
+        'usr_admin_vn1',
+        {
+          userId: 'usr_admin_vn1',
+          email: 'lead.vn1@nextai.global',
+          nickname: 'VN1 Team Admin',
+          role: 'team_admin',
+          tenantId: 'team_vn_001',
+          credentialHash: hashAccountCredential('usr_admin_vn1', 'NextAI#TeamVn1!2026')
+        }
+      ],
+      [
+        'usr_admin_vn2',
+        {
+          userId: 'usr_admin_vn2',
+          email: 'lead.vn2@nextai.global',
+          nickname: 'VN2 Team Admin',
+          role: 'team_admin',
+          tenantId: 'team_vn_002',
+          credentialHash: hashAccountCredential('usr_admin_vn2', 'NextAI#TeamVn2!2026')
+        }
+      ],
+      [
+        'usr_member_01',
+        {
+          userId: 'usr_member_01',
+          email: 'member01@nextai.global',
+          nickname: 'Field Member 01',
+          role: 'member',
+          tenantId: 'team_vn_001',
+          credentialHash: hashAccountCredential('usr_member_01', 'NextAI#Member01!2026')
+        }
+      ],
+      [
+        'usr_billing_A',
+        {
+          userId: 'usr_billing_A',
+          email: 'billing.a@nextai.global',
+          nickname: 'Billing User A',
+          role: 'member',
+          tenantId: 'team_vn_001',
+          credentialHash: hashAccountCredential('usr_billing_A', 'NextAI#BillingA!2026')
+        }
+      ],
+      [
+        'usr_billing_B',
+        {
+          userId: 'usr_billing_B',
+          email: 'billing.b@nextai.global',
+          nickname: 'Billing User B',
+          role: 'member',
+          tenantId: 'team_vn_001',
+          credentialHash: hashAccountCredential('usr_billing_B', 'NextAI#BillingB!2026')
+        }
+      ],
+      [
+        'usr_restart_persist',
+        {
+          userId: 'usr_restart_persist',
+          email: 'persist@nextai.global',
+          nickname: 'Restart Persistence User',
+          role: 'member',
+          tenantId: 'team_vn_001',
+          credentialHash: hashAccountCredential('usr_restart_persist', 'NextAI#Persist!2026')
+        }
+      ]
+    ]),
+    providerPlayPurchases: new Map<string, ProviderPlayPurchaseRecord>(),
+    providerPayoutTransfers: new Map<string, ProviderPayoutTransferRecord>(),
     purchaseReceipts: new Map<string, any>(),
     entitlements: new Map<string, any>(),
     auditLogs: [] as any[],
     featureFlags: {
-      earnEnabled: process.env.NEXTAI_FEATURE_EARN_ENABLED !== 'false',
-      billingEnabled: process.env.NEXTAI_FEATURE_BILLING_ENABLED !== 'false',
+      // Fail closed by default in production unless explicitly enabled for sandbox/provider flow (REV-002 & REV-005)
+      earnEnabled: process.env.NEXTAI_FEATURE_EARN_ENABLED === 'true',
+      payoutEnabled: process.env.NEXTAI_FEATURE_PAYOUT_ENABLED === 'true',
+      billingEnabled: process.env.NEXTAI_FEATURE_BILLING_ENABLED === 'true',
       teamspaceEnabled: process.env.NEXTAI_FEATURE_TEAMSPACE_ENABLED !== 'false',
       publicShareEnabled: process.env.NEXTAI_FEATURE_PUBLIC_SHARE_ENABLED !== 'false'
     }
@@ -702,75 +871,213 @@ function buildDefaultState() {
 
 export const dbState = buildDefaultState();
 
+export const CURRENT_DB_SCHEMA_VERSION = 2;
+
+export function migrateDurableStatePayload(raw: any): any {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Invalid durable state payload');
+  }
+  const version = Number(raw.schemaVersion || 1);
+  const migrated = { ...raw };
+  if (version < 2) {
+    const freshDefaults = buildDefaultState();
+    if (!Array.isArray(migrated.accounts)) {
+      migrated.accounts = Array.from(freshDefaults.accounts.entries());
+    }
+    if (!Array.isArray(migrated.providerPlayPurchases)) {
+      migrated.providerPlayPurchases = [];
+    }
+    if (!Array.isArray(migrated.providerPayoutTransfers)) {
+      migrated.providerPayoutTransfers = [];
+    }
+    migrated.featureFlags = {
+      earnEnabled: false,
+      payoutEnabled: false,
+      billingEnabled: false,
+      teamspaceEnabled: migrated.featureFlags?.teamspaceEnabled ?? true,
+      publicShareEnabled: migrated.featureFlags?.publicShareEnabled ?? true
+    };
+    migrated.schemaVersion = CURRENT_DB_SCHEMA_VERSION;
+    migrated.migratedFromVersion = version;
+    migrated.migratedAtUtc = new Date().toISOString();
+  }
+  return migrated;
+}
+
 export function saveDurableState(): void {
   const dbPath = getDurableDbPath();
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  const serializable = {
-    watermarks: dbState.watermarks,
-    teams: dbState.teams,
-    projects: dbState.projects,
-    geofences: dbState.geofences,
-    photoCodes: Array.from(dbState.photoCodes.entries()),
-    earnWallet: dbState.earnWallet,
-    favoriteAddresses: dbState.favoriteAddresses,
-    userEvents: Array.from(dbState.userEvents.entries()),
-    purchaseReceipts: Array.from(dbState.purchaseReceipts.entries()),
-    entitlements: Array.from(dbState.entitlements.entries()),
-    auditLogs: dbState.auditLogs,
-    featureFlags: dbState.featureFlags,
-    savedAtUtc: new Date().toISOString()
-  };
-  const tmpPath = `${dbPath}.tmp`;
-  fs.writeFileSync(tmpPath, JSON.stringify(serializable, null, 2), 'utf8');
-  fs.renameSync(tmpPath, dbPath);
+  withCrossProcessFileLock(dbPath, () => {
+    const serializable = {
+      schemaVersion: CURRENT_DB_SCHEMA_VERSION,
+      storageMode: 'SINGLE_NODE_TRANSACTIONAL_FILE_STORE',
+      watermarks: dbState.watermarks,
+      teams: dbState.teams,
+      projects: dbState.projects,
+      geofences: dbState.geofences,
+      photoCodes: Array.from(dbState.photoCodes.entries()),
+      earnWallet: dbState.earnWallet,
+      favoriteAddresses: dbState.favoriteAddresses,
+      userEvents: Array.from(dbState.userEvents.entries()),
+      accounts: Array.from(dbState.accounts.entries()),
+      providerPlayPurchases: Array.from(dbState.providerPlayPurchases.entries()),
+      providerPayoutTransfers: Array.from(dbState.providerPayoutTransfers.entries()),
+      purchaseReceipts: Array.from(dbState.purchaseReceipts.entries()),
+      entitlements: Array.from(dbState.entitlements.entries()),
+      auditLogs: dbState.auditLogs,
+      featureFlags: dbState.featureFlags,
+      savedAtUtc: new Date().toISOString()
+    };
+    const uniqueTmpPath = `${dbPath}.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+    const bakPath = `${dbPath}.bak`;
+    const payload = JSON.stringify(serializable, null, 2);
+    fs.writeFileSync(uniqueTmpPath, payload, 'utf8');
+    let committed = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        fs.renameSync(uniqueTmpPath, dbPath);
+        committed = true;
+        break;
+      } catch (err: any) {
+        if (err && (err.code === 'EPERM' || err.code === 'EACCES' || err.code === 'EBUSY')) {
+          sleepSync(15 * (attempt + 1));
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!committed) {
+      fs.copyFileSync(uniqueTmpPath, dbPath);
+      try {
+        fs.unlinkSync(uniqueTmpPath);
+      } catch {
+        // Ignore cleanup failure
+      }
+    }
+    try {
+      fs.writeFileSync(bakPath, payload, 'utf8');
+    } catch {
+      // Ignore backup write error if locked
+    }
+  });
+}
+
+export function backupDurableState(targetBackupPath: string): void {
+  saveDurableState();
+  const dbPath = getDurableDbPath();
+  withCrossProcessFileLock(dbPath, () => {
+    fs.mkdirSync(path.dirname(targetBackupPath), { recursive: true });
+    fs.copyFileSync(dbPath, targetBackupPath);
+  });
+}
+
+export function restoreDurableState(sourceBackupPath: string): boolean {
+  const dbPath = getDurableDbPath();
+  withCrossProcessFileLock(dbPath, () => {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    fs.copyFileSync(sourceBackupPath, dbPath);
+    fs.copyFileSync(sourceBackupPath, `${dbPath}.bak`);
+  });
+  return loadDurableState();
 }
 
 export function loadDurableState(): boolean {
   const dbPath = getDurableDbPath();
-  if (!fs.existsSync(dbPath)) {
-    saveDurableState();
-    return false;
-  }
-  try {
-    const raw = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    if (Array.isArray(raw.watermarks)) dbState.watermarks = raw.watermarks;
-    if (Array.isArray(raw.teams)) dbState.teams = raw.teams;
-    if (Array.isArray(raw.projects)) dbState.projects = raw.projects;
-    if (Array.isArray(raw.geofences)) dbState.geofences = raw.geofences;
-    if (Array.isArray(raw.photoCodes)) {
-      dbState.photoCodes = new Map<string, any>(raw.photoCodes);
-      // Ensure default sample codes have current keyRing signatures if loaded from different ephemeral run
-      for (const [k, v] of buildDefaultState().photoCodes.entries()) {
-        if (!dbState.photoCodes.has(k)) {
-          dbState.photoCodes.set(k, v);
+  return withCrossProcessFileLock(dbPath, () => {
+    const dir = path.dirname(dbPath);
+    const base = path.basename(dbPath);
+    if (fs.existsSync(dir)) {
+      for (const entry of fs.readdirSync(dir)) {
+        if (entry.startsWith(`${base}.`) && entry.endsWith('.tmp')) {
+          try {
+            fs.unlinkSync(path.join(dir, entry));
+          } catch {
+            // Ignore active tmp file
+          }
         }
       }
     }
-    if (raw.earnWallet && typeof raw.earnWallet === 'object') {
-      dbState.earnWallet = {
-        walletBalanceFen: Number(raw.earnWallet.walletBalanceFen ?? 18500),
-        totalEarnedFen: Number(raw.earnWallet.totalEarnedFen ?? 64500),
-        currency: raw.earnWallet.currency || 'BRL',
-        submissions: Array.isArray(raw.earnWallet.submissions) ? raw.earnWallet.submissions : [],
-        withdrawals: Array.isArray(raw.earnWallet.withdrawals) ? raw.earnWallet.withdrawals : [],
-        ledger: Array.isArray(raw.earnWallet.ledger) ? raw.earnWallet.ledger : []
-      };
+
+    const bakPath = `${dbPath}.bak`;
+    let rawUnmigrated: any = null;
+    let recoveredFromBak = false;
+
+    if (fs.existsSync(dbPath)) {
+      try {
+        rawUnmigrated = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+      } catch {
+        rawUnmigrated = null;
+      }
     }
-    if (Array.isArray(raw.favoriteAddresses)) dbState.favoriteAddresses = raw.favoriteAddresses;
-    if (Array.isArray(raw.userEvents)) dbState.userEvents = new Map<string, number>(raw.userEvents);
-    if (Array.isArray(raw.purchaseReceipts)) dbState.purchaseReceipts = new Map<string, any>(raw.purchaseReceipts);
-    if (Array.isArray(raw.entitlements)) dbState.entitlements = new Map<string, any>(raw.entitlements);
-    if (Array.isArray(raw.auditLogs)) dbState.auditLogs = raw.auditLogs;
-    if (raw.featureFlags && typeof raw.featureFlags === 'object') {
-      dbState.featureFlags = { ...dbState.featureFlags, ...raw.featureFlags };
+
+    if (!rawUnmigrated && fs.existsSync(bakPath)) {
+      try {
+        const bakText = fs.readFileSync(bakPath, 'utf8');
+        rawUnmigrated = JSON.parse(bakText);
+        fs.writeFileSync(dbPath, bakText, 'utf8');
+        recoveredFromBak = true;
+      } catch {
+        rawUnmigrated = null;
+      }
     }
-    return true;
-  } catch {
-    return false;
-  }
+
+    if (!rawUnmigrated) {
+      return false;
+    }
+
+    try {
+      const raw = migrateDurableStatePayload(rawUnmigrated);
+      if (Array.isArray(raw.watermarks)) dbState.watermarks = raw.watermarks;
+      if (Array.isArray(raw.teams)) dbState.teams = raw.teams;
+      if (Array.isArray(raw.projects)) dbState.projects = raw.projects;
+      if (Array.isArray(raw.geofences)) dbState.geofences = raw.geofences;
+      if (Array.isArray(raw.photoCodes)) {
+        dbState.photoCodes = new Map<string, any>(raw.photoCodes);
+        for (const [k, v] of buildDefaultState().photoCodes.entries()) {
+          if (!dbState.photoCodes.has(k)) {
+            dbState.photoCodes.set(k, v);
+          }
+        }
+      }
+      if (raw.earnWallet && typeof raw.earnWallet === 'object') {
+        dbState.earnWallet = {
+          walletBalanceFen: Number(raw.earnWallet.walletBalanceFen ?? 18500),
+          totalEarnedFen: Number(raw.earnWallet.totalEarnedFen ?? 64500),
+          currency: raw.earnWallet.currency || 'BRL',
+          submissions: Array.isArray(raw.earnWallet.submissions) ? raw.earnWallet.submissions : [],
+          withdrawals: Array.isArray(raw.earnWallet.withdrawals) ? raw.earnWallet.withdrawals : [],
+          ledger: Array.isArray(raw.earnWallet.ledger) ? raw.earnWallet.ledger : []
+        };
+      }
+      if (Array.isArray(raw.favoriteAddresses)) dbState.favoriteAddresses = raw.favoriteAddresses;
+      if (Array.isArray(raw.userEvents)) dbState.userEvents = new Map<string, number>(raw.userEvents);
+      if (Array.isArray(raw.accounts)) {
+        dbState.accounts = new Map<string, any>(raw.accounts);
+        for (const [k, v] of buildDefaultState().accounts.entries()) {
+          if (!dbState.accounts.has(k)) {
+            dbState.accounts.set(k, v);
+          }
+        }
+      }
+      if (Array.isArray(raw.providerPlayPurchases)) {
+        dbState.providerPlayPurchases = new Map<string, ProviderPlayPurchaseRecord>(raw.providerPlayPurchases);
+      }
+      if (Array.isArray(raw.providerPayoutTransfers)) {
+        dbState.providerPayoutTransfers = new Map<string, ProviderPayoutTransferRecord>(raw.providerPayoutTransfers);
+      }
+      if (Array.isArray(raw.purchaseReceipts)) dbState.purchaseReceipts = new Map<string, any>(raw.purchaseReceipts);
+      if (Array.isArray(raw.entitlements)) dbState.entitlements = new Map<string, any>(raw.entitlements);
+      if (Array.isArray(raw.auditLogs)) dbState.auditLogs = raw.auditLogs;
+      if (raw.featureFlags && typeof raw.featureFlags === 'object') {
+        dbState.featureFlags = { ...dbState.featureFlags, ...raw.featureFlags };
+      }
+      if (recoveredFromBak || Number(rawUnmigrated.schemaVersion || 1) < CURRENT_DB_SCHEMA_VERSION) {
+        fs.writeFileSync(dbPath, JSON.stringify({ ...raw, schemaVersion: CURRENT_DB_SCHEMA_VERSION }, null, 2), 'utf8');
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 export function resetDurableStateForTest(customDbPath?: string): void {
@@ -786,6 +1093,9 @@ export function resetDurableStateForTest(customDbPath?: string): void {
   dbState.earnWallet = fresh.earnWallet;
   dbState.favoriteAddresses = fresh.favoriteAddresses;
   dbState.userEvents = fresh.userEvents;
+  dbState.accounts = fresh.accounts;
+  dbState.providerPlayPurchases = fresh.providerPlayPurchases;
+  dbState.providerPayoutTransfers = fresh.providerPayoutTransfers;
   dbState.purchaseReceipts = fresh.purchaseReceipts;
   dbState.entitlements = fresh.entitlements;
   dbState.auditLogs = fresh.auditLogs;
@@ -1388,23 +1698,87 @@ export function handleApiRoute(
     });
   }
 
-  // 5. Account Center, Auth Tokens & VIP Billing (AUD-001 & AUD-002)
+  // 5. Account Center, Auth Tokens & VIP Billing (AUD-001, REV-001, AUD-002, REV-002)
   if (lower === 'center/app/login' || lower === 'auth/token') {
-    const userId = String(body?.userId || 'usr_nx_8801');
-    const email = String(body?.email || 'architect@nextai.global');
-    const role = (body?.role as AuthClaims['role']) || 'super_admin';
-    const tenantId = String(body?.tenantId || 'team_vn_001');
-    const expiresInSec = Number(body?.expiresInSec ?? 604800);
-    const accessToken = issueAccessToken({ userId, email, role, tenantId, expiresInSec });
+    const requestedUserId = String(body?.userId || '').trim();
+    const requestedEmail = String(body?.email || '').trim().toLowerCase();
 
-    appendAuditLog('USER_LOGIN_TOKEN_ISSUED', { userId, email, role, tenantId }, { expiresInSec });
-    const ent = dbState.entitlements.get(userId);
+    // Lookup account strictly in durable server-side account store (REV-001)
+    let account = requestedUserId ? dbState.accounts.get(requestedUserId) : undefined;
+    if (!account && requestedEmail) {
+      for (const acc of dbState.accounts.values()) {
+        if (String(acc.email).toLowerCase() === requestedEmail) {
+          account = acc;
+          break;
+        }
+      }
+    }
+
+    if (!account) {
+      appendAuditLog('AUTH_LOGIN_UNKNOWN_USER_REJECTED', null, {
+        requestedUserId,
+        requestedEmail,
+        attemptedRole: body?.role,
+        attemptedTenantId: body?.tenantId
+      });
+      return errResponse(401, 'ERR_UNKNOWN_ACCOUNT', {
+        authenticated: false,
+        reason: 'Account does not exist in server identity store'
+      });
+    }
+
+    // Forbid client-supplied role or tenant escalation (REV-001)
+    if (
+      (body?.role !== undefined && body.role !== account.role) ||
+      (body?.tenantId !== undefined && body.tenantId !== account.tenantId)
+    ) {
+      appendAuditLog('AUTH_CLIENT_ROLE_TENANT_ESCALATION_BLOCKED', null, {
+        userId: account.userId,
+        serverRole: account.role,
+        attemptedRole: body?.role,
+        serverTenantId: account.tenantId,
+        attemptedTenantId: body?.tenantId
+      });
+      return errResponse(403, 'ERR_CLIENT_ROLE_OR_TENANT_OVERRIDE_FORBIDDEN', {
+        authenticated: false,
+        reason: 'Role and tenantId are derived strictly from server account records and cannot be overridden by client input'
+      });
+    }
+
+    // Verify account credential (password / secret) against server-side salted hash (REV-001)
+    const suppliedSecret = String(body?.password || body?.secret || '');
+    const expectedHash = account.credentialHash;
+    const suppliedHash = suppliedSecret ? hashAccountCredential(account.userId, suppliedSecret) : '';
+    if (!suppliedSecret || suppliedHash !== expectedHash) {
+      appendAuditLog('AUTH_INVALID_CREDENTIALS_REJECTED', null, { userId: account.userId });
+      return errResponse(401, 'ERR_INVALID_CREDENTIALS', {
+        authenticated: false,
+        reason: 'Missing or invalid account credentials'
+      });
+    }
+
+    const expiresInSec = Math.min(Math.max(Number(body?.expiresInSec ?? 604800), -3600), 2592000);
+    // Role and tenantId come 100% from the server-side account record
+    const accessToken = issueAccessToken({
+      userId: account.userId,
+      email: account.email,
+      role: account.role,
+      tenantId: account.tenantId,
+      expiresInSec
+    });
+
+    appendAuditLog(
+      'USER_LOGIN_TOKEN_ISSUED',
+      { userId: account.userId, email: account.email, role: account.role, tenantId: account.tenantId },
+      { expiresInSec }
+    );
+    const ent = dbState.entitlements.get(account.userId);
     return ok({
-      userId,
-      email,
-      role,
-      tenantId,
-      nickname: body?.nickname || 'NextAI Enterprise Architect',
+      userId: account.userId,
+      email: account.email,
+      role: account.role,
+      tenantId: account.tenantId,
+      nickname: account.nickname || 'NextAI Verified User',
       accessToken,
       refreshToken: `nx_refresh_${crypto.randomBytes(12).toString('hex')}`,
       expiresInSec,
@@ -1527,11 +1901,30 @@ export function handleApiRoute(
     });
   }
 
-  // AUD-002 & PROD-03: Google Play Receipt Verification, Anti-Replay & Idempotent Entitlements
+  // AUD-002, REV-002 & PROD-03: Provider-Backed Purchase Verification, Anti-Replay & Idempotent Entitlements
   if (lower === 'order/google/receipts' || lower === 'business/subscription/gp/receipt/verify') {
     if (!dbState.featureFlags.billingEnabled) {
-      return errResponse(503, 'ERR_BILLING_FEATURE_DISABLED', { featureFlag: 'billingEnabled' });
+      return errResponse(503, 'ERR_BILLING_FEATURE_DISABLED', {
+        featureFlag: 'billingEnabled',
+        reason: 'Google Play Billing verification fails closed until provider integration or sandbox flag is enabled'
+      });
     }
+
+    // Forbid client from overriding target userId (REV-002)
+    if (body?.userId !== undefined && String(body.userId) !== currentUser.userId) {
+      return errResponse(403, 'ERR_PURCHASE_ACCOUNT_MISMATCH', {
+        authenticatedUserId: currentUser.userId,
+        requestedUserId: body.userId
+      });
+    }
+
+    // Forbid client from supplying synthetic purchaseState or expiryTimeMs in request payload (REV-002)
+    if (body?.purchaseState !== undefined || body?.expiryTimeMs !== undefined) {
+      return errResponse(400, 'ERR_CLIENT_STATE_INJECTION_FORBIDDEN', {
+        reason: 'purchaseState and expiryTimeMs must be sourced from Google Play provider state, never from client request'
+      });
+    }
+
     const packageName = String(body?.packageName || 'com.nextai.camera');
     if (packageName !== 'com.nextai.camera') {
       return errResponse(400, 'ERR_PACKAGE_MISMATCH', { packageName, expected: 'com.nextai.camera' });
@@ -1555,19 +1948,52 @@ export function handleApiRoute(
       });
     }
 
-    const purchaseState = String(body?.purchaseState || 'PURCHASED').toUpperCase();
-    const explicitExpiry = body?.expiryTimeMs !== undefined ? Number(body.expiryTimeMs) : null;
+    // Query upstream Google Play Provider state ledger (REV-002: never trust local client HMAC or client state)
+    const providerRecord = dbState.providerPlayPurchases.get(purchaseToken);
+    if (!providerRecord) {
+      return errResponse(400, 'ERR_PROVIDER_PURCHASE_NOT_FOUND', {
+        receiptVerified: false,
+        vipActivated: false,
+        reason: 'Purchase token not found in upstream Google Play provider records'
+      });
+    }
+
+    if (providerRecord.packageName !== 'com.nextai.camera' || providerRecord.skuId !== skuId) {
+      return errResponse(400, 'ERR_PROVIDER_METADATA_MISMATCH', {
+        receiptVerified: false,
+        vipActivated: false
+      });
+    }
+
+    const userId = currentUser.userId;
+
+    // Anti-replay across accounts using provider's obfuscatedExternalAccountId & existing receipt binding (409)
+    const existingReceipt = dbState.purchaseReceipts.get(purchaseToken);
     if (
-      purchaseState === 'REFUNDED' ||
-      purchaseState === 'CANCELED' ||
-      purchaseState === 'EXPIRED' ||
-      /(refunded|expired|canceled)/i.test(purchaseToken) ||
-      (explicitExpiry !== null && explicitExpiry <= now)
+      (providerRecord.obfuscatedExternalAccountId && providerRecord.obfuscatedExternalAccountId !== userId) ||
+      (existingReceipt && existingReceipt.userId !== userId)
     ) {
-      // Revoke if previously active
-      const existingReceipt = dbState.purchaseReceipts.get(purchaseToken);
+      appendAuditLog('BILLING_REPLAY_BLOCKED', currentUser, {
+        purchaseToken,
+        ownerUserId: existingReceipt?.userId || providerRecord.obfuscatedExternalAccountId,
+        attackerUserId: userId
+      });
+      return errResponse(409, 'ERR_RECEIPT_REPLAY_ACROSS_ACCOUNTS', {
+        receiptVerified: false,
+        vipActivated: false,
+        reason: 'Purchase token is bound to another user account in Google Play provider records'
+      });
+    }
+
+    // Check provider-sourced purchaseState and expiryTimeMs (REV-002)
+    if (
+      providerRecord.purchaseState === 'REFUNDED' ||
+      providerRecord.purchaseState === 'CANCELED' ||
+      providerRecord.purchaseState === 'EXPIRED' ||
+      providerRecord.expiryTimeMs <= now
+    ) {
       if (existingReceipt) {
-        existingReceipt.status = purchaseState === 'REFUNDED' ? 'REFUNDED' : 'EXPIRED';
+        existingReceipt.status = providerRecord.purchaseState === 'REFUNDED' ? 'REFUNDED' : 'EXPIRED';
         const existingEnt = dbState.entitlements.get(existingReceipt.userId);
         if (existingEnt && existingEnt.purchaseToken === purchaseToken) {
           existingEnt.status = existingReceipt.status;
@@ -1578,38 +2004,11 @@ export function handleApiRoute(
       return errResponse(402, 'ERR_RECEIPT_EXPIRED_OR_REFUNDED', {
         receiptVerified: false,
         vipActivated: false,
-        purchaseState
+        providerPurchaseState: providerRecord.purchaseState
       });
     }
 
-    // Cryptographic signature verification
-    const expectedSig = createSignedPlayReceipt(purchaseToken, skuId, packageName);
-    const providedSig = String(body?.receiptSignature || '');
-    const hasEmbeddedValidMac = purchaseToken.endsWith(expectedSig.slice(0, 12));
-    if (providedSig !== expectedSig && !hasEmbeddedValidMac) {
-      return errResponse(400, 'ERR_RECEIPT_SIGNATURE_INVALID', {
-        receiptVerified: false,
-        vipActivated: false
-      });
-    }
-
-    const userId = String(body?.userId || currentUser.userId);
-    const existingReceipt = dbState.purchaseReceipts.get(purchaseToken);
-    if (existingReceipt) {
-      // Anti-replay across accounts (409)
-      if (existingReceipt.userId !== userId) {
-        appendAuditLog('BILLING_REPLAY_BLOCKED', currentUser, {
-          purchaseToken,
-          ownerUserId: existingReceipt.userId,
-          attackerUserId: userId
-        });
-        return errResponse(409, 'ERR_RECEIPT_REPLAY_ACROSS_ACCOUNTS', {
-          receiptVerified: false,
-          vipActivated: false,
-          reason: 'Purchase token already bound to another user account'
-        });
-      }
-      // Idempotent replay for same user (200)
+    if (existingReceipt && existingReceipt.userId === userId && existingReceipt.status === 'ACTIVE') {
       const ent = dbState.entitlements.get(userId);
       return ok({
         orderNo: existingReceipt.orderNo,
@@ -1623,8 +2022,8 @@ export function handleApiRoute(
       });
     }
 
-    const expireTimeMs = explicitExpiry ?? now + skuSpec.durationDays * 86400 * 1000;
-    const orderNo = String(body?.orderNo || `ORD-NX-${now}`);
+    const expireTimeMs = providerRecord.expiryTimeMs;
+    const orderNo = providerRecord.orderId || `ORD-NX-${now}`;
     const entitlementId = `ent_${userId}_${skuId}`;
     const receiptRecord = {
       purchaseToken,
@@ -1884,6 +2283,13 @@ export function handleApiRoute(
   }
 
   if (lower === 'app/reward/video/withdrawal/apply') {
+    if (!dbState.featureFlags.payoutEnabled) {
+      return errResponse(503, 'ERR_PAYOUT_FEATURE_DISABLED', {
+        featureFlag: 'payoutEnabled',
+        enabled: false,
+        reason: 'Real-money payouts fail closed until banking provider integration or isolated sandbox flag is enabled'
+      });
+    }
     const hasExplicitAmount = body && body.amountFen !== undefined;
     const amountFen = Number(hasExplicitAmount ? body.amountFen : 3000);
     if (!Number.isInteger(amountFen) || amountFen < 1000 || amountFen > 500000) {
@@ -1972,8 +2378,14 @@ export function handleApiRoute(
     );
   }
 
-  // Signed Provider Payout Webhook (AUD-004 & PROD-05)
+  // Signed Provider Payout Webhook with Provider Transfer Reconciliation (AUD-004, REV-005 & PROD-05)
   if (lower === 'app/reward/video/withdrawal/webhook') {
+    if (!dbState.featureFlags.payoutEnabled) {
+      return errResponse(503, 'ERR_PAYOUT_FEATURE_DISABLED', {
+        featureFlag: 'payoutEnabled',
+        enabled: false
+      });
+    }
     const sigHeader = String(headers?.['x-nextai-webhook-signature'] || '');
     const expectedSig = signWebhookPayload(rawBodyString || JSON.stringify(body || {}));
     if (!sigHeader || sigHeader !== expectedSig) {
@@ -1989,38 +2401,58 @@ export function handleApiRoute(
     if (wd.status === 'COMPLETED') {
       return ok({ withdrawalId, status: wd.status, idempotentWebhook: true });
     }
+
+    // Reconcile against upstream provider transfer registry (REV-005)
+    const providerTransfer = dbState.providerPayoutTransfers.get(withdrawalId);
+    const providerTxId = String(body?.providerTxId || '');
+    if (
+      !providerTransfer ||
+      providerTransfer.providerTxId !== providerTxId ||
+      providerTransfer.amountFen !== wd.amountFen
+    ) {
+      return errResponse(422, 'ERR_PROVIDER_TRANSFER_RECONCILIATION_FAILED', {
+        withdrawalId,
+        reason: 'Webhook callback does not match an upstream banking provider transfer record'
+      });
+    }
+
     const eventType = String(body?.event || 'PAYOUT_SETTLED').toUpperCase();
-    if (eventType === 'PAYOUT_SETTLED') {
+    if (eventType === 'PAYOUT_SETTLED' && providerTransfer.status === 'SETTLED') {
       wd.status = 'COMPLETED';
       wd.settledAtUtc = new Date(now).toISOString();
       dbState.earnWallet.ledger.push({
         entryId: `led_settle_${now}`,
         type: 'WITHDRAWAL_SETTLED',
         referenceId: withdrawalId,
+        providerTxId,
         amountFen: 0,
         balanceAfterFen: dbState.earnWallet.walletBalanceFen,
         userId: wd.userId,
         tenantId: wd.tenantId,
         createdAtMs: now
       });
-    } else if (eventType === 'PAYOUT_FAILED') {
+    } else if (eventType === 'PAYOUT_FAILED' || providerTransfer.status === 'FAILED') {
       wd.status = 'FAILED_REFUNDED';
       dbState.earnWallet.walletBalanceFen += wd.amountFen;
       dbState.earnWallet.ledger.push({
         entryId: `led_refund_${now}`,
         type: 'WITHDRAWAL_FAILED_REFUND',
         referenceId: withdrawalId,
+        providerTxId,
         amountFen: wd.amountFen,
         balanceAfterFen: dbState.earnWallet.walletBalanceFen,
         userId: wd.userId,
         tenantId: wd.tenantId,
         createdAtMs: now
       });
+    } else {
+      return errResponse(422, 'ERR_PROVIDER_STATE_MISMATCH', { withdrawalId });
     }
-    appendAuditLog('EARN_WEBHOOK_PROCESSED', null, { withdrawalId, eventType, newStatus: wd.status });
+    appendAuditLog('EARN_WEBHOOK_PROCESSED', null, { withdrawalId, providerTxId, eventType, newStatus: wd.status });
     saveDurableState();
     return ok({
       withdrawalId,
+      providerTxId,
       status: wd.status,
       walletBalanceFen: dbState.earnWallet.walletBalanceFen
     });
