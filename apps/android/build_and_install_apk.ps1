@@ -168,7 +168,7 @@ Write-Host "[6/6] Running zipalign, apksigner & binary manifest inspection (aapt
 $alignedApk = Join-Path $buildDir "aligned.apk"
 Invoke-NativeTool "zipalign" { & $zipalign -p -f 4 $unalignedApk $alignedApk }
 
-$keystore = Join-Path $buildDir "nextai_build_signing.keystore"
+$keystore = Join-Path $androidRoot "nextai_debug.keystore"
 if (-not (Test-Path $keystore)) {
     Invoke-NativeTool "keytool" {
         & $keytool -genkeypair `
@@ -232,10 +232,16 @@ if ($SkipDeploy) {
 }
 
 # 7. Deploy to Connected Devices (if adb is available and -SkipDeploy is not set)
-$adb = "$env:TEMP\android-platform-tools\platform-tools\adb.exe"
+$workspaceRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $androidRoot))
+$adbCandidates = @(
+    @(
+        (Join-Path $workspaceRoot ".tools/android-platform-tools/platform-tools/adb$exeSuffix"),
+        "$env:TEMP\android-platform-tools\platform-tools\adb$exeSuffix"
+    ) | Where-Object { $_ -and (Test-Path $_) }
+)
 $adbCmd = $null
-if (Test-Path $adb) {
-    $adbCmd = $adb
+if ($adbCandidates.Count -gt 0) {
+    $adbCmd = $adbCandidates[0]
 } elseif (Get-Command adb -ErrorAction SilentlyContinue) {
     $adbCmd = (Get-Command adb).Source
 }
@@ -262,10 +268,18 @@ if ($null -ne $adbCmd) {
         & $adbCmd -s $s shell settings put global verifier_verify_adb_installs 0 | Out-Null
         & $adbCmd -s $s shell settings put global package_verifier_enable 0 | Out-Null
         & $adbCmd -s $s push $finalDebugApk /data/local/tmp/timenow_orig.apk | Out-Null
-        & $adbCmd -s $s shell pm install -r -g /data/local/tmp/timenow_orig.apk
-        if ($LASTEXITCODE -ne 0) { throw "pm install failed on $s" }
+        $installOut = (& $adbCmd -s $s shell pm install -r -g /data/local/tmp/timenow_orig.apk 2>&1) -join "`n"
+        if ($LASTEXITCODE -ne 0 -or $installOut -match "Failure") {
+            Write-Host "     Signature changed; uninstalling previous com.nextai.camera and reinstalling..."
+            & $adbCmd -s $s shell pm uninstall com.nextai.camera | Out-Null
+            & $adbCmd -s $s shell pm install -r -g /data/local/tmp/timenow_orig.apk
+            if ($LASTEXITCODE -ne 0) { throw "pm install failed on $s" }
+        } else {
+            Write-Host "     $installOut"
+        }
 
         & $adbCmd -s $s shell pm grant com.nextai.camera android.permission.CAMERA 2>$null
+        & $adbCmd -s $s shell pm grant com.nextai.camera android.permission.RECORD_AUDIO 2>$null
         & $adbCmd -s $s shell pm grant com.nextai.camera android.permission.ACCESS_FINE_LOCATION 2>$null
         & $adbCmd -s $s shell pm grant com.nextai.camera android.permission.ACCESS_COARSE_LOCATION 2>$null
         & $adbCmd -s $s shell am force-stop com.nextai.camera
