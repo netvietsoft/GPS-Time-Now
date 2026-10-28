@@ -66,8 +66,13 @@ public class MainActivity extends Activity {
     private Typeface mFontMono;
 
     // UI References matching activity_camera_preview.xml
+    private LinearLayout mRootLayout;
+    private FrameLayout mCenterHost;
+    private FrameLayout mBottomActionHost;
     private FrameLayout mViewfinderContainer;
     private TextureView mTextureView;
+    private int mPreviewBufferWidth = 1280;
+    private int mPreviewBufferHeight = 960;
     private View mShutterFlashView;
     private View mGridLevelerView;
     private TextView mTimerCountdownTv;
@@ -399,9 +404,13 @@ public class MainActivity extends Activity {
         // =================================================================================
         // 2. CAMERA VIEWFINDER: view_camera / fl_water_container (4:3 default)
         // =================================================================================
+        mRootLayout = root;
         FrameLayout centerHost = new FrameLayout(this);
+        mCenterHost = centerHost;
         centerHost.setBackgroundColor(0xFF000000);
-        centerHost.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        int screenW = getResources().getDisplayMetrics().widthPixels;
+        int initialVfH = Math.round(screenW * 4f / 3f);
+        centerHost.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, initialVfH));
 
         mViewfinderContainer = new FrameLayout(this);
         mViewfinderContainer.setBackgroundColor(0xFF101820);
@@ -435,10 +444,13 @@ public class MainActivity extends Activity {
         mTextureView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                configureTextureViewTransform(width, height);
                 openCameraHardware();
             }
             @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+                configureTextureViewTransform(width, height);
+            }
             @Override
             public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
                 closeCameraHardware();
@@ -446,6 +458,17 @@ public class MainActivity extends Activity {
             }
             @Override
             public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
+        });
+        mTextureView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                int w = right - left;
+                int h = bottom - top;
+                if (w > 0 && h > 0 && (w != (oldRight - oldLeft) || h != (oldBottom - oldTop))) {
+                    configureTextureViewTransform(w, h);
+                }
+            }
         });
         mViewfinderContainer.addView(mTextureView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -630,8 +653,10 @@ public class MainActivity extends Activity {
         //    - view_preview_bottom_camera_video_action_global.xml (Video recording active)
         // =================================================================================
         FrameLayout bottomActionHost = new FrameLayout(this);
+        mBottomActionHost = bottomActionHost;
         bottomActionHost.setBackgroundColor(0xFFFFFFFF);
-        bottomActionHost.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(104)));
+        bottomActionHost.setMinimumHeight(dp(104));
+        bottomActionHost.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         // 4A. Normal Action Bar (view_preview_bottom_camera_action_global.xml)
         mNormalActionBar = new RelativeLayout(this);
@@ -987,6 +1012,29 @@ public class MainActivity extends Activity {
         bottomActionHost.addView(mVideoRecordingActionBar);
 
         root.addView(bottomActionHost);
+
+        root.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                       int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                int w = right - left;
+                int h = bottom - top;
+                if (w > 0 && h > 0 && (w != (oldRight - oldLeft) || h != (oldBottom - oldTop))) {
+                    root.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            applyAspectRatioLayout();
+                        }
+                    });
+                }
+            }
+        });
+        root.post(new Runnable() {
+            @Override
+            public void run() {
+                applyAspectRatioLayout();
+            }
+        });
 
         updateModeTabsUI();
         rebuildWatermarkOverlay();
@@ -2049,26 +2097,97 @@ public class MainActivity extends Activity {
     }
 
     private void applyAspectRatioLayout() {
-        if (mViewfinderContainer == null) return;
-        View parent = (View) mViewfinderContainer.getParent();
-        int maxW = parent.getWidth();
-        int maxH = parent.getHeight();
-        if (maxW <= 0 || maxH <= 0) return;
+        if (mRootLayout == null || mCenterHost == null || mViewfinderContainer == null) return;
+        int rootW = mRootLayout.getWidth();
+        int rootH = mRootLayout.getHeight();
+        if (rootW <= 0 || rootH <= 0) return;
+
+        int topH = dp(56);
+        int modeH = dp(38);
+        int minBottomH = dp(104);
+        int maxAvailVfH = Math.max(dp(240), rootH - topH - modeH - minBottomH);
+
+        int targetVfW = rootW;
+        int targetVfH;
+        if (mModel.aspectRatioMode == 2) {
+            // 1:1 Square
+            targetVfH = Math.min(maxAvailVfH, rootW);
+        } else if (mModel.aspectRatioMode == 0) {
+            // 4:3 Standard (portrait 3:4 -> height = width * 4 / 3)
+            targetVfH = Math.min(maxAvailVfH, Math.round(rootW * 4f / 3f));
+        } else {
+            // 16:9 or Full
+            targetVfH = maxAvailVfH;
+        }
+
+        LinearLayout.LayoutParams chLp = (LinearLayout.LayoutParams) mCenterHost.getLayoutParams();
+        if (chLp.height != targetVfH || chLp.weight != 0f) {
+            chLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            chLp.height = targetVfH;
+            chLp.weight = 0f;
+            mCenterHost.setLayoutParams(chLp);
+        }
 
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mViewfinderContainer.getLayoutParams();
-        if (mModel.aspectRatioMode == 2) {
-            lp.width = maxW;
-            lp.height = maxW;
-        } else if (mModel.aspectRatioMode == 0) {
-            int targetH = (int) (maxW * 4f / 3f);
-            lp.width = maxW;
-            lp.height = Math.min(maxH, targetH);
-        } else {
-            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        if (lp.width != targetVfW || lp.height != targetVfH) {
+            lp.width = targetVfW;
+            lp.height = targetVfH;
+            lp.gravity = Gravity.CENTER;
+            mViewfinderContainer.setLayoutParams(lp);
         }
-        mViewfinderContainer.setLayoutParams(lp);
+
+        configureTextureViewTransform(targetVfW, targetVfH);
         if (mGridLevelerView != null) mGridLevelerView.invalidate();
+    }
+
+    private void configureTextureViewTransform(int viewWidth, int viewHeight) {
+        if (mTextureView == null || viewWidth <= 0 || viewHeight <= 0) return;
+        int uprightBufW = Math.min(mPreviewBufferWidth, mPreviewBufferHeight);
+        int uprightBufH = Math.max(mPreviewBufferWidth, mPreviewBufferHeight);
+        if (uprightBufW <= 0 || uprightBufH <= 0) return;
+
+        float bufferRatio = (float) uprightBufH / (float) uprightBufW;
+        float viewRatio = (float) viewHeight / (float) viewWidth;
+
+        android.graphics.Matrix matrix = new android.graphics.Matrix();
+        float centerX = viewWidth / 2f;
+        float centerY = viewHeight / 2f;
+        if (Math.abs(viewRatio - bufferRatio) < 0.01f) {
+            matrix.reset();
+        } else if (viewRatio > bufferRatio) {
+            float scaleX = viewRatio / bufferRatio;
+            matrix.postScale(scaleX, 1.0f, centerX, centerY);
+        } else {
+            float scaleY = bufferRatio / viewRatio;
+            matrix.postScale(1.0f, scaleY, centerX, centerY);
+        }
+        mTextureView.setTransform(matrix);
+    }
+
+    private boolean drawUnstretchedCameraFrame(Canvas destCanvas, int targetW, int targetH) {
+        if (mTextureView == null || !mTextureView.isAvailable()) return false;
+        Bitmap raw = mTextureView.getBitmap(targetW, targetH);
+        if (raw == null) return false;
+
+        int uprightBufW = Math.min(mPreviewBufferWidth, mPreviewBufferHeight);
+        int uprightBufH = Math.max(mPreviewBufferWidth, mPreviewBufferHeight);
+        float bufferRatio = (uprightBufW > 0 && uprightBufH > 0)
+                ? ((float) uprightBufH / (float) uprightBufW) : (4f / 3f);
+        float targetRatio = (float) targetH / (float) Math.max(1, targetW);
+
+        android.graphics.Matrix m = new android.graphics.Matrix();
+        float cx = targetW / 2f;
+        float cy = targetH / 2f;
+        if (Math.abs(targetRatio - bufferRatio) >= 0.01f) {
+            if (targetRatio > bufferRatio) {
+                m.postScale(targetRatio / bufferRatio, 1.0f, cx, cy);
+            } else {
+                m.postScale(1.0f, bufferRatio / targetRatio, cx, cy);
+            }
+        }
+        Paint p = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+        destCanvas.drawBitmap(raw, m, p);
+        return true;
     }
 
     // =========================================================================================
@@ -2120,11 +2239,7 @@ public class MainActivity extends Activity {
             Bitmap frame = Bitmap.createBitmap(outW, outH, Bitmap.Config.RGB_565);
             Canvas c = new Canvas(frame);
 
-            Bitmap cam = (mTextureView != null && mTextureView.isAvailable())
-                    ? mTextureView.getBitmap(outW, outH) : null;
-            if (cam != null) {
-                c.drawBitmap(cam, 0, 0, null);
-            } else if (mViewfinderContainer != null && mViewfinderContainer.getChildCount() > 0) {
+            if (!drawUnstretchedCameraFrame(c, outW, outH) && mViewfinderContainer != null && mViewfinderContainer.getChildCount() > 0) {
                 int vw = Math.max(1, mViewfinderContainer.getWidth());
                 int vh = Math.max(1, mViewfinderContainer.getHeight());
                 c.save();
@@ -2319,11 +2434,7 @@ public class MainActivity extends Activity {
         if (baseBmp == null) {
             baseBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             Canvas cleanCanvas = new Canvas(baseBmp);
-            Bitmap cameraFrame = (mTextureView != null && mTextureView.isAvailable())
-                    ? mTextureView.getBitmap(w, h) : null;
-            if (cameraFrame != null) {
-                cleanCanvas.drawBitmap(cameraFrame, 0, 0, null);
-            } else {
+            if (!drawUnstretchedCameraFrame(cleanCanvas, w, h)) {
                 mViewfinderContainer.getChildAt(0).draw(cleanCanvas);
             }
         }
@@ -2363,11 +2474,7 @@ public class MainActivity extends Activity {
         Bitmap cleanBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas cleanCanvas = new Canvas(cleanBmp);
 
-        Bitmap cameraFrame = (mTextureView != null && mTextureView.isAvailable())
-                ? mTextureView.getBitmap(w, h) : null;
-        if (cameraFrame != null) {
-            cleanCanvas.drawBitmap(cameraFrame, 0, 0, null);
-        } else {
+        if (!drawUnstretchedCameraFrame(cleanCanvas, w, h)) {
             mViewfinderContainer.getChildAt(0).draw(cleanCanvas);
         }
 
@@ -2437,11 +2544,13 @@ public class MainActivity extends Activity {
                 if (facing != null && facing == targetFacing) {
                     selectedCamId = id;
                     mSensorActiveArraySize = cc.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                    selectOptimalPreviewSize(cc);
                     break;
                 }
             }
             if (selectedCamId == null && mgr.getCameraIdList().length > 0) {
                 selectedCamId = mgr.getCameraIdList()[0];
+                selectOptimalPreviewSize(mgr.getCameraCharacteristics(selectedCamId));
             }
             if (selectedCamId == null) return;
 
@@ -2465,12 +2574,50 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {}
     }
 
+    private void selectOptimalPreviewSize(CameraCharacteristics cc) {
+        try {
+            android.hardware.camera2.params.StreamConfigurationMap map =
+                    cc.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            if (map == null) return;
+            android.util.Size[] sizes = map.getOutputSizes(SurfaceTexture.class);
+            if (sizes == null || sizes.length == 0) return;
+
+            android.util.Size best4x3 = null;
+            long best4x3Area = 0;
+            android.util.Size bestFallback = null;
+            long bestFallbackArea = 0;
+
+            for (android.util.Size s : sizes) {
+                int w = s.getWidth();
+                int h = s.getHeight();
+                if (w > 1920 || h > 1920) continue;
+                long area = (long) w * (long) h;
+                float ratio = (float) Math.max(w, h) / (float) Math.max(1, Math.min(w, h));
+                if (Math.abs(ratio - (4f / 3f)) < 0.03f) {
+                    if (area > best4x3Area) {
+                        best4x3Area = area;
+                        best4x3 = s;
+                    }
+                }
+                if (area > bestFallbackArea) {
+                    bestFallbackArea = area;
+                    bestFallback = s;
+                }
+            }
+
+            android.util.Size chosen = (best4x3 != null) ? best4x3 : (bestFallback != null ? bestFallback : sizes[0]);
+            mPreviewBufferWidth = chosen.getWidth();
+            mPreviewBufferHeight = chosen.getHeight();
+        } catch (Throwable ignored) {}
+    }
+
     private void startCameraPreviewSession() {
         if (mCameraDevice == null || mTextureView == null || !mTextureView.isAvailable()) return;
         try {
             SurfaceTexture st = mTextureView.getSurfaceTexture();
             if (st == null) return;
-            st.setDefaultBufferSize(1280, 960);
+            st.setDefaultBufferSize(mPreviewBufferWidth, mPreviewBufferHeight);
+            configureTextureViewTransform(mTextureView.getWidth(), mTextureView.getHeight());
             Surface surface = new Surface(st);
 
             mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
