@@ -31,7 +31,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -84,6 +87,7 @@ public class MainActivity extends Activity {
     private View mGridLevelerView;
     private TextView mTimerCountdownTv;
     private LinearLayout mWatermarkCardContainer;
+    private LinearLayout mPhotoByBadgeContainer;
     private TextView mAntiCodeVerticalTv;
     private ImageView mFlashIv;
     private ImageView mPreviewThumbIv;
@@ -504,7 +508,7 @@ public class MainActivity extends Activity {
         zoomCol.setGravity(Gravity.CENTER_HORIZONTAL);
         FrameLayout.LayoutParams zColLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         zColLp.gravity = Gravity.BOTTOM | Gravity.END;
-        zColLp.setMargins(0, 0, dp(12), dp(18));
+        zColLp.setMargins(0, 0, dp(10), dp(64));
         zoomCol.setLayoutParams(zColLp);
 
         final float[] zoomVals = new float[]{2.0f, 1.0f, 0.6f};
@@ -587,6 +591,39 @@ public class MainActivity extends Activity {
         mWatermarkCardContainer.setLayoutParams(wmLp);
         setupDraggableAndClickableWatermark(mWatermarkCardContainer);
         mViewfinderContainer.addView(mWatermarkCardContainer);
+
+        // Bottom-Right Official Developer Watermark Badge ("Photo by / Time Now")
+        mPhotoByBadgeContainer = new LinearLayout(this);
+        mPhotoByBadgeContainer.setOrientation(LinearLayout.VERTICAL);
+        mPhotoByBadgeContainer.setGravity(Gravity.END);
+        TextView photoByTv = new TextView(this);
+        photoByTv.setText("Photo by");
+        photoByTv.setTextSize(11.5f);
+        photoByTv.setTextColor(0xEEFFFFFF);
+        photoByTv.setGravity(Gravity.END);
+        photoByTv.setIncludeFontPadding(false);
+        photoByTv.setShadowLayer(3f, 0f, 1f, 0xCC000000);
+        mPhotoByBadgeContainer.addView(photoByTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView brandLogoTv = new TextView(this);
+        SpannableStringBuilder brandSpan = new SpannableStringBuilder("Time Now");
+        brandSpan.setSpan(new ForegroundColorSpan(0xFFFFE02E), 0, 4, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        brandSpan.setSpan(new ForegroundColorSpan(0xFFFFFFFF), 4, 8, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        brandLogoTv.setText(brandSpan);
+        brandLogoTv.setTextSize(16.5f);
+        brandLogoTv.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        brandLogoTv.setGravity(Gravity.END);
+        brandLogoTv.setIncludeFontPadding(false);
+        brandLogoTv.setShadowLayer(3.5f, 0f, 1.2f, 0xDD000000);
+        LinearLayout.LayoutParams blLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        blLp.setMargins(0, dp(-1), 0, 0);
+        mPhotoByBadgeContainer.addView(brandLogoTv, blLp);
+
+        FrameLayout.LayoutParams pbLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        pbLp.gravity = Gravity.BOTTOM | Gravity.END;
+        pbLp.setMargins(dp(10), dp(10), dp(10), dp(10));
+        mPhotoByBadgeContainer.setLayoutParams(pbLp);
+        mViewfinderContainer.addView(mPhotoByBadgeContainer);
 
         // Shutter Flash Overlay
         mShutterFlashView = new View(this);
@@ -1108,6 +1145,17 @@ public class MainActivity extends Activity {
 
         mAntiCodeVerticalTv.setVisibility(mModel.showPhotoCode ? View.VISIBLE : View.GONE);
         mAntiCodeVerticalTv.setText("Photo Code: " + mModel.currentPhotoCode);
+        if (mPhotoByBadgeContainer != null) {
+            mPhotoByBadgeContainer.setVisibility(mModel.showTimeNowLogo ? View.VISIBLE : View.GONE);
+            FrameLayout.LayoutParams pbLp = (FrameLayout.LayoutParams) mPhotoByBadgeContainer.getLayoutParams();
+            if (pbLp != null) {
+                pbLp.gravity = (mModel.stampPositionIndex == 1)
+                        ? (Gravity.BOTTOM | Gravity.START)
+                        : (Gravity.BOTTOM | Gravity.END);
+                pbLp.setMargins(dp(10), dp(10), dp(10), dp(10));
+                mPhotoByBadgeContainer.setLayoutParams(pbLp);
+            }
+        }
         if (mPlusTv != null && mLayoutPlus != null) {
             mPlusTv.setText(mModel.isVipPlus ? " VIP" : " Plus");
             mLayoutPlus.setBackground(roundedRect(mModel.isVipPlus ? 0xFF7A6EFF : 0xFF282828, 12, 0, 0));
@@ -1864,7 +1912,7 @@ public class MainActivity extends Activity {
             LinearLayout leftBlock = new LinearLayout(this);
             leftBlock.setOrientation(LinearLayout.VERTICAL);
             leftBlock.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            int maxAddrW = isMap01 ? 202 : 276;
+            int maxAddrW = isMap01 ? 176 : 248;
             appendOptionalBrandLogoHeader(leftBlock);
 
             if (mModel.showTitle && mModel.customTitle != null && !mModel.customTitle.trim().isEmpty()) {
@@ -1886,7 +1934,7 @@ public class MainActivity extends Activity {
                 middleRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 mLiveBigClockTv = new TextView(this);
-                mLiveBigClockTv.setTextSize(isMap01 ? 30 : 36);
+                mLiveBigClockTv.setTextSize(isMap01 ? 26 : 34);
                 mLiveBigClockTv.setSingleLine(true);
                 mLiveBigClockTv.setTypeface(mFontBebas, Typeface.BOLD);
                 mLiveBigClockTv.setTextColor(0xFFFFFFFF);
@@ -1896,17 +1944,17 @@ public class MainActivity extends Activity {
 
                 View blockBar = new View(this);
                 blockBar.setBackground(roundedRect(mModel.customAccentColor, 1.5f, 0, 0));
-                LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), dp(32));
-                barLp.setMargins(dp(7), 0, dp(7), 0);
+                LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), dp(30));
+                barLp.setMargins(dp(6), 0, dp(6), 0);
                 middleRow.addView(blockBar, barLp);
 
                 LinearLayout dateCol = new LinearLayout(this);
                 dateCol.setOrientation(LinearLayout.VERTICAL);
                 dateCol.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-                int maxDateColW = isMap01 ? 112 : 156;
+                int maxDateColW = isMap01 ? 82 : 140;
                 mLiveDateTv = new TextView(this);
-                mLiveDateTv.setTextSize(isMap01 ? 12f : 13.5f);
+                mLiveDateTv.setTextSize(isMap01 ? 11f : 13f);
                 mLiveDateTv.setSingleLine(false);
                 mLiveDateTv.setMaxWidth(dp(maxDateColW));
                 mLiveDateTv.setTypeface(Typeface.DEFAULT_BOLD);
@@ -1915,7 +1963,7 @@ public class MainActivity extends Activity {
                 dateCol.addView(mLiveDateTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 mLiveWeatherTv = new TextView(this);
-                mLiveWeatherTv.setTextSize(isMap01 ? 11.5f : 12.5f);
+                mLiveWeatherTv.setTextSize(isMap01 ? 10.5f : 12f);
                 mLiveWeatherTv.setSingleLine(false);
                 mLiveWeatherTv.setMaxWidth(dp(maxDateColW));
                 mLiveWeatherTv.setTextColor(0xFFFFFFFF);
@@ -1927,7 +1975,7 @@ public class MainActivity extends Activity {
             }
 
             if (mModel.showAddress) {
-                TextView addrTv = createShadowText(mModel.addressLine, 13.5f, false, maxAddrW);
+                TextView addrTv = createShadowText(mModel.addressLine, isMap01 ? 12.5f : 13f, false, maxAddrW);
                 addrTv.setPadding(0, dp(4), 0, 0);
                 leftBlock.addView(addrTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
@@ -1936,7 +1984,7 @@ public class MainActivity extends Activity {
             outerRow.addView(leftBlock, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
             if (isMap01) {
-                outerRow.addView(createMiniGpsMapCard(68));
+                outerRow.addView(createMiniGpsMapCard(58));
             }
 
             updateClockTexts();
@@ -2290,11 +2338,11 @@ public class MainActivity extends Activity {
             float targetSp = 0f;
             if ("34".equals(id) || "map01".equals(id)) {
                 if (clockStr.length() > 8) {
-                    targetSp = isMap01 ? 21f : 26f;
+                    targetSp = isMap01 ? 18.5f : 24f;
                 } else if (clockStr.length() > 5) {
-                    targetSp = isMap01 ? 24f : 30f;
+                    targetSp = isMap01 ? 21.5f : 28f;
                 } else {
-                    targetSp = isMap01 ? 30f : 36f;
+                    targetSp = isMap01 ? 26f : 34f;
                 }
             } else if ("43".equals(id) && clockStr.length() > 8) {
                 targetSp = 21f;
@@ -2574,6 +2622,13 @@ public class MainActivity extends Activity {
                 mWatermarkCardContainer.draw(c);
                 c.restore();
 
+                if (mPhotoByBadgeContainer != null && mPhotoByBadgeContainer.getVisibility() == View.VISIBLE) {
+                    c.save();
+                    c.translate(mPhotoByBadgeContainer.getX(), mPhotoByBadgeContainer.getY());
+                    mPhotoByBadgeContainer.draw(c);
+                    c.restore();
+                }
+
                 if (mModel.showPhotoCode) {
                     Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
                     p.setColor(0xDDFFFFFF);
@@ -2758,6 +2813,13 @@ public class MainActivity extends Activity {
                 mWatermarkCardContainer.getPivotX(), mWatermarkCardContainer.getPivotY());
         mWatermarkCardContainer.draw(compCanvas);
         compCanvas.restore();
+
+        if (mPhotoByBadgeContainer != null && mPhotoByBadgeContainer.getVisibility() == View.VISIBLE) {
+            compCanvas.save();
+            compCanvas.translate(mPhotoByBadgeContainer.getX(), mPhotoByBadgeContainer.getY());
+            mPhotoByBadgeContainer.draw(compCanvas);
+            compCanvas.restore();
+        }
 
         if (mModel.showPhotoCode) {
             Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
