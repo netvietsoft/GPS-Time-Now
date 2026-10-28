@@ -99,6 +99,8 @@ public class MainActivity extends Activity {
     private final View[] mModeDots = new View[3];
 
     // Original Bottom Action Bar Layouts (layout_preview_global_bottom.xml)
+    private LinearLayout mModeRow;
+    private LinearLayout mRecordTopPill;
     private RelativeLayout mNormalActionBar;
     private LinearLayout mAttendActionBar;
     private RelativeLayout mVideoRecordingActionBar;
@@ -638,15 +640,18 @@ public class MainActivity extends Activity {
         // =================================================================================
         // 3. BOTTOM MODE TABS: layout_preview_bottom_fun_global.xml (white #FFFFFF)
         //    Exact 3 Original Modes: Video | Photo | Attendance
+        //    (Switches to centered recording duration pill when video recording is active)
         // =================================================================================
         LinearLayout modeSection = new LinearLayout(this);
         modeSection.setOrientation(LinearLayout.VERTICAL);
-        modeSection.setGravity(Gravity.CENTER_HORIZONTAL);
+        modeSection.setGravity(Gravity.CENTER);
         modeSection.setBackgroundColor(0xFFFFFFFF);
-        modeSection.setPadding(0, dp(8), 0, dp(2));
+        modeSection.setMinimumHeight(dp(38));
+        modeSection.setPadding(0, dp(6), 0, dp(2));
         modeSection.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         LinearLayout modeRow = new LinearLayout(this);
+        mModeRow = modeRow;
         modeRow.setOrientation(LinearLayout.HORIZONTAL);
         modeRow.setGravity(Gravity.CENTER);
         modeRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -656,19 +661,23 @@ public class MainActivity extends Activity {
             LinearLayout tabCol = new LinearLayout(this);
             tabCol.setOrientation(LinearLayout.VERTICAL);
             tabCol.setGravity(Gravity.CENTER_HORIZONTAL);
-            tabCol.setPadding(dp(18), dp(2), dp(18), dp(2));
+            tabCol.setPadding(dp(4), dp(2), dp(4), dp(2));
 
             TextView tv = new TextView(this);
             tv.setText(modes[i]);
             tv.setSingleLine(true);
+            tv.setIncludeFontPadding(false);
             tv.setGravity(Gravity.CENTER);
-            tv.setTextSize(14f);
-            tabCol.addView(tv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            tv.setTextSize(14.5f);
+            LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            tvLp.gravity = Gravity.CENTER_HORIZONTAL;
+            tabCol.addView(tv, tvLp);
 
             View dot = new View(this);
             dot.setBackground(roundedRect(0xFF222222, 2.5f, 0, 0));
-            LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(4), dp(4));
-            dotLp.setMargins(0, dp(3), 0, 0);
+            LinearLayout.LayoutParams dotLp = new LinearLayout.LayoutParams(dp(5), dp(5));
+            dotLp.gravity = Gravity.CENTER_HORIZONTAL;
+            dotLp.setMargins(0, dp(4), 0, 0);
             dot.setLayoutParams(dotLp);
             tabCol.addView(dot);
 
@@ -692,9 +701,39 @@ public class MainActivity extends Activity {
                     updateModeTabsUI();
                 }
             });
-            modeRow.addView(tabCol, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            modeRow.addView(tabCol, new LinearLayout.LayoutParams(dp(96), ViewGroup.LayoutParams.WRAP_CONTENT));
         }
         modeSection.addView(modeRow);
+
+        // Recording duration pill (recordDurationTv in view_preview_bottom_camera_video_action_global.xml)
+        LinearLayout recTopPill = new LinearLayout(this);
+        mRecordTopPill = recTopPill;
+        recTopPill.setOrientation(LinearLayout.HORIZONTAL);
+        recTopPill.setGravity(Gravity.CENTER);
+        recTopPill.setBackground(roundedRect(0xFFF2F3F5, 14, 0, 0));
+        recTopPill.setPadding(dp(14), dp(4), dp(14), dp(4));
+        recTopPill.setVisibility(View.GONE);
+        LinearLayout.LayoutParams rtpLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(28));
+        rtpLp.gravity = Gravity.CENTER;
+        recTopPill.setLayoutParams(rtpLp);
+
+        View recRedDot = new View(this);
+        recRedDot.setBackground(roundedRect(0xFFFF004D, 4, 0, 0));
+        LinearLayout.LayoutParams rrdLp = new LinearLayout.LayoutParams(dp(8), dp(8));
+        rrdLp.gravity = Gravity.CENTER_VERTICAL;
+        rrdLp.setMargins(0, 0, dp(6), 0);
+        recTopPill.addView(recRedDot, rrdLp);
+
+        mRecordDurationTv = new TextView(this);
+        mRecordDurationTv.setText("00:01");
+        mRecordDurationTv.setTextSize(14f);
+        mRecordDurationTv.setTypeface(Typeface.DEFAULT_BOLD);
+        mRecordDurationTv.setTextColor(0xFF222222);
+        mRecordDurationTv.setGravity(Gravity.CENTER);
+        mRecordDurationTv.setIncludeFontPadding(false);
+        recTopPill.addView(mRecordDurationTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        modeSection.addView(recTopPill);
+
         root.addView(modeSection);
 
         // =================================================================================
@@ -739,30 +778,35 @@ public class MainActivity extends Activity {
         RelativeLayout.LayoutParams lgLp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lgLp.addRule(RelativeLayout.ALIGN_PARENT_START);
         lgLp.addRule(RelativeLayout.CENTER_VERTICAL);
-        lgLp.setMarginStart(dp(8));
+        lgLp.setMarginStart(dp(6));
         leftGroup.setLayoutParams(lgLp);
 
         // clPreview
         LinearLayout clPreview = new LinearLayout(this);
         clPreview.setOrientation(LinearLayout.VERTICAL);
         clPreview.setGravity(Gravity.CENTER_HORIZONTAL);
-        clPreview.setMinimumWidth(dp(56));
-        clPreview.setPadding(dp(6), dp(2), dp(6), dp(2));
+        clPreview.setMinimumWidth(dp(58));
+        clPreview.setPadding(dp(4), dp(2), dp(4), dp(2));
 
         mPreviewThumbIv = new ImageView(this);
         mPreviewThumbIv.setImageResource(R.drawable.gallery_light);
         mPreviewThumbIv.setScaleType(ImageView.ScaleType.CENTER_CROP);
         mPreviewThumbIv.setBackground(roundedRect(0xFFF0F0F0, 6, dp(1), 0xFFDEDEDE));
-        clPreview.addView(mPreviewThumbIv, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        LinearLayout.LayoutParams ptIvLp = new LinearLayout.LayoutParams(dp(36), dp(36));
+        ptIvLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clPreview.addView(mPreviewThumbIv, ptIvLp);
 
         TextView previewTitle = new TextView(this);
         previewTitle.setText("Preview");
         previewTitle.setSingleLine(true);
+        previewTitle.setGravity(Gravity.CENTER);
         previewTitle.setTextSize(12);
         previewTitle.setTypeface(Typeface.DEFAULT_BOLD);
         previewTitle.setTextColor(0xFF666666);
         previewTitle.setPadding(0, dp(3), 0, 0);
-        clPreview.addView(previewTitle);
+        LinearLayout.LayoutParams ptTvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        ptTvLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clPreview.addView(previewTitle, ptTvLp);
         clPreview.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -774,34 +818,42 @@ public class MainActivity extends Activity {
                 });
             }
         });
-        leftGroup.addView(clPreview);
+        leftGroup.addView(clPreview, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         // clFolder (Teamspace)
         LinearLayout clFolder = new LinearLayout(this);
         clFolder.setOrientation(LinearLayout.VERTICAL);
         clFolder.setGravity(Gravity.CENTER_HORIZONTAL);
-        clFolder.setPadding(dp(8), dp(2), dp(8), dp(2));
+        clFolder.setPadding(dp(6), dp(2), dp(6), dp(2));
 
         FrameLayout folderIconWrap = new FrameLayout(this);
         ImageView folderImg = new ImageView(this);
         folderImg.setImageResource(R.drawable.icon_preview_folder);
         folderImg.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        folderIconWrap.addView(folderImg, new FrameLayout.LayoutParams(dp(36), dp(36)));
+        FrameLayout.LayoutParams fImgLp = new FrameLayout.LayoutParams(dp(36), dp(36));
+        fImgLp.gravity = Gravity.CENTER;
+        folderIconWrap.addView(folderImg, fImgLp);
 
         View blueNotifyDot = new View(this);
         blueNotifyDot.setBackground(roundedRect(0xFF0093FF, 5, dp(1), 0xFFFFFFFF));
         FrameLayout.LayoutParams bnLp = new FrameLayout.LayoutParams(dp(9), dp(9));
         bnLp.gravity = Gravity.TOP | Gravity.END;
         folderIconWrap.addView(blueNotifyDot, bnLp);
-        clFolder.addView(folderIconWrap);
+        LinearLayout.LayoutParams fWrapLp = new LinearLayout.LayoutParams(dp(40), dp(36));
+        fWrapLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clFolder.addView(folderIconWrap, fWrapLp);
 
         TextView folderTitle = new TextView(this);
         folderTitle.setText("Teamspace");
+        folderTitle.setSingleLine(true);
+        folderTitle.setGravity(Gravity.CENTER);
         folderTitle.setTextSize(12);
         folderTitle.setTypeface(Typeface.DEFAULT_BOLD);
         folderTitle.setTextColor(0xFF666666);
         folderTitle.setPadding(0, dp(3), 0, 0);
-        clFolder.addView(folderTitle);
+        LinearLayout.LayoutParams fTvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        fTvLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clFolder.addView(folderTitle, fTvLp);
         clFolder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -813,7 +865,7 @@ public class MainActivity extends Activity {
                 });
             }
         });
-        leftGroup.addView(clFolder);
+        leftGroup.addView(clFolder, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         mNormalActionBar.addView(leftGroup);
 
         // Right: clTemplate (ic_watermark_ltr + red dot + "Templates")
@@ -831,22 +883,30 @@ public class MainActivity extends Activity {
         ImageView wmImg = new ImageView(this);
         wmImg.setImageResource(R.drawable.ic_watermark_ltr);
         wmImg.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        wmIconWrap.addView(wmImg, new FrameLayout.LayoutParams(dp(36), dp(36)));
+        FrameLayout.LayoutParams wmImgLp = new FrameLayout.LayoutParams(dp(36), dp(36));
+        wmImgLp.gravity = Gravity.CENTER;
+        wmIconWrap.addView(wmImg, wmImgLp);
 
         View redDot = new View(this);
         redDot.setBackground(roundedRect(0xFFFF004D, 5, dp(1), 0xFFFFFFFF));
         FrameLayout.LayoutParams rdLp = new FrameLayout.LayoutParams(dp(9), dp(9));
         rdLp.gravity = Gravity.TOP | Gravity.END;
         wmIconWrap.addView(redDot, rdLp);
-        clTemplate.addView(wmIconWrap);
+        LinearLayout.LayoutParams wmWrapLp = new LinearLayout.LayoutParams(dp(40), dp(36));
+        wmWrapLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clTemplate.addView(wmIconWrap, wmWrapLp);
 
         TextView wmTv = new TextView(this);
         wmTv.setText("Templates");
+        wmTv.setSingleLine(true);
+        wmTv.setGravity(Gravity.CENTER);
         wmTv.setTextSize(12);
         wmTv.setTypeface(Typeface.DEFAULT_BOLD);
         wmTv.setTextColor(0xFF666666);
         wmTv.setPadding(0, dp(3), 0, 0);
-        clTemplate.addView(wmTv);
+        LinearLayout.LayoutParams wmTvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        wmTvLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clTemplate.addView(wmTv, wmTvLp);
         clTemplate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -864,7 +924,7 @@ public class MainActivity extends Activity {
         // 4B. Attendance Action Bar (view_preview_bottom_camera_action_attend_global.xml)
         mAttendActionBar = new LinearLayout(this);
         mAttendActionBar.setOrientation(LinearLayout.VERTICAL);
-        mAttendActionBar.setGravity(Gravity.CENTER_HORIZONTAL);
+        mAttendActionBar.setGravity(Gravity.CENTER);
         mAttendActionBar.setBackgroundColor(0xFFFFFFFF);
         mAttendActionBar.setPadding(dp(16), dp(2), dp(16), dp(10));
         mAttendActionBar.setVisibility(View.GONE);
@@ -884,7 +944,7 @@ public class MainActivity extends Activity {
         mWorkStatusTv.setText("Off Work");
         mWorkStatusTv.setTextSize(12);
         mWorkStatusTv.setTextColor(0xFF444444);
-        statusRow.addView(mWorkStatusTv);
+        statusRow.addView(mWorkStatusTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         mAttendActionBar.addView(statusRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         // Bottom Attendance Row: Left Timesheet | Center Clock In Pill | Right Start Break
@@ -904,15 +964,20 @@ public class MainActivity extends Activity {
         ImageView tsIv = new ImageView(this);
         tsIv.setImageResource(R.drawable.attendance_timesheet_calendar);
         tsIv.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        clTimeSheet.addView(tsIv, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        LinearLayout.LayoutParams tsIvLp = new LinearLayout.LayoutParams(dp(36), dp(36));
+        tsIvLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clTimeSheet.addView(tsIv, tsIvLp);
 
         TextView tsTv = new TextView(this);
         tsTv.setText("Timesheet");
+        tsTv.setGravity(Gravity.CENTER);
         tsTv.setTextSize(12);
         tsTv.setTypeface(Typeface.DEFAULT_BOLD);
         tsTv.setTextColor(0xFF666666);
         tsTv.setSingleLine(true);
-        clTimeSheet.addView(tsTv);
+        LinearLayout.LayoutParams tsTvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tsTvLp.gravity = Gravity.CENTER_HORIZONTAL;
+        clTimeSheet.addView(tsTv, tsTvLp);
         clTimeSheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -948,7 +1013,7 @@ public class MainActivity extends Activity {
         mClockTypeTv.setTypeface(Typeface.DEFAULT_BOLD);
         mClockTypeTv.setTextColor(0xFFFFFFFF);
         mClockTypeTv.setSingleLine(true);
-        clAttendClock.addView(mClockTypeTv);
+        clAttendClock.addView(mClockTypeTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         clAttendClock.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -994,65 +1059,55 @@ public class MainActivity extends Activity {
         mAttendActionBar.addView(attendBottomRow);
         bottomActionHost.addView(mAttendActionBar);
 
-        // 4C. Video Recording Action Bar (view_preview_bottom_camera_video_action_global.xml)
+        // 4C. Video Recording Action Bar (1:1 view_preview_bottom_camera_video_action_global.xml)
         mVideoRecordingActionBar = new RelativeLayout(this);
         mVideoRecordingActionBar.setBackgroundColor(0xFFFFFFFF);
-        mVideoRecordingActionBar.setPadding(dp(16), dp(2), dp(16), dp(8));
+        mVideoRecordingActionBar.setPadding(dp(16), dp(4), dp(16), dp(14));
         mVideoRecordingActionBar.setVisibility(View.GONE);
         mVideoRecordingActionBar.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // Top recording duration pill
-        LinearLayout recTopPill = new LinearLayout(this);
-        recTopPill.setOrientation(LinearLayout.HORIZONTAL);
-        recTopPill.setGravity(Gravity.CENTER);
-        recTopPill.setBackground(roundedRect(0xFFF0F0F0, 4, 0, 0));
-        recTopPill.setPadding(dp(8), dp(2), dp(8), dp(2));
-        RelativeLayout.LayoutParams rtpLp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(20));
-        rtpLp.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        rtpLp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        recTopPill.setLayoutParams(rtpLp);
+        // Left: recordVideoSwitchCamCtrl (44dp x 44dp, @drawable/ico_video_recording_cam_switch)
+        ImageView switchCamDuringVideoIv = new ImageView(this);
+        switchCamDuringVideoIv.setImageResource(R.drawable.ico_video_recording_cam_switch);
+        switchCamDuringVideoIv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        RelativeLayout.LayoutParams scvLp = new RelativeLayout.LayoutParams(dp(44), dp(44));
+        scvLp.addRule(RelativeLayout.ALIGN_PARENT_START);
+        scvLp.addRule(RelativeLayout.CENTER_VERTICAL);
+        scvLp.setMarginStart(dp(44));
+        switchCamDuringVideoIv.setLayoutParams(scvLp);
+        switchCamDuringVideoIv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mUseFrontCamera = !mUseFrontCamera;
+                closeCameraHardware();
+                openCameraHardware();
+            }
+        });
+        mVideoRecordingActionBar.addView(switchCamDuringVideoIv);
 
-        View recRedDot = new View(this);
-        recRedDot.setBackground(roundedRect(0xFFFF004D, 3, 0, 0));
-        LinearLayout.LayoutParams rrdLp = new LinearLayout.LayoutParams(dp(6), dp(6));
-        rrdLp.setMargins(0, 0, dp(5), 0);
-        recTopPill.addView(recRedDot, rrdLp);
-
-        mRecordDurationTv = new TextView(this);
-        mRecordDurationTv.setText("00:01");
-        mRecordDurationTv.setTextSize(12);
-        mRecordDurationTv.setTextColor(0xFF000000);
-        recTopPill.addView(mRecordDurationTv);
-        mVideoRecordingActionBar.addView(recTopPill);
-
-        // Center stop button (video_stop_normal, 58dp x 58dp inside 76dp ring)
-        FrameLayout stopWrap = new FrameLayout(this);
-        stopWrap.setBackground(roundedRect(0xFFF0F0F0, 38, dp(3), 0xFFFF004D));
-        RelativeLayout.LayoutParams swLp = new RelativeLayout.LayoutParams(dp(74), dp(74));
-        swLp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        swLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        stopWrap.setLayoutParams(swLp);
-
+        // Center: recordIv (80dp x 80dp, @drawable/cam_shooting, exact same center position as mShootIv)
         ImageView stopIv = new ImageView(this);
         stopIv.setImageResource(R.drawable.cam_shooting);
-        FrameLayout.LayoutParams sIvLp = new FrameLayout.LayoutParams(dp(54), dp(54));
-        sIvLp.gravity = Gravity.CENTER;
-        stopWrap.addView(stopIv, sIvLp);
-        stopWrap.setOnClickListener(new View.OnClickListener() {
+        stopIv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        RelativeLayout.LayoutParams swLp = new RelativeLayout.LayoutParams(dp(80), dp(80));
+        swLp.addRule(RelativeLayout.CENTER_IN_PARENT);
+        stopIv.setLayoutParams(swLp);
+        stopIv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 stopVideoRecording();
             }
         });
-        mVideoRecordingActionBar.addView(stopWrap);
+        mVideoRecordingActionBar.addView(stopIv);
 
-        // Right snapshot-while-recording button (cam_shoot, 40dp x 40dp)
+        // Right: snapshot-while-recording button (44dp x 44dp, @drawable/cam_shoot)
         ImageView snapDuringVideoIv = new ImageView(this);
         snapDuringVideoIv.setImageResource(R.drawable.cam_shoot);
-        RelativeLayout.LayoutParams sdvLp = new RelativeLayout.LayoutParams(dp(40), dp(40));
+        snapDuringVideoIv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        RelativeLayout.LayoutParams sdvLp = new RelativeLayout.LayoutParams(dp(44), dp(44));
         sdvLp.addRule(RelativeLayout.ALIGN_PARENT_END);
         sdvLp.addRule(RelativeLayout.CENTER_VERTICAL);
-        sdvLp.setMarginEnd(dp(36));
+        sdvLp.setMarginEnd(dp(44));
         snapDuringVideoIv.setLayoutParams(sdvLp);
         snapDuringVideoIv.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -2430,8 +2485,14 @@ public class MainActivity extends Activity {
             mModeDots[i].setVisibility(sel ? View.VISIBLE : View.INVISIBLE);
         }
 
+        boolean recActive = (mIsRecordingVideo && mModel.cameraMode == 0);
+        if (mModeRow != null && mRecordTopPill != null) {
+            mModeRow.setVisibility(recActive ? View.GONE : View.VISIBLE);
+            mRecordTopPill.setVisibility(recActive ? View.VISIBLE : View.GONE);
+        }
+
         if (mNormalActionBar != null && mAttendActionBar != null && mVideoRecordingActionBar != null) {
-            if (mIsRecordingVideo && mModel.cameraMode == 0) {
+            if (recActive) {
                 mNormalActionBar.setVisibility(View.GONE);
                 mAttendActionBar.setVisibility(View.GONE);
                 mVideoRecordingActionBar.setVisibility(View.VISIBLE);
@@ -2618,7 +2679,8 @@ public class MainActivity extends Activity {
 
                 c.save();
                 c.translate(mWatermarkCardContainer.getX(), mWatermarkCardContainer.getY());
-                c.scale(mModel.stampScale, mModel.stampScale, mWatermarkCardContainer.getPivotX(), mWatermarkCardContainer.getPivotY());
+                c.scale(mWatermarkCardContainer.getScaleX(), mWatermarkCardContainer.getScaleY(),
+                        mWatermarkCardContainer.getPivotX(), mWatermarkCardContainer.getPivotY());
                 mWatermarkCardContainer.draw(c);
                 c.restore();
 

@@ -65,6 +65,46 @@ public class OriginalDialogs {
         return gd;
     }
 
+    // Ensures full-screen Dialogs on Android 15/16 (targetSdkVersion=36) sit cleanly below the status bar
+    private static void applyDialogSystemBarInsets(final Activity act, final Dialog dlg, final View root,
+                                                   final int statusBarColor, final boolean lightBars) {
+        Window w = dlg.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(statusBarColor));
+            w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            if (android.os.Build.VERSION.SDK_INT >= 23) {
+                w.setStatusBarColor(statusBarColor);
+                w.setNavigationBarColor(0xFFFFFFFF);
+                int flags = lightBars ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : 0;
+                if (android.os.Build.VERSION.SDK_INT >= 26) {
+                    flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                }
+                w.getDecorView().setSystemUiVisibility(flags);
+            }
+            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        }
+        final int baseLeft = root.getPaddingLeft();
+        final int baseTop = root.getPaddingTop();
+        final int baseRight = root.getPaddingRight();
+        final int baseBottom = root.getPaddingBottom();
+        root.post(new Runnable() {
+            @Override
+            public void run() {
+                int[] loc = new int[2];
+                root.getLocationOnScreen(loc);
+                int sbH = 0;
+                int resId = act.getResources().getIdentifier("status_bar_height", "dimen", "android");
+                if (resId > 0) sbH = act.getResources().getDimensionPixelSize(resId);
+                if (sbH <= 0) sbH = dp(act, 28);
+                int extraTop = (loc[1] < sbH) ? (sbH - loc[1]) : 0;
+                if (extraTop > 0) {
+                    root.setPadding(baseLeft, baseTop + extraTop, baseRight, baseBottom);
+                }
+            }
+        });
+    }
+
     // Helper to create a clean iOS/Timemark-style Switch view matching @drawable/switch_ios_track
     private static View createOriginalSwitch(final Context ctx, boolean checked) {
         FrameLayout track = new FrameLayout(ctx);
@@ -2144,6 +2184,7 @@ public class OriginalDialogs {
 
         scroll.addView(root);
         dlg.setContentView(scroll);
+        applyDialogSystemBarInsets(act, dlg, root, 0xFFF6F6F6, true);
         Window w = dlg.getWindow();
         if (w != null) {
             w.setBackgroundDrawable(new ColorDrawable(0xFFF6F6F6));
@@ -2336,11 +2377,7 @@ public class OriginalDialogs {
         root.addView(card);
 
         dlg.setContentView(root);
-        Window w = dlg.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawable(new ColorDrawable(0xFFF6F6F6));
-            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        }
+        applyDialogSystemBarInsets(act, dlg, root, 0xFFFFFFFF, true);
         dlg.show();
     }
 
@@ -2380,15 +2417,20 @@ public class OriginalDialogs {
             ImageView iv = new ImageView(act);
             iv.setImageResource(icons[i]);
             if (sel) iv.setColorFilter(0xFF0093FF);
-            col.addView(iv, new LinearLayout.LayoutParams(dp(act, 28), dp(act, 28)));
+            LinearLayout.LayoutParams ivLp = new LinearLayout.LayoutParams(dp(act, 28), dp(act, 28));
+            ivLp.gravity = Gravity.CENTER_HORIZONTAL;
+            col.addView(iv, ivLp);
 
             TextView tv = new TextView(act);
             tv.setText(labels[i]);
             tv.setTextSize(13);
+            tv.setGravity(Gravity.CENTER);
             tv.setTypeface(sel ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
             tv.setTextColor(sel ? 0xFF0093FF : 0xFF222222);
             tv.setPadding(0, dp(act, 4), 0, 0);
-            col.addView(tv);
+            LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            tvLp.gravity = Gravity.CENTER_HORIZONTAL;
+            col.addView(tv, tvLp);
 
             col.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -2545,11 +2587,7 @@ public class OriginalDialogs {
         root.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         dlg.setContentView(root);
-        Window w = dlg.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawable(new ColorDrawable(0xFF154978));
-            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        }
+        applyDialogSystemBarInsets(act, dlg, root, 0xFF154978, false);
         dlg.show();
     }
 
@@ -2782,17 +2820,13 @@ public class OriginalDialogs {
         frameRoot.addView(shootFab);
 
         dlg.setContentView(frameRoot);
-        Window w = dlg.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawable(new ColorDrawable(0xFFFFFFFF));
-            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        }
+        applyDialogSystemBarInsets(act, dlg, frameRoot, 0xFFFFFFFF, true);
         dlg.show();
     }
 
     // =========================================================================================
-    // 8. LOCAL PHOTO PREVIEW DIALOG (1:1 fragment_local_pic_preview.xml)
-    //    Bottom 80dp white bar with 5 exact columns: WhatsApp | More | Share | Note | Delete
+    // 8. LOCAL PHOTO & VIDEO PREVIEW DIALOG (1:1 fragment_local_pic_preview.xml + item_pic_preview.xml)
+    //    Bottom 80dp white bar with 5 exact centered columns: WhatsApp | More | Share | Note | Delete
     // =========================================================================================
     public static void showLocalPreviewDialog(final Activity act, final WatermarkModel model, final Runnable onUpdate) {
         showLocalPreviewDialog(act, model, onUpdate, 0);
@@ -2804,43 +2838,52 @@ public class OriginalDialogs {
 
         LinearLayout root = new LinearLayout(act);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(0xFFF7F7F7);
+        root.setBackgroundColor(0xFFFFFFFF);
 
         final int[] curIdx = new int[]{Math.max(0, Math.min(initialIndex, Math.max(0, model.capturedPhotos.size() - 1)))};
+        final Handler animHandler = new Handler(Looper.getMainLooper());
+        final boolean[] isPlayingVideo = new boolean[]{false};
+        final int[] frameCursor = new int[]{0};
 
-        // Top Bar (height 56dp, #FFFFFF: ivClose + title + "Multi-Share")
+        // Top Bar (height 52dp, #FFFFFF: ivClose + title + "Multi-Share")
         RelativeLayout topBar = new RelativeLayout(act);
         topBar.setBackgroundColor(0xFFFFFFFF);
-        topBar.setPadding(dp(act, 12), 0, dp(act, 16), 0);
-        topBar.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 56)));
+        topBar.setPadding(dp(act, 10), 0, dp(act, 16), 0);
+        topBar.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 52)));
 
         ImageView closeIv = new ImageView(act);
         closeIv.setImageResource(R.drawable.global_border_close_ultrastrong);
-        RelativeLayout.LayoutParams cLp = new RelativeLayout.LayoutParams(dp(act, 28), dp(act, 28));
+        closeIv.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        closeIv.setPadding(dp(act, 6), dp(act, 6), dp(act, 6), dp(act, 6));
+        RelativeLayout.LayoutParams cLp = new RelativeLayout.LayoutParams(dp(act, 38), dp(act, 38));
         cLp.addRule(RelativeLayout.ALIGN_PARENT_START);
         cLp.addRule(RelativeLayout.CENTER_VERTICAL);
         closeIv.setLayoutParams(cLp);
         closeIv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                isPlayingVideo[0] = false;
+                animHandler.removeCallbacksAndMessages(null);
                 dlg.dismiss();
             }
         });
         topBar.addView(closeIv);
 
         final TextView titleTv = new TextView(act);
-        titleTv.setTextSize(18);
+        titleTv.setTextSize(17);
         titleTv.setTypeface(Typeface.DEFAULT_BOLD);
-        titleTv.setTextColor(0xFF000000);
+        titleTv.setTextColor(0xFF111111);
+        titleTv.setGravity(Gravity.CENTER);
         RelativeLayout.LayoutParams tLp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tLp.addRule(RelativeLayout.CENTER_IN_PARENT);
         topBar.addView(titleTv, tLp);
 
         TextView multiShareTv = new TextView(act);
         multiShareTv.setText("Multi-Share");
-        multiShareTv.setTextSize(16);
+        multiShareTv.setTextSize(15.5f);
         multiShareTv.setTypeface(Typeface.DEFAULT_BOLD);
         multiShareTv.setTextColor(0xFF0070F4);
+        multiShareTv.setGravity(Gravity.CENTER);
         RelativeLayout.LayoutParams msLp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         msLp.addRule(RelativeLayout.ALIGN_PARENT_END);
         msLp.addRule(RelativeLayout.CENTER_VERTICAL);
@@ -2857,13 +2900,74 @@ public class OriginalDialogs {
         topBar.addView(multiShareTv);
         root.addView(topBar);
 
-        // Center Image View
+        View topDiv = new View(act);
+        topDiv.setBackgroundColor(0xFFEFEFEF);
+        root.addView(topDiv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+
+        // Center Media Preview Container (item_pic_preview.xml)
         FrameLayout centerFrame = new FrameLayout(act);
+        centerFrame.setBackgroundColor(0xFFF5F6F8);
+        centerFrame.setPadding(dp(act, 8), dp(act, 8), dp(act, 8), dp(act, 8));
         centerFrame.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         final ImageView photoIv = new ImageView(act);
         photoIv.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        centerFrame.addView(photoIv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout.LayoutParams pIvLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        pIvLp.gravity = Gravity.CENTER;
+        centerFrame.addView(photoIv, pIvLp);
+
+        // Video Badge Pill (top-left when viewing a recorded video)
+        final TextView videoBadgeTv = new TextView(act);
+        videoBadgeTv.setTextSize(12);
+        videoBadgeTv.setTypeface(Typeface.DEFAULT_BOLD);
+        videoBadgeTv.setTextColor(0xFFFFFFFF);
+        videoBadgeTv.setBackground(rounded(act, 0xAA000000, 14, dp(act, 1), 0x44FFFFFF));
+        videoBadgeTv.setPadding(dp(act, 12), dp(act, 4), dp(act, 12), dp(act, 4));
+        videoBadgeTv.setVisibility(View.GONE);
+        FrameLayout.LayoutParams vbLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        vbLp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        vbLp.setMargins(0, dp(act, 12), 0, 0);
+        centerFrame.addView(videoBadgeTv, vbLp);
+
+        // Center Video Play/Pause Overlay Button
+        final TextView playBtnTv = new TextView(act);
+        playBtnTv.setText("▶");
+        playBtnTv.setTextSize(24);
+        playBtnTv.setTypeface(Typeface.DEFAULT_BOLD);
+        playBtnTv.setTextColor(0xFFFFFFFF);
+        playBtnTv.setGravity(Gravity.CENTER);
+        playBtnTv.setBackground(rounded(act, 0x99000000, 32, dp(act, 2), 0xFFFFFFFF));
+        playBtnTv.setVisibility(View.GONE);
+        FrameLayout.LayoutParams pbLp = new FrameLayout.LayoutParams(dp(act, 64), dp(act, 64));
+        pbLp.gravity = Gravity.CENTER;
+        centerFrame.addView(playBtnTv, pbLp);
+
+        // Left / Right Navigation Arrows for Multiple Photos/Videos
+        final TextView prevArrowTv = new TextView(act);
+        prevArrowTv.setText("‹");
+        prevArrowTv.setTextSize(26);
+        prevArrowTv.setTypeface(Typeface.DEFAULT_BOLD);
+        prevArrowTv.setTextColor(0xFFFFFFFF);
+        prevArrowTv.setGravity(Gravity.CENTER);
+        prevArrowTv.setIncludeFontPadding(false);
+        prevArrowTv.setBackground(rounded(act, 0x66000000, 20, 0, 0));
+        FrameLayout.LayoutParams paLp = new FrameLayout.LayoutParams(dp(act, 38), dp(act, 38));
+        paLp.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+        paLp.setMargins(dp(act, 6), 0, 0, 0);
+        centerFrame.addView(prevArrowTv, paLp);
+
+        final TextView nextArrowTv = new TextView(act);
+        nextArrowTv.setText("›");
+        nextArrowTv.setTextSize(26);
+        nextArrowTv.setTypeface(Typeface.DEFAULT_BOLD);
+        nextArrowTv.setTextColor(0xFFFFFFFF);
+        nextArrowTv.setGravity(Gravity.CENTER);
+        nextArrowTv.setIncludeFontPadding(false);
+        nextArrowTv.setBackground(rounded(act, 0x66000000, 20, 0, 0));
+        FrameLayout.LayoutParams naLp = new FrameLayout.LayoutParams(dp(act, 38), dp(act, 38));
+        naLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        naLp.setMargins(0, 0, dp(act, 6), 0);
+        centerFrame.addView(nextArrowTv, naLp);
 
         final TextView emptyTv = new TextView(act);
         emptyTv.setText("No photos yet. Take a photo first.");
@@ -2872,34 +2976,129 @@ public class OriginalDialogs {
         emptyTv.setGravity(Gravity.CENTER);
         centerFrame.addView(emptyTv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        final Runnable videoFrameStepper = new Runnable() {
+            @Override
+            public void run() {
+                if (!isPlayingVideo[0] || model.capturedPhotos.isEmpty()) return;
+                WatermarkModel.CapturedPhoto item = model.capturedPhotos.get(curIdx[0]);
+                if (!item.isVideo || item.videoFrames == null || item.videoFrames.isEmpty()) {
+                    isPlayingVideo[0] = false;
+                    playBtnTv.setText("▶");
+                    playBtnTv.setAlpha(1f);
+                    return;
+                }
+                Bitmap f = item.videoFrames.get(frameCursor[0] % item.videoFrames.size());
+                if (f != null) photoIv.setImageBitmap(f);
+                frameCursor[0]++;
+                if (frameCursor[0] >= item.videoFrames.size()) {
+                    frameCursor[0] = 0;
+                    isPlayingVideo[0] = false;
+                    playBtnTv.setText("▶");
+                    playBtnTv.setAlpha(1f);
+                } else {
+                    animHandler.postDelayed(this, 140);
+                }
+            }
+        };
+
         final Runnable updatePhotoView = new Runnable() {
             @Override
             public void run() {
+                isPlayingVideo[0] = false;
+                animHandler.removeCallbacksAndMessages(null);
                 if (model.capturedPhotos.isEmpty()) {
                     titleTv.setText("Preview");
                     photoIv.setImageDrawable(null);
+                    videoBadgeTv.setVisibility(View.GONE);
+                    playBtnTv.setVisibility(View.GONE);
+                    prevArrowTv.setVisibility(View.GONE);
+                    nextArrowTv.setVisibility(View.GONE);
                     emptyTv.setVisibility(View.VISIBLE);
                     return;
                 }
                 emptyTv.setVisibility(View.GONE);
-                curIdx[0] = Math.max(0, Math.min(curIdx[0], model.capturedPhotos.size() - 1));
+                int total = model.capturedPhotos.size();
+                curIdx[0] = Math.max(0, Math.min(curIdx[0], total - 1));
                 WatermarkModel.CapturedPhoto item = model.capturedPhotos.get(curIdx[0]);
-                titleTv.setText((curIdx[0] + 1) + "/" + model.capturedPhotos.size());
+                titleTv.setText((curIdx[0] + 1) + "/" + total);
+
+                prevArrowTv.setVisibility(total > 1 && curIdx[0] > 0 ? View.VISIBLE : View.GONE);
+                nextArrowTv.setVisibility(total > 1 && curIdx[0] < total - 1 ? View.VISIBLE : View.GONE);
+
                 if (item.previewBitmap != null) {
                     photoIv.setImageBitmap(item.previewBitmap);
                 } else if (item.compositeFile != null && item.compositeFile.exists()) {
                     photoIv.setImageBitmap(BitmapFactory.decodeFile(item.compositeFile.getAbsolutePath()));
                 }
+
+                if (item.isVideo) {
+                    videoBadgeTv.setVisibility(View.VISIBLE);
+                    videoBadgeTv.setText(String.format(Locale.US, "● VIDEO  00:%02d", Math.max(1, item.durationSec)));
+                    playBtnTv.setVisibility(View.VISIBLE);
+                    playBtnTv.setText("▶");
+                    playBtnTv.setAlpha(1f);
+                } else {
+                    videoBadgeTv.setVisibility(View.GONE);
+                    playBtnTv.setVisibility(View.GONE);
+                }
             }
         };
+
+        View.OnClickListener toggleVideoPlay = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (model.capturedPhotos.isEmpty()) return;
+                WatermarkModel.CapturedPhoto item = model.capturedPhotos.get(curIdx[0]);
+                if (!item.isVideo) return;
+                if (isPlayingVideo[0]) {
+                    isPlayingVideo[0] = false;
+                    animHandler.removeCallbacksAndMessages(null);
+                    playBtnTv.setText("▶");
+                    playBtnTv.setAlpha(1f);
+                } else {
+                    isPlayingVideo[0] = true;
+                    frameCursor[0] = 0;
+                    playBtnTv.setText("❚❚");
+                    playBtnTv.setAlpha(0.45f);
+                    animHandler.post(videoFrameStepper);
+                }
+            }
+        };
+        playBtnTv.setOnClickListener(toggleVideoPlay);
+        photoIv.setOnClickListener(toggleVideoPlay);
+
+        prevArrowTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (curIdx[0] > 0) {
+                    curIdx[0]--;
+                    updatePhotoView.run();
+                }
+            }
+        });
+        nextArrowTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (curIdx[0] < model.capturedPhotos.size() - 1) {
+                    curIdx[0]++;
+                    updatePhotoView.run();
+                }
+            }
+        });
+
         updatePhotoView.run();
         root.addView(centerFrame);
 
-        // Bottom Bar (bottomLayoutGlobalNew: height 80dp, #FFFFFF, 5 columns)
+        View botDiv = new View(act);
+        botDiv.setBackgroundColor(0xFFEFEFEF);
+        root.addView(botDiv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+
+        // Bottom Bar (bottomLayoutGlobalNew: height 80dp, #FFFFFF, 5 centered columns)
         LinearLayout bottomBar = new LinearLayout(act);
         bottomBar.setOrientation(LinearLayout.HORIZONTAL);
         bottomBar.setGravity(Gravity.CENTER_VERTICAL);
         bottomBar.setBackgroundColor(0xFFFFFFFF);
+        bottomBar.setPadding(dp(act, 10), dp(act, 4), dp(act, 10), dp(act, 4));
         bottomBar.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 80)));
 
         int[] botIcons = new int[]{
@@ -2917,16 +3116,36 @@ public class OriginalDialogs {
             col.setGravity(Gravity.CENTER);
             col.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
 
+            FrameLayout iconWrap = new FrameLayout(act);
             ImageView iv = new ImageView(act);
             iv.setImageResource(botIcons[i]);
-            col.addView(iv, new LinearLayout.LayoutParams(dp(act, 24), dp(act, 24)));
+            iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            FrameLayout.LayoutParams ivLp = new FrameLayout.LayoutParams(dp(act, 28), dp(act, 28));
+            ivLp.gravity = Gravity.CENTER;
+            iconWrap.addView(iv, ivLp);
+
+            if (i == 1) {
+                View moreDot = new View(act);
+                moreDot.setBackground(rounded(act, 0xFF0093FF, 4.5f, dp(act, 1), 0xFFFFFFFF));
+                FrameLayout.LayoutParams mdLp = new FrameLayout.LayoutParams(dp(act, 9), dp(act, 9));
+                mdLp.gravity = Gravity.TOP | Gravity.END;
+                iconWrap.addView(moreDot, mdLp);
+            }
+
+            LinearLayout.LayoutParams iwLp = new LinearLayout.LayoutParams(dp(act, 34), dp(act, 32));
+            iwLp.gravity = Gravity.CENTER_HORIZONTAL;
+            col.addView(iconWrap, iwLp);
 
             TextView tv = new TextView(act);
             tv.setText(botLabels[i]);
-            tv.setTextSize(11);
+            tv.setSingleLine(true);
+            tv.setGravity(Gravity.CENTER);
+            tv.setTextSize(11.5f);
             tv.setTextColor(0xFF222222);
-            tv.setPadding(0, dp(act, 4), 0, 0);
-            col.addView(tv);
+            LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            tvLp.gravity = Gravity.CENTER_HORIZONTAL;
+            tvLp.setMargins(0, dp(act, 4), 0, 0);
+            col.addView(tv, tvLp);
 
             col.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -2962,11 +3181,7 @@ public class OriginalDialogs {
         root.addView(bottomBar);
 
         dlg.setContentView(root);
-        Window w = dlg.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawable(new ColorDrawable(0xFFF7F7F7));
-            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        }
+        applyDialogSystemBarInsets(act, dlg, root, 0xFFFFFFFF, true);
         dlg.show();
     }
 
