@@ -8,6 +8,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
@@ -255,39 +258,31 @@ public class OriginalDialogs {
                         cardLp.setMargins(dp(act, 4), 0, dp(act, 4), 0);
                         card.setLayoutParams(cardLp);
 
-                        // Top Cover Frame (aivWMCover + clWMShareAndEdit when selected)
+                        // Top Cover Frame (bg_watermark_cover.xml #7F8690 + full uncropped stamp preview)
                         FrameLayout coverFrame = new FrameLayout(act);
-                        coverFrame.setBackground(rounded(act, 0xFF4D545E, 6, isActive ? dp(act, 2) : 0, 0xFF0093FF));
-                        coverFrame.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 112)));
+                        coverFrame.setBackground(rounded(act, 0xFF7F8690, 6, isActive ? dp(act, 2) : 0, 0xFF0093FF));
+                        coverFrame.setMinimumHeight(dp(act, 100));
+                        boolean isCustomCard = "120".equals(t.id) || "20".equals(t.id) || "100".equals(t.id)
+                                || "43".equals(t.id) || "60".equals(t.id) || "130".equals(t.id);
+                        int pad = isCustomCard ? dp(act, 6) : dp(act, 2);
+                        coverFrame.setPadding(pad, pad, pad, pad);
+                        coverFrame.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-                        ImageView coverIv = new ImageView(act);
-                        coverIv.setImageResource(t.coverResId);
-                        coverIv.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                        coverIv.setPadding(dp(act, 6), dp(act, 6), dp(act, 6), dp(act, 6));
-                        coverFrame.addView(coverIv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                        View fullStampPreview = buildFullTemplatePreviewCard(act, t);
+                        FrameLayout.LayoutParams fpLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                        fpLp.gravity = Gravity.CENTER_VERTICAL;
+                        coverFrame.addView(fullStampPreview, fpLp);
+
+                        card.addView(coverFrame);
 
                         if (isActive) {
-                            // clWMShareAndEdit overlay at bottom of active cover card
-                            LinearLayout shareEditRow = new LinearLayout(act);
-                            shareEditRow.setOrientation(LinearLayout.HORIZONTAL);
-                            shareEditRow.setGravity(Gravity.CENTER);
-                            shareEditRow.setBackgroundColor(0x66000000);
-                            shareEditRow.setPadding(dp(act, 6), dp(act, 6), dp(act, 6), dp(act, 6));
-                            FrameLayout.LayoutParams seLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-                            coverFrame.addView(shareEditRow, seLp);
-
+                            // Action row placed cleanly below coverFrame so stamp content is never covered or cut off
                             LinearLayout btnsWrap = new LinearLayout(act);
                             btnsWrap.setOrientation(LinearLayout.HORIZONTAL);
                             btnsWrap.setGravity(Gravity.CENTER);
-                            FrameLayout.LayoutParams bwLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 28));
-                            bwLp.gravity = Gravity.BOTTOM;
-                            bwLp.setMargins(dp(act, 6), 0, dp(act, 6), dp(act, 6));
-                            coverFrame.removeView(shareEditRow);
-
-                            // Dark tint overlay
-                            View darkOverlay = new View(act);
-                            darkOverlay.setBackground(rounded(act, 0x44000000, 6, dp(act, 2), 0xFF0093FF));
-                            coverFrame.addView(darkOverlay, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                            LinearLayout.LayoutParams bwLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(act, 28));
+                            bwLp.setMargins(0, dp(act, 4), 0, 0);
+                            btnsWrap.setLayoutParams(bwLp);
 
                             // Share button (#1DC560)
                             LinearLayout shareBtn = new LinearLayout(act);
@@ -295,17 +290,17 @@ public class OriginalDialogs {
                             shareBtn.setGravity(Gravity.CENTER);
                             shareBtn.setBackground(rounded(act, 0xFF1DC560, 4, 0, 0));
                             LinearLayout.LayoutParams sBtnLp = new LinearLayout.LayoutParams(0, dp(act, 26), 1f);
-                            sBtnLp.setMargins(0, 0, dp(act, 4), 0);
+                            sBtnLp.setMargins(0, 0, dp(act, 3), 0);
                             shareBtn.setLayoutParams(sBtnLp);
 
                             ImageView sIv = new ImageView(act);
                             sIv.setImageResource(R.drawable.ic_share_ltr);
                             sIv.setColorFilter(0xFFFFFFFF);
-                            shareBtn.addView(sIv, new LinearLayout.LayoutParams(dp(act, 13), dp(act, 13)));
+                            shareBtn.addView(sIv, new LinearLayout.LayoutParams(dp(act, 12), dp(act, 12)));
 
                             TextView sTv = new TextView(act);
                             sTv.setText(" Share");
-                            sTv.setTextSize(12);
+                            sTv.setTextSize(11.5f);
                             sTv.setTypeface(Typeface.DEFAULT_BOLD);
                             sTv.setTextColor(0xFFFFFFFF);
                             shareBtn.addView(sTv);
@@ -327,17 +322,17 @@ public class OriginalDialogs {
                             editBtn.setGravity(Gravity.CENTER);
                             editBtn.setBackground(rounded(act, 0xFF0093FF, 4, 0, 0));
                             LinearLayout.LayoutParams eBtnLp = new LinearLayout.LayoutParams(0, dp(act, 26), 1f);
-                            eBtnLp.setMargins(dp(act, 4), 0, 0, 0);
+                            eBtnLp.setMargins(dp(act, 3), 0, 0, 0);
                             editBtn.setLayoutParams(eBtnLp);
 
                             ImageView eIv = new ImageView(act);
                             eIv.setImageResource(R.drawable.tool_border_edit);
                             eIv.setColorFilter(0xFFFFFFFF);
-                            editBtn.addView(eIv, new LinearLayout.LayoutParams(dp(act, 13), dp(act, 13)));
+                            editBtn.addView(eIv, new LinearLayout.LayoutParams(dp(act, 12), dp(act, 12)));
 
                             TextView eTv = new TextView(act);
                             eTv.setText(" Edit");
-                            eTv.setTextSize(12);
+                            eTv.setTextSize(11.5f);
                             eTv.setTypeface(Typeface.DEFAULT_BOLD);
                             eTv.setTextColor(0xFFFFFFFF);
                             editBtn.addView(eTv);
@@ -350,10 +345,8 @@ public class OriginalDialogs {
                             });
                             btnsWrap.addView(editBtn);
 
-                            coverFrame.addView(btnsWrap, bwLp);
+                            card.addView(btnsWrap);
                         }
-
-                        card.addView(coverFrame);
 
                         // Bottom Name (atvWMName: 30dp height, 14sp #333333 centered)
                         TextView nameTv = new TextView(act);
@@ -1036,7 +1029,369 @@ public class OriginalDialogs {
         void onSave(String newVal);
     }
 
-    // Exact 1:1 row from item_edit_item_single_line.xml (50dp height, switch_edit + tv_title + arrow_right_gray)
+    // Complete, uncropped miniature preview card for every template in the Templates chooser sheet
+    private static View buildFullTemplatePreviewCard(final Context ctx, final WatermarkModel.TemplateInfo t) {
+        String id = (t != null && t.id != null) ? t.id : "34";
+
+        if ("120".equals(id) || "20".equals(id)) {
+            boolean isConst = "120".equals(id);
+            LinearLayout card = new LinearLayout(ctx);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackground(rounded(ctx, 0xFFE6ECF2, 4, 0, 0));
+
+            LinearLayout hdr = new LinearLayout(ctx);
+            hdr.setOrientation(LinearLayout.VERTICAL);
+            hdr.setBackground(topRounded(ctx, isConst ? 0xFF2E47A0 : 0xFFD98A36, 4));
+            hdr.setPadding(dp(ctx, 6), dp(ctx, 4), dp(ctx, 6), dp(ctx, 4));
+
+            if (isConst) {
+                LinearLayout logosRow = new LinearLayout(ctx);
+                logosRow.setOrientation(LinearLayout.HORIZONTAL);
+                logosRow.setGravity(Gravity.CENTER);
+                String[] lgLabels = new String[]{"🏢 LOGO", "🏗 LOGO", "🏛 LOGO"};
+                for (int i = 0; i < 3; i++) {
+                    TextView lPill = new TextView(ctx);
+                    lPill.setText(lgLabels[i]);
+                    lPill.setTextSize(7f);
+                    lPill.setTypeface(Typeface.DEFAULT_BOLD);
+                    lPill.setTextColor(0xFF1F3A8A);
+                    lPill.setGravity(Gravity.CENTER);
+                    lPill.setBackground(rounded(ctx, 0xFFF2F5FA, 2, 0, 0));
+                    lPill.setPadding(dp(ctx, 3), dp(ctx, 1), dp(ctx, 3), dp(ctx, 1));
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                    if (i < 2) lp.setMargins(0, 0, dp(ctx, 3), 0);
+                    logosRow.addView(lPill, lp);
+                }
+                hdr.addView(logosRow);
+            }
+
+            TextView hTitle = new TextView(ctx);
+            hTitle.setText(isConst ? "Construction Record" : "Work Report");
+            hTitle.setTextSize(10.5f);
+            hTitle.setTypeface(Typeface.DEFAULT_BOLD);
+            hTitle.setTextColor(0xFFFFFFFF);
+            hTitle.setGravity(isConst ? Gravity.CENTER : Gravity.START);
+            if (isConst) hTitle.setPadding(0, dp(ctx, 2), 0, 0);
+            hdr.addView(hTitle);
+            card.addView(hdr);
+
+            LinearLayout body = new LinearLayout(ctx);
+            body.setOrientation(LinearLayout.VERTICAL);
+            body.setPadding(dp(ctx, 6), dp(ctx, 4), dp(ctx, 6), dp(ctx, 5));
+            if (isConst) {
+                addMiniTableRow(ctx, body, "Project", "Metro Line 1 Station B");
+                addMiniTableRow(ctx, body, "Area", "Zone A - Floor 3");
+                addMiniTableRow(ctx, body, "Description", "Floor Inspection");
+                addMiniTableRow(ctx, body, "Time", "30/01/2026 09:30");
+                addMiniTableRow(ctx, body, "Address", "Cupertino, CA, USA");
+            } else {
+                addMiniTableRow(ctx, body, "Project", "CH396+800 Roadbed");
+                addMiniTableRow(ctx, body, "Inspection", "Site Clearing/Remove");
+                addMiniTableRow(ctx, body, "By", "Eng. Nguyen Van A");
+                addMiniTableRow(ctx, body, "Time", "30/01/2026 09:30");
+                addMiniTableRow(ctx, body, "Address", "McClellan Rd, Cupertino");
+            }
+            card.addView(body);
+            return card;
+
+        } else if ("100".equals(id)) {
+            int green = 0xFF5CE08A;
+            LinearLayout card = new LinearLayout(ctx);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackground(rounded(ctx, 0xCC263238, 3, dp(ctx, 1), green));
+
+            View topBar = new View(ctx);
+            topBar.setBackgroundColor(green);
+            card.addView(topBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 3)));
+
+            TextView titleTv = new TextView(ctx);
+            titleTv.setText("Work Record");
+            titleTv.setTextSize(10.5f);
+            titleTv.setTypeface(Typeface.DEFAULT_BOLD);
+            titleTv.setTextColor(green);
+            titleTv.setPadding(dp(ctx, 6), dp(ctx, 3), dp(ctx, 6), dp(ctx, 3));
+            card.addView(titleTv);
+
+            addMiniGreenRow(ctx, card, "Time", "14/09/2026 10:56", green);
+            addMiniGreenRow(ctx, card, "Project", "Site Structure A", green);
+            addMiniGreenRow(ctx, card, "By", "Inspector Team", green);
+            addMiniGreenRow(ctx, card, "Address", "121 St. Petersburg, FL", green);
+            return card;
+
+        } else if ("43".equals(id)) {
+            LinearLayout card = new LinearLayout(ctx);
+            card.setOrientation(LinearLayout.VERTICAL);
+
+            LinearLayout hdr = new LinearLayout(ctx);
+            hdr.setOrientation(LinearLayout.HORIZONTAL);
+            hdr.setGravity(Gravity.CENTER_VERTICAL);
+            hdr.setBackground(topRounded(ctx, 0xFF28356E, 4));
+            hdr.setPadding(dp(ctx, 6), dp(ctx, 4), dp(ctx, 6), dp(ctx, 4));
+
+            ImageView sh = new ImageView(ctx);
+            sh.setImageResource(R.drawable.tool_border_safe_green);
+            hdr.addView(sh, new LinearLayout.LayoutParams(dp(ctx, 14), dp(ctx, 14)));
+
+            TextView tTv = new TextView(ctx);
+            tTv.setText(" Security Guard");
+            tTv.setTextSize(10.5f);
+            tTv.setTypeface(Typeface.DEFAULT_BOLD);
+            tTv.setTextColor(0xFFFFF15C);
+            hdr.addView(tTv);
+            card.addView(hdr);
+
+            View yLine = new View(ctx);
+            yLine.setBackgroundColor(0xFFFFF15C);
+            card.addView(yLine, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 1.5f)));
+
+            LinearLayout body = new LinearLayout(ctx);
+            body.setOrientation(LinearLayout.VERTICAL);
+            body.setBackground( rounded(ctx, 0xFF3651C9, 3, 0, 0));
+            body.setPadding(dp(ctx, 6), dp(ctx, 3), dp(ctx, 6), dp(ctx, 5));
+
+            TextView tm = new TextView(ctx);
+            tm.setText("09:30  30 Jan 2026");
+            tm.setTextSize(11f);
+            tm.setTypeface(Typeface.DEFAULT_BOLD);
+            tm.setTextColor(0xFFFFF15C);
+            body.addView(tm);
+
+            addMiniBulletRow(ctx, body, "Patrol Checkpoint Clear");
+            addMiniBulletRow(ctx, body, "Cupertino, California, USA");
+            addMiniBulletRow(ctx, body, "37.31519°N, 122.05233°E");
+            card.addView(body);
+            return card;
+
+        } else if ("60".equals(id) || "130".equals(id)) {
+            boolean isBigMap = "130".equals(id);
+            LinearLayout card = new LinearLayout(ctx);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setBackground(rounded(ctx, 0xCC263238, 4, 0, 0));
+
+            if (isBigMap) {
+                card.addView(createSurveyMapBannerView(ctx, 40),
+                        new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 40)));
+            }
+
+            LinearLayout body = new LinearLayout(ctx);
+            body.setOrientation(LinearLayout.VERTICAL);
+            body.setPadding(dp(ctx, 6), dp(ctx, 4), dp(ctx, 6), dp(ctx, 4));
+
+            TextView t1 = new TextView(ctx);
+            t1.setText(isBigMap ? "Survey Map • 125°SE" : "21490 McClellan Rd");
+            t1.setTextSize(10f);
+            t1.setTypeface(Typeface.DEFAULT_BOLD);
+            t1.setTextColor(0xFFFFFFFF);
+            body.addView(t1);
+
+            TextView t2 = new TextView(ctx);
+            t2.setText("Cupertino, California, USA");
+            t2.setTextSize(8.5f);
+            t2.setTextColor(0xEEFFFFFF);
+            body.addView(t2);
+
+            TextView t3 = new TextView(ctx);
+            t3.setText("37.31519°N, 122.05233°E • 26°C");
+            t3.setTextSize(8f);
+            t3.setTextColor(0xDDFFFFFF);
+            body.addView(t3);
+
+            TextView t4 = new TextView(ctx);
+            t4.setText("08/07/2026 09:30 • 18.4m ASL");
+            t4.setTextSize(8f);
+            t4.setTextColor(0xDDFFFFFF);
+            body.addView(t4);
+
+            card.addView(body);
+            View botLine = new View(ctx);
+            botLine.setBackgroundColor(0xFFFFC233);
+            card.addView(botLine, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 2)));
+            return card;
+
+        } else if ("dasher01".equals(id)) {
+            LinearLayout card = new LinearLayout(ctx);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(dp(ctx, 4), dp(ctx, 3), dp(ctx, 4), dp(ctx, 3));
+
+            LinearLayout pill = new LinearLayout(ctx);
+            pill.setOrientation(LinearLayout.HORIZONTAL);
+            pill.setGravity(Gravity.CENTER_VERTICAL);
+
+            TextView badge = new TextView(ctx);
+            badge.setText("TIPS & REVIEWS KEEP ME DRIVING");
+            badge.setTextSize(7f);
+            badge.setTypeface(Typeface.DEFAULT_BOLD);
+            badge.setTextColor(0xFFFFFFFF);
+            badge.setBackground(rounded(ctx, 0xFFFF1717, 2.5f, 0, 0));
+            badge.setPadding(dp(ctx, 4), dp(ctx, 2), dp(ctx, 4), dp(ctx, 2));
+            pill.addView(badge);
+
+            TextView clk = new TextView(ctx);
+            clk.setText(" 09:35 ");
+            clk.setTextSize(10f);
+            clk.setTypeface(Typeface.DEFAULT_BOLD);
+            clk.setTextColor(0xFF0A2463);
+            clk.setBackground(rounded(ctx, 0xFFFFFFFF, 2.5f, 0, 0));
+            clk.setPadding(dp(ctx, 3), dp(ctx, 1), dp(ctx, 3), dp(ctx, 1));
+            pill.addView(clk);
+            card.addView(pill);
+
+            TextView dt = new TextView(ctx);
+            dt.setText("30/01/2026 • Cupertino, CA, USA");
+            dt.setTextSize(8.5f);
+            dt.setTextColor(0xFFFFFFFF);
+            dt.setPadding(0, dp(ctx, 3), 0, dp(ctx, 3));
+            card.addView(dt);
+
+            LinearLayout biz = new LinearLayout(ctx);
+            biz.setOrientation(LinearLayout.HORIZONTAL);
+            biz.setGravity(Gravity.CENTER_VERTICAL);
+            biz.setBackground(rounded(ctx, 0xE6FFFFFF, 3, 0, 0));
+            biz.setPadding(dp(ctx, 5), dp(ctx, 3), dp(ctx, 5), dp(ctx, 3));
+
+            TextView av = new TextView(ctx);
+            av.setText("🛵 ");
+            av.setTextSize(10f);
+            biz.addView(av);
+
+            TextView bTxt = new TextView(ctx);
+            bTxt.setText("Delivered By Courier • 5.0 ★");
+            bTxt.setTextSize(8f);
+            bTxt.setTypeface(Typeface.DEFAULT_BOLD);
+            bTxt.setTextColor(0xFF222222);
+            biz.addView(bTxt);
+            card.addView(biz);
+            return card;
+
+        } else {
+            // For 34, map01, 21, 10, 80, service01, 90: use crisp ImageView with ADJUST_VIEW_BOUNDS + full lines
+            ImageView iv = new ImageView(ctx);
+            iv.setImageResource(t.coverResId);
+            iv.setAdjustViewBounds(true);
+            iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            return iv;
+        }
+    }
+
+    public static View createSurveyMapBannerView(final Context ctx, final int heightDp) {
+        return new View(ctx) {
+            private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final RectF rf = new RectF();
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                int w = getWidth();
+                int h = getHeight();
+                if (w <= 0 || h <= 0) return;
+
+                // Base light map terrain
+                p.setStyle(Paint.Style.FILL);
+                p.setColor(0xFFEEF2E8);
+                canvas.drawRect(0, 0, w, h, p);
+
+                // Green survey blocks / park polygons
+                p.setColor(0xFFC5E89B);
+                canvas.drawRect(0, 0, w * 0.45f, h * 0.58f, p);
+                p.setColor(0xFFB3DC82);
+                canvas.drawRect(w * 0.52f, h * 0.15f, w * 0.88f, h * 0.78f, p);
+                p.setColor(0xFFD6F0B4);
+                canvas.drawRect(w * 0.10f, h * 0.65f, w * 0.48f, h, p);
+
+                // Blue river / canal channel
+                p.setColor(0xFF81D4FA);
+                p.setStrokeWidth(dp(ctx, 4.5f));
+                canvas.drawLine(0, h * 0.82f, w * 0.72f, 0, p);
+
+                // White survey roads
+                p.setColor(0xFFFFFFFF);
+                p.setStrokeWidth(dp(ctx, 4f));
+                canvas.drawLine(0, h * 0.25f, w, h * 0.78f, p);
+                canvas.drawLine(w * 0.28f, 0, w * 0.65f, h, p);
+                p.setStrokeWidth(dp(ctx, 2.5f));
+                canvas.drawLine(0, h * 0.55f, w, h * 0.32f, p);
+
+                // Compass radar direction cone (SE)
+                float cx = w * 0.46f;
+                float cy = h * 0.52f;
+                float coneR = Math.min(w, h) * 0.44f;
+                rf.set(cx - coneR, cy - coneR, cx + coneR, cy + coneR);
+                p.setStyle(Paint.Style.FILL);
+                p.setColor(0x441E88E5);
+                canvas.drawArc(rf, 15f, 55f, true, p);
+
+                // Outer white halo + blue GPS beacon dot
+                p.setColor(0xFFFFFFFF);
+                canvas.drawCircle(cx, cy, dp(ctx, 5.5f), p);
+                p.setColor(0xFF1565C0);
+                canvas.drawCircle(cx, cy, dp(ctx, 3.8f), p);
+
+                // Top-right dark camera badge
+                float bw = dp(ctx, 26);
+                float bh = dp(ctx, 16);
+                float bx = w - bw - dp(ctx, 6);
+                float by = dp(ctx, 4);
+                rf.set(bx, by, bx + bw, by + bh);
+                p.setColor(0x99263238);
+                canvas.drawRoundRect(rf, dp(ctx, 3), dp(ctx, 3), p);
+                p.setColor(0xFFFFFFFF);
+                canvas.drawCircle(bx + bw / 2f, by + bh / 2f, dp(ctx, 3.2f), p);
+            }
+        };
+    }
+
+    private static void addMiniTableRow(Context ctx, LinearLayout parent, String k, String v) {
+        LinearLayout r = new LinearLayout(ctx);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setPadding(0, dp(ctx, 0.5f), 0, dp(ctx, 0.5f));
+
+        TextView kTv = new TextView(ctx);
+        kTv.setText(k + ": ");
+        kTv.setTextSize(8f);
+        kTv.setTextColor(0xFF444444);
+        r.addView(kTv, new LinearLayout.LayoutParams(dp(ctx, 48), ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView vTv = new TextView(ctx);
+        vTv.setText(v);
+        vTv.setTextSize(8f);
+        vTv.setTypeface(Typeface.DEFAULT_BOLD);
+        vTv.setTextColor(0xFF111111);
+        r.addView(vTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        parent.addView(r);
+    }
+
+    private static void addMiniGreenRow(Context ctx, LinearLayout parent, String k, String v, int green) {
+        View div = new View(ctx);
+        div.setBackgroundColor(green);
+        parent.addView(div, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+
+        LinearLayout r = new LinearLayout(ctx);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setPadding(dp(ctx, 5), dp(ctx, 2), dp(ctx, 5), dp(ctx, 2));
+
+        TextView kTv = new TextView(ctx);
+        kTv.setText(k);
+        kTv.setTextSize(8f);
+        kTv.setTextColor(0xFFE0F2F1);
+        r.addView(kTv, new LinearLayout.LayoutParams(dp(ctx, 38), ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        TextView vTv = new TextView(ctx);
+        vTv.setText("|  " + v);
+        vTv.setTextSize(8f);
+        vTv.setTextColor(0xFFFFFFFF);
+        r.addView(vTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        parent.addView(r);
+    }
+
+    private static void addMiniBulletRow(Context ctx, LinearLayout parent, String text) {
+        TextView tv = new TextView(ctx);
+        tv.setText("▪ " + text);
+        tv.setTextSize(8f);
+        tv.setTextColor(0xFFFFFFFF);
+        parent.addView(tv);
+    }
+
+    // Exact 1:1 row from item_edit_item_single_line.xml (minHeight 50dp, switch_edit + multi-line tv_title + arrow_right_gray)
     private static void addOriginalSingleLineEditRow(final Context ctx, LinearLayout parent,
                                                      boolean checked, String text, String rightBlueLabel,
                                                      final Runnable onToggle, final Runnable onRowClick) {
@@ -1044,8 +1399,9 @@ public class OriginalDialogs {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackgroundColor(0xFFFFFFFF);
-        row.setPadding(dp(ctx, 16), 0, dp(ctx, 16), 0);
-        row.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(ctx, 50)));
+        row.setMinimumHeight(dp(ctx, 50));
+        row.setPadding(dp(ctx, 16), dp(ctx, 8), dp(ctx, 16), dp(ctx, 8));
+        row.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         View sw = createOriginalSwitch(ctx, checked);
         sw.setOnClickListener(new View.OnClickListener() {
@@ -1058,9 +1414,9 @@ public class OriginalDialogs {
 
         TextView tv = new TextView(ctx);
         tv.setText(text);
-        tv.setTextSize(17);
-        tv.setSingleLine(true);
-        tv.setEllipsize(TextUtils.TruncateAt.END);
+        tv.setTextSize(15.5f);
+        tv.setSingleLine(false);
+        tv.setMaxLines(3);
         tv.setTextColor(checked ? 0xFF222222 : 0xFF999999);
         tv.setPadding(dp(ctx, 12), 0, dp(ctx, 8), 0);
         row.addView(tv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));

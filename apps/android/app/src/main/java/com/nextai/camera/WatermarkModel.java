@@ -281,10 +281,11 @@ public class WatermarkModel {
         this.showTitle = (info.headerBadge != null && !info.headerBadge.trim().isEmpty());
         this.showProject = info.hasTableFields || "service01".equals(info.id);
         this.showArea = "120".equals(info.id);
-        this.showInspector = "dasher01".equals(info.id) || "120".equals(info.id) || "20".equals(info.id);
-        if (info.hasTableFields || "service01".equals(info.id)) {
-            this.showNotes = true;
-        }
+        this.showInspector = "dasher01".equals(info.id) || "120".equals(info.id) || "20".equals(info.id)
+                || "service01".equals(info.id) || "100".equals(info.id);
+        this.showNotes = info.hasTableFields || "service01".equals(info.id) || "43".equals(info.id);
+        this.showCompass = "60".equals(info.id) || "130".equals(info.id);
+        this.stampPositionIndex = 0;
     }
 
     public void resetActiveTemplateDefaults() {

@@ -9,6 +9,7 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SurfaceTexture;
 import android.graphics.Typeface;
@@ -173,6 +174,7 @@ public class MainActivity extends Activity {
         String safe = (text != null) ? text : "";
         tv.setText(safe);
         tv.setMaxWidth(dp(maxWidthDp));
+        tv.setEllipsize(null);
         Paint paint = new Paint(tv.getPaint());
         float pxAtBase = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, baseSp, getResources().getDisplayMetrics());
         paint.setTextSize(pxAtBase);
@@ -180,17 +182,18 @@ public class MainActivity extends Activity {
         float availPx = dp(maxWidthDp - 14);
         if (measured <= availPx || measured <= 0f) {
             tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, baseSp);
-            tv.setSingleLine(true);
+            tv.setSingleLine(false);
+            tv.setMaxLines(4);
         } else {
             float scaledSp = baseSp * (availPx / measured);
             if (scaledSp >= minSp) {
                 tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, scaledSp);
-                tv.setSingleLine(true);
+                tv.setSingleLine(false);
+                tv.setMaxLines(4);
             } else {
                 tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, minSp);
                 tv.setSingleLine(false);
-                tv.setMaxLines(2);
-                tv.setEllipsize(TextUtils.TruncateAt.END);
+                tv.setMaxLines(6);
             }
         }
     }
@@ -408,12 +411,16 @@ public class MainActivity extends Activity {
         FrameLayout centerHost = new FrameLayout(this);
         mCenterHost = centerHost;
         centerHost.setBackgroundColor(0xFF000000);
+        centerHost.setClipChildren(false);
+        centerHost.setClipToPadding(false);
         int screenW = getResources().getDisplayMetrics().widthPixels;
         int initialVfH = Math.round(screenW * 4f / 3f);
         centerHost.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, initialVfH));
 
         mViewfinderContainer = new FrameLayout(this);
         mViewfinderContainer.setBackgroundColor(0xFF101820);
+        mViewfinderContainer.setClipChildren(false);
+        mViewfinderContainer.setClipToPadding(false);
         FrameLayout.LayoutParams vfLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         vfLp.gravity = Gravity.CENTER;
         mViewfinderContainer.setLayoutParams(vfLp);
@@ -566,9 +573,11 @@ public class MainActivity extends Activity {
         // Bottom-Left Draggable & Clickable Live Watermark Overlay (waterMarkLayoutRl)
         mWatermarkCardContainer = new LinearLayout(this);
         mWatermarkCardContainer.setOrientation(LinearLayout.VERTICAL);
+        mWatermarkCardContainer.setClipChildren(false);
+        mWatermarkCardContainer.setClipToPadding(false);
         FrameLayout.LayoutParams wmLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         wmLp.gravity = Gravity.BOTTOM | Gravity.START;
-        wmLp.setMargins(dp(12), dp(12), dp(48), dp(14));
+        wmLp.setMargins(dp(10), dp(10), dp(42), dp(12));
         mWatermarkCardContainer.setLayoutParams(wmLp);
         setupDraggableAndClickableWatermark(mWatermarkCardContainer);
         mViewfinderContainer.addView(mWatermarkCardContainer);
@@ -1059,6 +1068,7 @@ public class MainActivity extends Activity {
 
     // =========================================================================================
     // 1:1 AUTHENTIC WATERMARK OVERLAY BUILDER MATCHING DECOMPILED XML LAYOUTS
+    // (100% Uncut Content, Multi-Line Wrapping, & Smart Viewfinder Auto-Fit)
     // =========================================================================================
     private void rebuildWatermarkOverlay() {
         if (mWatermarkCardContainer == null) return;
@@ -1070,6 +1080,25 @@ public class MainActivity extends Activity {
         mLiveDateTv = null;
         mLiveWeatherTv = null;
         mDatePattern = "dd MMM yyyy";
+
+        // Apply user-selected Stamp Position (0=Bottom-Left, 1=Bottom-Right, 2=Top-Left, 3=Top-Right)
+        FrameLayout.LayoutParams wmLp = (FrameLayout.LayoutParams) mWatermarkCardContainer.getLayoutParams();
+        if (wmLp != null) {
+            if (mModel.stampPositionIndex == 1) {
+                wmLp.gravity = Gravity.BOTTOM | Gravity.END;
+                wmLp.setMargins(dp(10), dp(10), dp(42), dp(12));
+            } else if (mModel.stampPositionIndex == 2) {
+                wmLp.gravity = Gravity.TOP | Gravity.START;
+                wmLp.setMargins(dp(10), dp(12), dp(42), dp(10));
+            } else if (mModel.stampPositionIndex == 3) {
+                wmLp.gravity = Gravity.TOP | Gravity.END;
+                wmLp.setMargins(dp(10), dp(12), dp(42), dp(10));
+            } else {
+                wmLp.gravity = Gravity.BOTTOM | Gravity.START;
+                wmLp.setMargins(dp(10), dp(10), dp(42), dp(12));
+            }
+            mWatermarkCardContainer.setLayoutParams(wmLp);
+        }
 
         mAntiCodeVerticalTv.setVisibility(mModel.showPhotoCode ? View.VISIBLE : View.GONE);
         mAntiCodeVerticalTv.setText("Photo Code: " + mModel.currentPhotoCode);
@@ -1088,6 +1117,7 @@ public class MainActivity extends Activity {
             mDatePattern = "dd/MM/yyyy";
             LinearLayout wrap = new LinearLayout(this);
             wrap.setOrientation(LinearLayout.VERTICAL);
+            appendOptionalBrandLogoHeader(wrap);
 
             LinearLayout topPill = new LinearLayout(this);
             topPill.setOrientation(LinearLayout.HORIZONTAL);
@@ -1105,13 +1135,13 @@ public class MainActivity extends Activity {
                 badgeTv.setMinimumHeight(dp(24));
                 badgeTv.setBackground(roundedRect(mModel.customAccentColor, 2.5f, 0, 0));
                 badgeTv.setPadding(dp(7), dp(2), dp(7), dp(2));
-                configureAutoFitText(badgeTv, titleText, 14f, 8.5f, 145);
+                configureAutoFitText(badgeTv, titleText, 14f, 8.5f, 135);
                 topPill.addView(badgeTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
 
             if (mModel.showTime) {
                 mLiveBigClockTv = new TextView(this);
-                mLiveBigClockTv.setTextSize(24);
+                mLiveBigClockTv.setTextSize(23);
                 mLiveBigClockTv.setSingleLine(true);
                 mLiveBigClockTv.setTypeface(mFontBebas, Typeface.BOLD);
                 mLiveBigClockTv.setTextColor(0xFF0A2246);
@@ -1123,38 +1153,27 @@ public class MainActivity extends Activity {
                 wrap.addView(topPill, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
 
-            LinearLayout midRow = new LinearLayout(this);
-            midRow.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout rightCol = createVerticalBarContainer(mModel.customAccentColor, 3, 9);
             LinearLayout.LayoutParams midLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            midLp.setMargins(0, dp(8), 0, 0);
-            midRow.setLayoutParams(midLp);
-
-            View vBar = new View(this);
-            vBar.setBackground(roundedRect(mModel.customAccentColor, 1.5f, 0, 0));
-            LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), ViewGroup.LayoutParams.MATCH_PARENT);
-            barLp.setMargins(0, dp(2), dp(6), dp(2));
-            midRow.addView(vBar, barLp);
-
-            LinearLayout rightCol = new LinearLayout(this);
-            rightCol.setOrientation(LinearLayout.VERTICAL);
+            midLp.setMargins(0, dp(7), 0, 0);
+            rightCol.setLayoutParams(midLp);
 
             if (mModel.showTime) {
-                mLiveDateTv = createShadowText("", 14, true, 245);
+                mLiveDateTv = createShadowText("", 13.5f, true, 265);
                 rightCol.addView(mLiveDateTv);
             }
             if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
-                TextView wTv = createShadowText(mModel.weatherLine.trim(), 13f, false, 245);
+                TextView wTv = createShadowText(mModel.weatherLine.trim(), 13f, false, 265);
                 wTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(wTv);
             }
             if (mModel.showAddress) {
-                TextView addrTv = createShadowText(mModel.addressLine, 14, false, 245);
-                addrTv.setPadding(0, dp(3), 0, 0);
+                TextView addrTv = createShadowText(mModel.addressLine, 13.5f, false, 265);
+                addrTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(addrTv);
             }
-            appendOptionalGeoAndNoteLines(rightCol, 245);
-            midRow.addView(rightCol);
-            wrap.addView(midRow);
+            appendOptionalGeoAndNoteLines(rightCol, 265);
+            wrap.addView(rightCol);
 
             appendOptionalMiniMapRow(wrap);
             appendTimeNowVerifiedFooter(wrap);
@@ -1162,7 +1181,7 @@ public class MainActivity extends Activity {
 
         } else if ("80".equals(id) || "dasher01".equals(id)) {
             // ---------------------------------------------------------------------------------
-            // TEMPLATE 80 (COMPLETED) & DASHER01 (DELIVERY SERVICE)
+            // TEMPLATE 80 (COMPLETED) & DASHER01 (DELIVERY SERVICE) (watermark_cover_id80.xml)
             // ---------------------------------------------------------------------------------
             boolean isDasher = "dasher01".equals(id);
             mDatePattern = "MM/dd/yyyy";
@@ -1171,16 +1190,17 @@ public class MainActivity extends Activity {
 
             LinearLayout wrap = new LinearLayout(this);
             wrap.setOrientation(LinearLayout.VERTICAL);
+            appendOptionalBrandLogoHeader(wrap);
 
             if (mModel.showTime) {
                 LinearLayout topPill = new LinearLayout(this);
                 topPill.setOrientation(LinearLayout.HORIZONTAL);
                 topPill.setGravity(Gravity.CENTER_VERTICAL);
                 topPill.setBackground(roundedRect(pillBg, 6, 0, 0));
-                topPill.setPadding(dp(10), dp(5), dp(10), dp(5));
+                topPill.setPadding(dp(10), dp(4), dp(10), dp(4));
 
                 mLiveBigClockTv = new TextView(this);
-                mLiveBigClockTv.setTextSize(26);
+                mLiveBigClockTv.setTextSize(25);
                 mLiveBigClockTv.setSingleLine(true);
                 mLiveBigClockTv.setTypeface(mFontBebas, Typeface.BOLD);
                 mLiveBigClockTv.setTextColor(0xFFFFFFFF);
@@ -1200,23 +1220,13 @@ public class MainActivity extends Activity {
                 wrap.addView(topPill, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
 
-            LinearLayout midRow = new LinearLayout(this);
-            midRow.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout rightCol = createVerticalBarContainer(barColor, 3, 10);
             LinearLayout.LayoutParams midLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            midLp.setMargins(0, dp(7), 0, 0);
-            midRow.setLayoutParams(midLp);
-
-            View vBar = new View(this);
-            vBar.setBackground(roundedRect(barColor, 1.5f, 0, 0));
-            LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), ViewGroup.LayoutParams.MATCH_PARENT);
-            barLp.setMargins(0, dp(2), dp(8), dp(2));
-            midRow.addView(vBar, barLp);
-
-            LinearLayout rightCol = new LinearLayout(this);
-            rightCol.setOrientation(LinearLayout.VERTICAL);
+            midLp.setMargins(0, dp(6), 0, 0);
+            rightCol.setLayoutParams(midLp);
 
             if (isDasher) {
-                TextView starsTv = createShadowText("★ ★ ★ ★ ★", 13, true, 245);
+                TextView starsTv = createShadowText("★ ★ ★ ★ ★", 13, true, 265);
                 starsTv.setTextColor(0xFFFFD700);
                 rightCol.addView(starsTv);
             }
@@ -1224,30 +1234,70 @@ public class MainActivity extends Activity {
             if (mModel.showTitle) {
                 String titleText = (mModel.customTitle != null && !mModel.customTitle.trim().isEmpty())
                         ? mModel.customTitle.trim() : (isDasher ? "TIPS & REVIEWS KEEP ME DRIVING" : "Completed");
-                TextView titleTv = createShadowText(titleText, 15, true, 245);
-                configureAutoFitText(titleTv, titleText, isDasher ? 13.5f : 16f, 10f, 245);
+                TextView titleTv = createShadowText(titleText, 15, true, 265);
+                configureAutoFitText(titleTv, titleText, isDasher ? 13.5f : 15.5f, 10f, 265);
                 rightCol.addView(titleTv);
             }
 
+            // Authentic Delivery Business Card in dasher01 (matching cover_wm80_dasher01.webp & watermark_cover_id80.xml)
+            if (isDasher) {
+                LinearLayout bizCard = new LinearLayout(this);
+                bizCard.setOrientation(LinearLayout.HORIZONTAL);
+                bizCard.setGravity(Gravity.CENTER_VERTICAL);
+                bizCard.setBackground(roundedRect(0xFFFFFFFF, 3, 0, 0));
+                LinearLayout.LayoutParams bzLp = new LinearLayout.LayoutParams(dp(235), ViewGroup.LayoutParams.WRAP_CONTENT);
+                bzLp.setMargins(0, dp(4), 0, dp(2));
+                bizCard.setLayoutParams(bzLp);
+
+                LinearLayout leftBiz = new LinearLayout(this);
+                leftBiz.setOrientation(LinearLayout.VERTICAL);
+                leftBiz.setPadding(dp(8), dp(4), dp(6), dp(4));
+                String courierName = (mModel.inspectorName != null && !mModel.inspectorName.trim().isEmpty())
+                        ? mModel.inspectorName.trim() : "Courier";
+                TextView delivByTv = new TextView(this);
+                delivByTv.setText("Delivered By: " + courierName);
+                delivByTv.setTextSize(10.5f);
+                delivByTv.setTypeface(Typeface.DEFAULT_BOLD);
+                delivByTv.setTextColor(0xFF222222);
+                leftBiz.addView(delivByTv);
+
+                TextView thxTv = new TextView(this);
+                thxTv.setText("Thanks & Enjoy • Delivery Service");
+                thxTv.setTextSize(9.5f);
+                thxTv.setTextColor(0xFF666666);
+                leftBiz.addView(thxTv);
+                bizCard.addView(leftBiz, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+                TextView rightRedBadge = new TextView(this);
+                rightRedBadge.setText("📦✓");
+                rightRedBadge.setTextSize(12);
+                rightRedBadge.setGravity(Gravity.CENTER);
+                rightRedBadge.setTextColor(0xFFFFFFFF);
+                rightRedBadge.setBackground(roundedCorners(0xFFFF1717, 0, 3, 3, 0));
+                rightRedBadge.setPadding(dp(10), dp(8), dp(10), dp(8));
+                bizCard.addView(rightRedBadge, new LinearLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.MATCH_PARENT));
+
+                rightCol.addView(bizCard);
+            }
+
             if (mModel.showTime) {
-                mLiveDateTv = createShadowText("", 13.5f, false, 245);
+                mLiveDateTv = createShadowText("", 13f, false, 265);
                 mLiveDateTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(mLiveDateTv);
             }
             if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
-                TextView wTv = createShadowText(mModel.weatherLine.trim(), 12.5f, false, 245);
+                TextView wTv = createShadowText(mModel.weatherLine.trim(), 12.5f, false, 265);
                 wTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(wTv);
             }
             if (mModel.showAddress) {
-                TextView addrTv = createShadowText(mModel.addressLine, 13.5f, false, 245);
+                TextView addrTv = createShadowText(mModel.addressLine, 13f, false, 265);
                 addrTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(addrTv);
             }
-            appendOptionalGeoAndNoteLines(rightCol, 245);
+            appendOptionalGeoAndNoteLines(rightCol, 265);
+            wrap.addView(rightCol);
 
-            midRow.addView(rightCol);
-            wrap.addView(midRow);
             appendOptionalMiniMapRow(wrap);
             appendTimeNowVerifiedFooter(wrap);
             mWatermarkCardContainer.addView(wrap);
@@ -1259,8 +1309,9 @@ public class MainActivity extends Activity {
             mDatePattern = "MM/dd/yyyy";
             LinearLayout wrap = new LinearLayout(this);
             wrap.setOrientation(LinearLayout.VERTICAL);
+            appendOptionalBrandLogoHeader(wrap);
 
-            TextView stars = createShadowText("★ ★ ★ ★ ★", 13, true, 240);
+            TextView stars = createShadowText("★ ★ ★ ★ ★", 13, true, 260);
             stars.setTextColor(0xFFFFEB3B);
             stars.setPadding(dp(2), 0, 0, dp(2));
             wrap.addView(stars);
@@ -1276,10 +1327,11 @@ public class MainActivity extends Activity {
                 leftBox.setTypeface(Typeface.DEFAULT_BOLD);
                 leftBox.setTextColor(0xFFE1F5FE);
                 leftBox.setGravity(Gravity.CENTER);
-                leftBox.setBackground(roundedCorners(mModel.customAccentColor, 4, 0, 0, 4));
-                leftBox.setPadding(dp(10), dp(5), dp(10), dp(5));
-                configureAutoFitText(leftBox, cleanTitle, 17f, 10f, 155);
-                twoTone.addView(leftBox, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(34)));
+                leftBox.setMinimumHeight(dp(34));
+                leftBox.setBackground(roundedCorners(mModel.customAccentColor, 4, mModel.showTime ? 0 : 4, mModel.showTime ? 0 : 4, 4));
+                leftBox.setPadding(dp(10), dp(4), dp(10), dp(4));
+                configureAutoFitText(leftBox, cleanTitle, 16f, 10f, 160);
+                twoTone.addView(leftBox, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
 
             if (mModel.showTime) {
@@ -1289,46 +1341,36 @@ public class MainActivity extends Activity {
                 mLiveBigClockTv.setTypeface(mFontBebas, Typeface.BOLD);
                 mLiveBigClockTv.setTextColor(0xFFFFFFFF);
                 mLiveBigClockTv.setGravity(Gravity.CENTER);
+                mLiveBigClockTv.setMinimumHeight(dp(34));
                 mLiveBigClockTv.setBackground(roundedCorners(0xFF229CD7, mModel.showTitle ? 0 : 4, 4, 4, mModel.showTitle ? 0 : 4));
                 mLiveBigClockTv.setPadding(dp(10), dp(4), dp(10), dp(4));
-                twoTone.addView(mLiveBigClockTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(34)));
+                twoTone.addView(mLiveBigClockTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
             if (twoTone.getChildCount() > 0) {
                 wrap.addView(twoTone);
             }
 
-            LinearLayout midRow = new LinearLayout(this);
-            midRow.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout rightCol = createVerticalBarContainer(mModel.customAccentColor, 3, 10);
             LinearLayout.LayoutParams midLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            midLp.setMargins(0, dp(7), 0, 0);
-            midRow.setLayoutParams(midLp);
-
-            View vBar = new View(this);
-            vBar.setBackground(roundedRect(mModel.customAccentColor, 1.5f, 0, 0));
-            LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), ViewGroup.LayoutParams.MATCH_PARENT);
-            barLp.setMargins(0, dp(2), dp(8), dp(2));
-            midRow.addView(vBar, barLp);
-
-            LinearLayout rightCol = new LinearLayout(this);
-            rightCol.setOrientation(LinearLayout.VERTICAL);
+            midLp.setMargins(0, dp(6), 0, 0);
+            rightCol.setLayoutParams(midLp);
 
             if (mModel.showTime) {
-                mLiveDateTv = createShadowText("", 14, true, 245);
+                mLiveDateTv = createShadowText("", 13.5f, true, 265);
                 rightCol.addView(mLiveDateTv);
             }
             if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
-                TextView wTv = createShadowText(mModel.weatherLine.trim(), 12.5f, false, 245);
+                TextView wTv = createShadowText(mModel.weatherLine.trim(), 12.5f, false, 265);
                 wTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(wTv);
             }
             if (mModel.showAddress) {
-                TextView addrTv = createShadowText(mModel.addressLine, 13.5f, false, 245);
+                TextView addrTv = createShadowText(mModel.addressLine, 13f, false, 265);
                 addrTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(addrTv);
             }
-            appendOptionalGeoAndNoteLines(rightCol, 245);
-            midRow.addView(rightCol);
-            wrap.addView(midRow);
+            appendOptionalGeoAndNoteLines(rightCol, 265);
+            wrap.addView(rightCol);
 
             appendOptionalMiniMapRow(wrap);
             appendTimeNowVerifiedFooter(wrap);
@@ -1336,19 +1378,20 @@ public class MainActivity extends Activity {
 
         } else if ("43".equals(id)) {
             // ---------------------------------------------------------------------------------
-            // TEMPLATE 43: SECURITY GUARD (new_watermark_cover_id43.xml)
+            // TEMPLATE 43: SECURITY GUARD (watermark_cover_id43.xml & new_watermark_cover_id43.xml)
             // ---------------------------------------------------------------------------------
             mDatePattern = "dd MMM yyyy";
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setLayoutParams(new LinearLayout.LayoutParams(dp(250), ViewGroup.LayoutParams.WRAP_CONTENT));
+            card.setLayoutParams(new LinearLayout.LayoutParams(dp(266), ViewGroup.LayoutParams.WRAP_CONTENT));
+            appendOptionalBrandLogoHeader(card);
 
             if (mModel.showTitle) {
                 LinearLayout header = new LinearLayout(this);
                 header.setOrientation(LinearLayout.HORIZONTAL);
                 header.setGravity(Gravity.CENTER_VERTICAL);
                 header.setBackground(roundedCorners(0xE628356E, 6, 6, 0, 0));
-                header.setPadding(dp(10), dp(7), dp(10), dp(7));
+                header.setPadding(dp(10), dp(6), dp(10), dp(6));
 
                 ImageView shieldIv = new ImageView(this);
                 shieldIv.setImageResource(R.drawable.tool_border_safe_green);
@@ -1360,7 +1403,7 @@ public class MainActivity extends Activity {
                 titleTv.setTypeface(Typeface.DEFAULT_BOLD);
                 titleTv.setTextColor(0xFFFFF15C);
                 titleTv.setPadding(dp(8), 0, 0, 0);
-                configureAutoFitText(titleTv, secTitle, 17f, 11f, 200);
+                configureAutoFitText(titleTv, secTitle, 16.5f, 11f, 215);
                 header.addView(titleTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                 card.addView(header);
 
@@ -1387,7 +1430,7 @@ public class MainActivity extends Activity {
                 timeRow.setGravity(Gravity.BOTTOM);
 
                 mLiveBigClockTv = new TextView(this);
-                mLiveBigClockTv.setTextSize(28);
+                mLiveBigClockTv.setTextSize(26);
                 mLiveBigClockTv.setSingleLine(true);
                 mLiveBigClockTv.setTypeface(mFontBebas, Typeface.BOLD);
                 mLiveBigClockTv.setTextColor(0xFFFFF15C);
@@ -1395,14 +1438,23 @@ public class MainActivity extends Activity {
                 timeRow.addView(mLiveBigClockTv);
 
                 mLiveDateTv = new TextView(this);
-                mLiveDateTv.setTextSize(13);
-                mLiveDateTv.setSingleLine(true);
+                mLiveDateTv.setTextSize(12.5f);
+                mLiveDateTv.setSingleLine(false);
                 mLiveDateTv.setTextColor(0xFFFFFFFF);
                 mLiveDateTv.setPadding(dp(8), 0, 0, dp(2));
-                timeRow.addView(mLiveDateTv);
+                timeRow.addView(mLiveDateTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                 body.addView(timeRow);
             }
 
+            if (mModel.showProject && mModel.projectName != null && !mModel.projectName.trim().isEmpty()) {
+                body.addView(createRedBulletRow("Project: " + mModel.projectName.trim()));
+            }
+            if (mModel.showArea && mModel.areaName != null && !mModel.areaName.trim().isEmpty()) {
+                body.addView(createRedBulletRow("Area: " + mModel.areaName.trim()));
+            }
+            if (mModel.showInspector && mModel.inspectorName != null && !mModel.inspectorName.trim().isEmpty()) {
+                body.addView(createRedBulletRow("By: " + mModel.inspectorName.trim()));
+            }
             if (mModel.showAddress) {
                 body.addView(createRedBulletRow(mModel.addressLine));
             }
@@ -1412,8 +1464,17 @@ public class MainActivity extends Activity {
             if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
                 body.addView(createRedBulletRow(mModel.weatherLine.trim()));
             }
+            if (mModel.showAltitude && mModel.altitudeLine != null && !mModel.altitudeLine.trim().isEmpty()) {
+                body.addView(createRedBulletRow("Altitude: " + mModel.altitudeLine.trim()));
+            }
+            if (mModel.showCompass && mModel.compassLine != null && !mModel.compassLine.trim().isEmpty()) {
+                body.addView(createRedBulletRow("Compass: " + mModel.compassLine.trim()));
+            }
             if (mModel.showNotes && mModel.customNote != null && !mModel.customNote.trim().isEmpty()) {
-                body.addView(createRedBulletRow(mModel.customNote.trim()));
+                body.addView(createRedBulletRow("Note: " + mModel.customNote.trim()));
+            }
+            for (int i = 0; i < mModel.customExtraFields.size(); i++) {
+                body.addView(createRedBulletRow(mModel.customExtraFields.get(i)));
             }
             card.addView(body);
             appendOptionalMiniMapRow(card);
@@ -1429,48 +1490,55 @@ public class MainActivity extends Activity {
 
             LinearLayout wrap = new LinearLayout(this);
             wrap.setOrientation(LinearLayout.VERTICAL);
+            appendOptionalBrandLogoHeader(wrap);
 
             if (mModel.showTitle) {
                 String topTitle = (mModel.customTitle != null && !mModel.customTitle.trim().isEmpty())
                         ? mModel.customTitle.trim() : (isService ? "Service Name" : "Work Record");
-                TextView titleTv = createShadowText(topTitle, 17, true, 255);
-                configureAutoFitText(titleTv, topTitle, 17f, 11f, 255);
+                TextView titleTv = createShadowText(topTitle, 16.5f, true, 268);
+                configureAutoFitText(titleTv, topTitle, 16.5f, 11f, 268);
                 wrap.addView(titleTv);
             }
 
-            LinearLayout midRow = new LinearLayout(this);
-            midRow.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout rightCol = createVerticalBarContainer(mModel.customAccentColor, 3, 10);
             LinearLayout.LayoutParams midLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             midLp.setMargins(0, dp(5), 0, 0);
-            midRow.setLayoutParams(midLp);
-
-            View vBar = new View(this);
-            vBar.setBackground(roundedRect(mModel.customAccentColor, 1.5f, 0, 0));
-            LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), ViewGroup.LayoutParams.MATCH_PARENT);
-            barLp.setMargins(0, dp(2), dp(8), dp(2));
-            midRow.addView(vBar, barLp);
-
-            LinearLayout rightCol = new LinearLayout(this);
-            rightCol.setOrientation(LinearLayout.VERTICAL);
+            rightCol.setLayoutParams(midLp);
 
             if (mModel.showTime) {
-                mLiveDateTv = createShadowText("", 13.5f, false, 245);
+                mLiveDateTv = createShadowText("", 13f, true, 265);
                 rightCol.addView(mLiveDateTv);
             }
+            if (isService) {
+                if (mModel.showProject && mModel.projectName != null && !mModel.projectName.trim().isEmpty()) {
+                    TextView sv1 = createShadowText("👉 Service: " + mModel.projectName.trim(), 13f, false, 265);
+                    sv1.setPadding(0, dp(2), 0, 0);
+                    rightCol.addView(sv1);
+                }
+                if (mModel.showNotes && mModel.customNote != null && !mModel.customNote.trim().isEmpty()) {
+                    TextView sv2 = createShadowText("👉 Details: " + mModel.customNote.trim(), 13f, false, 265);
+                    sv2.setPadding(0, dp(2), 0, 0);
+                    rightCol.addView(sv2);
+                }
+                if (mModel.showInspector && mModel.inspectorName != null && !mModel.inspectorName.trim().isEmpty()) {
+                    TextView sv3 = createShadowText("☎️ Staff/Tel: " + mModel.inspectorName.trim(), 13f, false, 265);
+                    sv3.setPadding(0, dp(2), 0, 0);
+                    rightCol.addView(sv3);
+                }
+            }
             if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
-                TextView wTv = createShadowText(mModel.weatherLine.trim(), 12.5f, false, 245);
+                TextView wTv = createShadowText(mModel.weatherLine.trim(), 12.5f, false, 265);
                 wTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(wTv);
             }
             if (mModel.showAddress) {
-                TextView addrTv = createShadowText(mModel.addressLine, 13.5f, false, 245);
+                TextView addrTv = createShadowText(mModel.addressLine, 13f, false, 265);
                 addrTv.setPadding(0, dp(2), 0, 0);
                 rightCol.addView(addrTv);
             }
-            appendOptionalGeoAndNoteLines(rightCol, 245, true, true);
+            appendOptionalGeoAndNoteLines(rightCol, 265, !isService, !isService);
+            wrap.addView(rightCol);
 
-            midRow.addView(rightCol);
-            wrap.addView(midRow);
             appendOptionalMiniMapRow(wrap);
             appendTimeNowVerifiedFooter(wrap);
             mWatermarkCardContainer.addView(wrap);
@@ -1478,34 +1546,69 @@ public class MainActivity extends Activity {
         } else if ("120".equals(id) || "20".equals(id)) {
             // ---------------------------------------------------------------------------------
             // TEMPLATE 120 (CONSTRUCTION RECORD) & TEMPLATE 20 (WORK REPORT)
+            // (watermark_cover_id120.xml & watermark_cover_id20.xml)
             // ---------------------------------------------------------------------------------
             boolean isConst = "120".equals(id);
             mDatePattern = "dd/MM/yyyy HH:mm";
 
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setLayoutParams(new LinearLayout.LayoutParams(dp(258), ViewGroup.LayoutParams.WRAP_CONTENT));
+            card.setLayoutParams(new LinearLayout.LayoutParams(dp(268), ViewGroup.LayoutParams.WRAP_CONTENT));
 
             LinearLayout header = new LinearLayout(this);
             header.setOrientation(LinearLayout.VERTICAL);
             header.setBackground(roundedCorners(mModel.customAccentColor, 5, 5, 0, 0));
             header.setPadding(dp(10), dp(6), dp(10), dp(6));
 
-            if (mModel.showTitle) {
+            if (isConst || mModel.showBrandLogo) {
+                LinearLayout logosRow = new LinearLayout(this);
+                logosRow.setOrientation(LinearLayout.HORIZONTAL);
+                logosRow.setGravity(Gravity.CENTER);
+                logosRow.setPadding(0, 0, 0, dp(4));
+                if (mModel.showBrandLogo && mModel.brandLogoText != null && !mModel.brandLogoText.trim().isEmpty()) {
+                    TextView lPill = new TextView(this);
+                    lPill.setText("🏢 " + mModel.brandLogoText.trim());
+                    lPill.setTextSize(10f);
+                    lPill.setTypeface(Typeface.DEFAULT_BOLD);
+                    lPill.setTextColor(0xFF1F3A8A);
+                    lPill.setGravity(Gravity.CENTER);
+                    lPill.setBackground(roundedRect(0xFFF2F5FA, 3, 0, 0));
+                    lPill.setPadding(dp(8), dp(2), dp(8), dp(2));
+                    logosRow.addView(lPill, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                } else {
+                    String[] lg = new String[]{"🏢 LOGO", "🏗 LOGO", "🏛 LOGO"};
+                    for (int i = 0; i < 3; i++) {
+                        TextView lPill = new TextView(this);
+                        lPill.setText(lg[i]);
+                        lPill.setTextSize(9f);
+                        lPill.setTypeface(Typeface.DEFAULT_BOLD);
+                        lPill.setTextColor(0xFF1F3A8A);
+                        lPill.setGravity(Gravity.CENTER);
+                        lPill.setBackground(roundedRect(0xFFF2F5FA, 2.5f, 0, 0));
+                        lPill.setPadding(dp(4), dp(2), dp(4), dp(2));
+                        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                        if (i < 2) lp.setMargins(0, 0, dp(4), 0);
+                        logosRow.addView(lPill, lp);
+                    }
+                }
+                header.addView(logosRow);
+            }
+
+            if (mModel.showTitle || !isConst) {
                 TextView hTitle = new TextView(this);
                 String titleStr = (mModel.customTitle != null && !mModel.customTitle.trim().isEmpty())
                         ? mModel.customTitle.trim() : (isConst ? "Construction Record" : "Work Report");
                 hTitle.setTypeface(Typeface.DEFAULT_BOLD);
                 hTitle.setTextColor(0xFFFFFFFF);
                 hTitle.setGravity(isConst ? Gravity.CENTER : Gravity.START);
-                configureAutoFitText(hTitle, titleStr, 16f, 11f, 236);
+                configureAutoFitText(hTitle, titleStr, 15.5f, 11f, 246);
                 header.addView(hTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
             card.addView(header);
 
             LinearLayout body = new LinearLayout(this);
             body.setOrientation(LinearLayout.VERTICAL);
-            body.setBackground(roundedCorners(0xE6D9E2EC, 0, 0, 5, 5));
+            body.setBackground(roundedCorners(0xEED9E2EC, 0, 0, 5, 5));
             body.setPadding(dp(8), dp(6), dp(8), dp(6));
 
             if (mModel.showProject && mModel.projectName != null && !mModel.projectName.trim().isEmpty()) {
@@ -1515,13 +1618,16 @@ public class MainActivity extends Activity {
                 addDarkTableRow(body, "Area", mModel.areaName.trim());
             }
             if (mModel.showInspector && mModel.inspectorName != null && !mModel.inspectorName.trim().isEmpty()) {
-                addDarkTableRow(body, "By", mModel.inspectorName.trim());
+                addDarkTableRow(body, isConst ? "By" : "Inspector", mModel.inspectorName.trim());
             }
             if (mModel.showNotes && mModel.customNote != null && !mModel.customNote.trim().isEmpty()) {
-                addDarkTableRow(body, "Note", mModel.customNote.trim());
+                addDarkTableRow(body, isConst ? "Description" : "Note", mModel.customNote.trim());
             }
             if (mModel.showTime) {
                 mLiveDateTv = addDarkTableRow(body, "Time", "");
+            }
+            if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
+                addDarkTableRow(body, "Weather", mModel.weatherLine.trim());
             }
             if (mModel.showAddress) {
                 addDarkTableRow(body, "Address", mModel.addressLine);
@@ -1529,8 +1635,20 @@ public class MainActivity extends Activity {
             if (mModel.showLatLong) {
                 addDarkTableRow(body, "Lat/Long", mModel.getFormattedCoordinates());
             }
-            if (mModel.showWeather) {
-                addDarkTableRow(body, "Weather", mModel.weatherLine);
+            if (mModel.showAltitude && mModel.altitudeLine != null && !mModel.altitudeLine.trim().isEmpty()) {
+                addDarkTableRow(body, "Altitude", mModel.altitudeLine.trim());
+            }
+            if (mModel.showCompass && mModel.compassLine != null && !mModel.compassLine.trim().isEmpty()) {
+                addDarkTableRow(body, "Compass", mModel.compassLine.trim());
+            }
+            for (int i = 0; i < mModel.customExtraFields.size(); i++) {
+                String raw = mModel.customExtraFields.get(i);
+                int idx = raw.indexOf(':');
+                if (idx > 0 && idx < raw.length() - 1) {
+                    addDarkTableRow(body, raw.substring(0, idx).trim(), raw.substring(idx + 1).trim());
+                } else {
+                    addDarkTableRow(body, "Custom", raw);
+                }
             }
             card.addView(body);
             appendOptionalMiniMapRow(card);
@@ -1546,12 +1664,16 @@ public class MainActivity extends Activity {
 
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setBackground(roundedRect(0xAA263238, 2, dp(1.5f), sheetGreen));
-            card.setLayoutParams(new LinearLayout.LayoutParams(dp(258), ViewGroup.LayoutParams.WRAP_CONTENT));
+            card.setBackground(roundedRect(0xCC263238, 2, dp(1.5f), sheetGreen));
+            card.setLayoutParams(new LinearLayout.LayoutParams(dp(268), ViewGroup.LayoutParams.WRAP_CONTENT));
 
             View topGreenBar = new View(this);
             topGreenBar.setBackgroundColor(sheetGreen);
             card.addView(topGreenBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(4)));
+
+            if (mModel.showBrandLogo && mModel.brandLogoText != null && !mModel.brandLogoText.trim().isEmpty()) {
+                addGreenSheetRow(card, "Company", mModel.brandLogoText.trim(), sheetGreen);
+            }
 
             if (mModel.showTitle) {
                 TextView titleTv = new TextView(this);
@@ -1560,7 +1682,7 @@ public class MainActivity extends Activity {
                 titleTv.setTypeface(Typeface.DEFAULT_BOLD);
                 titleTv.setTextColor(sheetGreen);
                 titleTv.setPadding(dp(8), dp(5), dp(8), dp(5));
-                configureAutoFitText(titleTv, sheetTitle, 15f, 11f, 240);
+                configureAutoFitText(titleTv, sheetTitle, 15f, 11f, 250);
                 card.addView(titleTv);
                 addGreenSheetDivider(card, sheetGreen);
             }
@@ -1571,8 +1693,14 @@ public class MainActivity extends Activity {
             if (mModel.showProject && mModel.projectName != null && !mModel.projectName.trim().isEmpty()) {
                 addGreenSheetRow(card, "Project", mModel.projectName.trim(), sheetGreen);
             }
+            if (mModel.showArea && mModel.areaName != null && !mModel.areaName.trim().isEmpty()) {
+                addGreenSheetRow(card, "Area", mModel.areaName.trim(), sheetGreen);
+            }
             if (mModel.showInspector && mModel.inspectorName != null && !mModel.inspectorName.trim().isEmpty()) {
                 addGreenSheetRow(card, "By", mModel.inspectorName.trim(), sheetGreen);
+            }
+            if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
+                addGreenSheetRow(card, "Weather", mModel.weatherLine.trim(), sheetGreen);
             }
             if (mModel.showAddress) {
                 addGreenSheetRow(card, "Address", mModel.addressLine, sheetGreen);
@@ -1580,8 +1708,23 @@ public class MainActivity extends Activity {
             if (mModel.showLatLong) {
                 addGreenSheetRow(card, "Lat/Long", mModel.getFormattedCoordinates(), sheetGreen);
             }
+            if (mModel.showAltitude && mModel.altitudeLine != null && !mModel.altitudeLine.trim().isEmpty()) {
+                addGreenSheetRow(card, "Altitude", mModel.altitudeLine.trim(), sheetGreen);
+            }
+            if (mModel.showCompass && mModel.compassLine != null && !mModel.compassLine.trim().isEmpty()) {
+                addGreenSheetRow(card, "Compass", mModel.compassLine.trim(), sheetGreen);
+            }
             if (mModel.showNotes && mModel.customNote != null && !mModel.customNote.trim().isEmpty()) {
                 addGreenSheetRow(card, "Note", mModel.customNote.trim(), sheetGreen);
+            }
+            for (int i = 0; i < mModel.customExtraFields.size(); i++) {
+                String raw = mModel.customExtraFields.get(i);
+                int idx = raw.indexOf(':');
+                if (idx > 0 && idx < raw.length() - 1) {
+                    addGreenSheetRow(card, raw.substring(0, idx).trim(), raw.substring(idx + 1).trim(), sheetGreen);
+                } else {
+                    addGreenSheetRow(card, "Custom", raw, sheetGreen);
+                }
             }
 
             appendOptionalMiniMapRow(card);
@@ -1591,25 +1734,25 @@ public class MainActivity extends Activity {
         } else if ("60".equals(id) || "130".equals(id)) {
             // ---------------------------------------------------------------------------------
             // TEMPLATE 60 (LOCATION STAMP) & TEMPLATE 130 (BIG MAP & COMPASS)
+            // (watermark_cover_id60.xml & watermark_cover_id130.xml)
             // ---------------------------------------------------------------------------------
             boolean isBigMap = "130".equals(id) || mModel.showMap;
             mDatePattern = "dd/MM/yyyy HH:mm";
 
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setLayoutParams(new LinearLayout.LayoutParams(dp(268), ViewGroup.LayoutParams.WRAP_CONTENT));
+            card.setLayoutParams(new LinearLayout.LayoutParams(dp(274), ViewGroup.LayoutParams.WRAP_CONTENT));
+            appendOptionalBrandLogoHeader(card);
 
             if (isBigMap) {
-                ImageView mapBanner = new ImageView(this);
-                mapBanner.setImageResource(R.drawable.cover_wm130);
-                mapBanner.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                card.addView(mapBanner, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(70)));
+                card.addView(OriginalDialogs.createSurveyMapBannerView(this, 68),
+                        new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(68)));
             }
 
             LinearLayout body = new LinearLayout(this);
             body.setOrientation(LinearLayout.VERTICAL);
-            body.setBackgroundColor(0xAA263238);
-            body.setPadding(dp(10), dp(8), dp(10), dp(8));
+            body.setBackgroundColor(0xBF263238);
+            body.setPadding(dp(10), dp(7), dp(10), dp(7));
 
             if (mModel.showTitle) {
                 String locTitle = (mModel.customTitle != null && !mModel.customTitle.trim().isEmpty())
@@ -1617,7 +1760,7 @@ public class MainActivity extends Activity {
                 TextView tTv = new TextView(this);
                 tTv.setTypeface(Typeface.DEFAULT_BOLD);
                 tTv.setTextColor(0xFFFFFFFF);
-                configureAutoFitText(tTv, locTitle, 16f, 11f, 248);
+                configureAutoFitText(tTv, locTitle, 15.5f, 11f, 254);
                 body.addView(tTv);
             }
 
@@ -1644,9 +1787,16 @@ public class MainActivity extends Activity {
                 gTv.setTextColor(0xFFFFFFFF);
                 leftMeta.addView(gTv);
             }
+            if (mModel.showAltitude && mModel.altitudeLine != null && !mModel.altitudeLine.trim().isEmpty()) {
+                TextView altTv = new TextView(this);
+                altTv.setText("Altitude: " + mModel.altitudeLine.trim());
+                altTv.setTextSize(11.5f);
+                altTv.setTextColor(0xEEFFFFFF);
+                leftMeta.addView(altTv);
+            }
             if (mModel.showTime) {
                 mLiveDateTv = new TextView(this);
-                mLiveDateTv.setTextSize(12);
+                mLiveDateTv.setTextSize(11.5f);
                 mLiveDateTv.setTextColor(0xEEFFFFFF);
                 leftMeta.addView(mLiveDateTv);
             }
@@ -1655,16 +1805,17 @@ public class MainActivity extends Activity {
             LinearLayout rightMeta = new LinearLayout(this);
             rightMeta.setOrientation(LinearLayout.VERTICAL);
             rightMeta.setGravity(Gravity.END);
+            rightMeta.setPadding(dp(6), 0, 0, 0);
             if (mModel.showCompass || "60".equals(id) || "130".equals(id)) {
                 TextView cTv = new TextView(this);
-                cTv.setText(mModel.compassLine);
+                cTv.setText("🧭 " + mModel.compassLine);
                 cTv.setTextSize(11.5f);
                 cTv.setTextColor(0xFFFFFFFF);
                 rightMeta.addView(cTv);
             }
-            if (mModel.showWeather) {
+            if (mModel.showWeather && mModel.weatherLine != null && !mModel.weatherLine.trim().isEmpty()) {
                 TextView wTv = new TextView(this);
-                wTv.setText(mModel.weatherLine);
+                wTv.setText("☀ " + mModel.weatherLine.trim());
                 wTv.setTextSize(11.5f);
                 wTv.setTextColor(0xFFFFFFFF);
                 rightMeta.addView(wTv);
@@ -1675,13 +1826,13 @@ public class MainActivity extends Activity {
             if (isBigMap && mModel.showAddress) {
                 TextView aTv = new TextView(this);
                 aTv.setText(mModel.addressLine);
-                aTv.setTextSize(12);
+                aTv.setTextSize(12f);
                 aTv.setTextColor(0xEEFFFFFF);
                 aTv.setPadding(0, dp(4), 0, 0);
                 body.addView(aTv);
             }
 
-            appendOptionalWorkAndNoteLinesOnly(body, 248);
+            appendOptionalWorkAndNoteLinesOnly(body, 254);
             card.addView(body);
 
             View bottomAccent = new View(this);
@@ -1701,11 +1852,12 @@ public class MainActivity extends Activity {
 
             LinearLayout outerRow = new LinearLayout(this);
             outerRow.setOrientation(LinearLayout.HORIZONTAL);
-            outerRow.setGravity(Gravity.CENTER_VERTICAL);
+            outerRow.setGravity(Gravity.BOTTOM);
 
             LinearLayout leftBlock = new LinearLayout(this);
             leftBlock.setOrientation(LinearLayout.VERTICAL);
-            int maxAddrW = isMap01 ? 195 : 265;
+            int maxAddrW = isMap01 ? 202 : 276;
+            appendOptionalBrandLogoHeader(leftBlock);
 
             if (mModel.showTitle && mModel.customTitle != null && !mModel.customTitle.trim().isEmpty()) {
                 TextView badge = new TextView(this);
@@ -1713,7 +1865,7 @@ public class MainActivity extends Activity {
                 badge.setTextColor(0xFF111111);
                 badge.setBackground(roundedRect(mModel.customAccentColor, 4, 0, 0));
                 badge.setPadding(dp(8), dp(2), dp(8), dp(2));
-                configureAutoFitText(badge, mModel.customTitle.trim(), 12f, 9f, maxAddrW);
+                configureAutoFitText(badge, mModel.customTitle.trim(), 12.5f, 9f, maxAddrW);
                 LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 bLp.setMargins(0, 0, 0, dp(4));
                 leftBlock.addView(badge, bLp);
@@ -1725,7 +1877,7 @@ public class MainActivity extends Activity {
                 middleRow.setGravity(Gravity.CENTER_VERTICAL);
 
                 mLiveBigClockTv = new TextView(this);
-                mLiveBigClockTv.setTextSize(38);
+                mLiveBigClockTv.setTextSize(isMap01 ? 30 : 36);
                 mLiveBigClockTv.setSingleLine(true);
                 mLiveBigClockTv.setTypeface(mFontBebas, Typeface.BOLD);
                 mLiveBigClockTv.setTextColor(0xFFFFFFFF);
@@ -1735,24 +1887,27 @@ public class MainActivity extends Activity {
 
                 View blockBar = new View(this);
                 blockBar.setBackground(roundedRect(mModel.customAccentColor, 1.5f, 0, 0));
-                LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), dp(34));
-                barLp.setMargins(dp(8), 0, dp(8), 0);
+                LinearLayout.LayoutParams barLp = new LinearLayout.LayoutParams(dp(3), dp(32));
+                barLp.setMargins(dp(7), 0, dp(7), 0);
                 middleRow.addView(blockBar, barLp);
 
                 LinearLayout dateCol = new LinearLayout(this);
                 dateCol.setOrientation(LinearLayout.VERTICAL);
 
+                int maxDateColW = isMap01 ? 102 : 148;
                 mLiveDateTv = new TextView(this);
-                mLiveDateTv.setTextSize(14);
-                mLiveDateTv.setSingleLine(true);
+                mLiveDateTv.setTextSize(isMap01 ? 12f : 13.5f);
+                mLiveDateTv.setSingleLine(false);
+                mLiveDateTv.setMaxWidth(dp(maxDateColW));
                 mLiveDateTv.setTypeface(Typeface.DEFAULT_BOLD);
                 mLiveDateTv.setTextColor(0xFFFFFFFF);
                 mLiveDateTv.setShadowLayer(3f, 0f, 1f, 0xCC000000);
                 dateCol.addView(mLiveDateTv);
 
                 mLiveWeatherTv = new TextView(this);
-                mLiveWeatherTv.setTextSize(13);
-                mLiveWeatherTv.setSingleLine(true);
+                mLiveWeatherTv.setTextSize(isMap01 ? 11.5f : 12.5f);
+                mLiveWeatherTv.setSingleLine(false);
+                mLiveWeatherTv.setMaxWidth(dp(maxDateColW));
                 mLiveWeatherTv.setTextColor(0xFFFFFFFF);
                 mLiveWeatherTv.setShadowLayer(3f, 0f, 1f, 0xCC000000);
                 dateCol.addView(mLiveWeatherTv);
@@ -1762,7 +1917,7 @@ public class MainActivity extends Activity {
             }
 
             if (mModel.showAddress) {
-                TextView addrTv = createShadowText(mModel.addressLine, 14f, false, maxAddrW);
+                TextView addrTv = createShadowText(mModel.addressLine, 13.5f, false, maxAddrW);
                 addrTv.setPadding(0, dp(4), 0, 0);
                 leftBlock.addView(addrTv);
             }
@@ -1771,34 +1926,146 @@ public class MainActivity extends Activity {
             outerRow.addView(leftBlock);
 
             if (isMap01) {
-                FrameLayout mapCard = new FrameLayout(this);
-                mapCard.setBackground(roundedRect(0xFFFFFFFF, 6, dp(1.5f), 0xFFFFFFFF));
-                mapCard.setPadding(dp(2), dp(2), dp(2), dp(2));
-                LinearLayout.LayoutParams mLp = new LinearLayout.LayoutParams(dp(70), dp(70));
-                mLp.setMargins(dp(10), 0, 0, 0);
-
-                ImageView mapIv = new ImageView(this);
-                mapIv.setImageResource(R.drawable.cover_wm10_map01);
-                mapIv.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                mapCard.addView(mapIv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                outerRow.addView(mapCard, mLp);
+                outerRow.addView(createMiniGpsMapCard(68));
             }
 
             mWatermarkCardContainer.addView(outerRow);
         }
 
-        // Apply user-selected Stamp Scale anchored to bottom-left
+        updateClockTexts();
+        applySafeStampScaleAndPivot();
+    }
+
+    private void applySafeStampScaleAndPivot() {
+        if (mWatermarkCardContainer == null) return;
         mWatermarkCardContainer.post(new Runnable() {
             @Override
             public void run() {
-                mWatermarkCardContainer.setPivotX(0f);
-                mWatermarkCardContainer.setPivotY(mWatermarkCardContainer.getHeight());
-                mWatermarkCardContainer.setScaleX(mModel.stampScale);
-                mWatermarkCardContainer.setScaleY(mModel.stampScale);
+                int cardW = mWatermarkCardContainer.getWidth();
+                int cardH = mWatermarkCardContainer.getHeight();
+                int vfW = (mViewfinderContainer != null && mViewfinderContainer.getWidth() > 0)
+                        ? mViewfinderContainer.getWidth() : getResources().getDisplayMetrics().widthPixels;
+                int vfH = (mViewfinderContainer != null && mViewfinderContainer.getHeight() > 0)
+                        ? mViewfinderContainer.getHeight() : Math.round(vfW * 4f / 3f);
+
+                float maxAvailW = Math.max(dp(200), vfW - dp(52));
+                float maxAvailH = Math.max(dp(180), vfH - dp(24));
+
+                float effectiveScale = mModel.stampScale;
+                if (cardW > 0 && cardW * effectiveScale > maxAvailW) {
+                    effectiveScale = Math.min(effectiveScale, maxAvailW / (float) cardW);
+                }
+                if (cardH > 0 && cardH * effectiveScale > maxAvailH) {
+                    effectiveScale = Math.min(effectiveScale, maxAvailH / (float) cardH);
+                }
+
+                boolean rightAnchored = (mModel.stampPositionIndex == 1 || mModel.stampPositionIndex == 3);
+                boolean topAnchored = (mModel.stampPositionIndex == 2 || mModel.stampPositionIndex == 3);
+                mWatermarkCardContainer.setPivotX(rightAnchored ? cardW : 0f);
+                mWatermarkCardContainer.setPivotY(topAnchored ? 0f : cardH);
+                mWatermarkCardContainer.setScaleX(effectiveScale);
+                mWatermarkCardContainer.setScaleY(effectiveScale);
             }
         });
+    }
 
-        updateClockTexts();
+    // Custom vertical-bar container that draws the left accent bar via dispatchDraw so it never collapses inside WRAP_CONTENT
+    private LinearLayout createVerticalBarContainer(final int barColor, final int barWidthDp, int leftPadDp) {
+        LinearLayout col = new LinearLayout(this) {
+            private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final RectF barRect = new RectF();
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                int h = getHeight();
+                if (h > dp(4)) {
+                    barPaint.setColor(barColor);
+                    float bw = dp(barWidthDp);
+                    float r = bw / 2f;
+                    barRect.set(0f, dp(2), bw, h - dp(2));
+                    canvas.drawRoundRect(barRect, r, r, barPaint);
+                }
+            }
+        };
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setPadding(dp(leftPadDp), 0, 0, 0);
+        return col;
+    }
+
+    private void appendOptionalBrandLogoHeader(LinearLayout parent) {
+        if (!mModel.showBrandLogo || mModel.brandLogoText == null || mModel.brandLogoText.trim().isEmpty()) return;
+        LinearLayout logoPill = new LinearLayout(this);
+        logoPill.setOrientation(LinearLayout.HORIZONTAL);
+        logoPill.setGravity(Gravity.CENTER_VERTICAL);
+        logoPill.setBackground(roundedRect(0xAA000000, 4, dp(1), mModel.customAccentColor));
+        logoPill.setPadding(dp(7), dp(2), dp(8), dp(2));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(4));
+        logoPill.setLayoutParams(lp);
+
+        ImageView shieldIv = new ImageView(this);
+        shieldIv.setImageResource(R.drawable.watermark_shield);
+        logoPill.addView(shieldIv, new LinearLayout.LayoutParams(dp(12), dp(12)));
+
+        TextView tv = new TextView(this);
+        tv.setText(" " + mModel.brandLogoText.trim());
+        tv.setTextSize(11.5f);
+        tv.setTypeface(Typeface.DEFAULT_BOLD);
+        tv.setTextColor(0xFFFFFFFF);
+        logoPill.addView(tv);
+        parent.addView(logoPill);
+    }
+
+    private View createMiniGpsMapCard(int sizeDp) {
+        FrameLayout mapCard = new FrameLayout(this);
+        mapCard.setBackground(roundedRect(0xFFFFFFFF, 6, dp(1.5f), 0xFFFFFFFF));
+        mapCard.setPadding(dp(2), dp(2), dp(2), dp(2));
+        LinearLayout.LayoutParams mLp = new LinearLayout.LayoutParams(dp(sizeDp), dp(sizeDp));
+        mLp.setMargins(dp(8), 0, 0, 0);
+        mapCard.setLayoutParams(mLp);
+
+        View mapCanvasView = new View(this) {
+            private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override
+            protected void onDraw(Canvas c) {
+                super.onDraw(c);
+                int w = getWidth();
+                int h = getHeight();
+                p.setStyle(Paint.Style.FILL);
+                p.setColor(0xFFEEF2F6);
+                c.drawRect(0, 0, w, h, p);
+                p.setColor(0xFFDCE6EE);
+                c.drawRect(0, h * 0.15f, w * 0.42f, h * 0.55f, p);
+                c.drawRect(w * 0.58f, h * 0.45f, w, h * 0.85f, p);
+                p.setColor(0xFFFFFFFF);
+                p.setStrokeWidth(dp(3));
+                c.drawLine(0, h * 0.35f, w, h * 0.35f, p);
+                c.drawLine(w * 0.48f, 0, w * 0.48f, h, p);
+                c.drawLine(0, h * 0.72f, w, h * 0.55f, p);
+                // Blue GPS Location Pin
+                float cx = w * 0.5f;
+                float cy = h * 0.40f;
+                p.setColor(0x330093FF);
+                c.drawCircle(cx, cy + dp(6), dp(8), p);
+                p.setColor(0xFF0093FF);
+                c.drawCircle(cx, cy, dp(8), p);
+                p.setColor(0xFFFFFFFF);
+                c.drawCircle(cx, cy, dp(3.5f), p);
+            }
+        };
+        mapCard.addView(mapCanvasView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        TextView cityTv = new TextView(this);
+        cityTv.setText("GPS Map");
+        cityTv.setTextSize(8.5f);
+        cityTv.setTypeface(Typeface.DEFAULT_BOLD);
+        cityTv.setTextColor(0xFF333333);
+        cityTv.setGravity(Gravity.CENTER);
+        cityTv.setBackgroundColor(0xCCFFFFFF);
+        FrameLayout.LayoutParams cLp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cLp.gravity = Gravity.BOTTOM;
+        mapCard.addView(cityTv, cLp);
+        return mapCard;
     }
 
     private void appendOptionalMiniMapRow(LinearLayout parent) {
@@ -1807,15 +2074,10 @@ public class MainActivity extends Activity {
         mapRow.setOrientation(LinearLayout.HORIZONTAL);
         mapRow.setGravity(Gravity.CENTER_VERTICAL);
         mapRow.setPadding(0, dp(4), 0, 0);
-
-        FrameLayout mapCard = new FrameLayout(this);
-        mapCard.setBackground(roundedRect(0xFFFFFFFF, 5, dp(1), 0xFFFFFFFF));
-        mapCard.setPadding(dp(1.5f), dp(1.5f), dp(1.5f), dp(1.5f));
-        ImageView mapIv = new ImageView(this);
-        mapIv.setImageResource(R.drawable.cover_wm10_map01);
-        mapIv.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        mapCard.addView(mapIv, new FrameLayout.LayoutParams(dp(48), dp(48)));
-        mapRow.addView(mapCard);
+        View card = createMiniGpsMapCard(54);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(54), dp(54));
+        card.setLayoutParams(lp);
+        mapRow.addView(card);
         parent.addView(mapRow);
     }
 
@@ -1823,6 +2085,8 @@ public class MainActivity extends Activity {
         TextView tv = new TextView(this);
         tv.setText(text);
         tv.setTextSize(sp);
+        tv.setSingleLine(false);
+        tv.setEllipsize(null);
         if (bold) tv.setTypeface(Typeface.DEFAULT_BOLD);
         tv.setTextColor(0xFFFFFFFF);
         tv.setShadowLayer(3.5f, 0f, 1.2f, 0xDD000000);
@@ -1846,7 +2110,7 @@ public class MainActivity extends Activity {
                 if (geo.length() > 0) geo.append("  ");
                 geo.append(mModel.altitudeLine);
             }
-            TextView geoTv = createShadowText(geo.toString(), 13f, false, maxWidthDp);
+            TextView geoTv = createShadowText(geo.toString(), 12.5f, false, maxWidthDp);
             geoTv.setPadding(0, dp(2), 0, 0);
             parent.addView(geoTv);
         }
@@ -1859,28 +2123,29 @@ public class MainActivity extends Activity {
 
     private void appendOptionalWorkAndNoteLines(LinearLayout parent, int maxWidthDp, boolean includeProjectLine, boolean includeNoteLine) {
         if (includeProjectLine && mModel.showProject && mModel.projectName != null && !mModel.projectName.trim().isEmpty()) {
-            TextView projTv = createShadowText("Project: " + mModel.projectName.trim(), 13f, false, maxWidthDp);
+            TextView projTv = createShadowText("Project: " + mModel.projectName.trim(), 12.5f, false, maxWidthDp);
             projTv.setPadding(0, dp(2), 0, 0);
             parent.addView(projTv);
         }
         if (mModel.showArea && mModel.areaName != null && !mModel.areaName.trim().isEmpty()) {
-            TextView areaTv = createShadowText("Area: " + mModel.areaName.trim(), 13f, false, maxWidthDp);
+            TextView areaTv = createShadowText("Area: " + mModel.areaName.trim(), 12.5f, false, maxWidthDp);
             areaTv.setPadding(0, dp(2), 0, 0);
             parent.addView(areaTv);
         }
-        if (!"dasher01".equals(mModel.activeTemplate != null ? mModel.activeTemplate.id : "")
+        String activeId = mModel.activeTemplate != null ? mModel.activeTemplate.id : "";
+        if (!"dasher01".equals(activeId) && !"service01".equals(activeId)
                 && mModel.showInspector && mModel.inspectorName != null && !mModel.inspectorName.trim().isEmpty()) {
-            TextView inspTv = createShadowText("By: " + mModel.inspectorName.trim(), 13f, false, maxWidthDp);
+            TextView inspTv = createShadowText("By: " + mModel.inspectorName.trim(), 12.5f, false, maxWidthDp);
             inspTv.setPadding(0, dp(2), 0, 0);
             parent.addView(inspTv);
         }
         if (includeNoteLine && mModel.showNotes && mModel.customNote != null && !mModel.customNote.trim().isEmpty()) {
-            TextView noteTv = createShadowText("Note: " + mModel.customNote.trim(), 13f, false, maxWidthDp);
+            TextView noteTv = createShadowText("Note: " + mModel.customNote.trim(), 12.5f, false, maxWidthDp);
             noteTv.setPadding(0, dp(2), 0, 0);
             parent.addView(noteTv);
         }
         for (int i = 0; i < mModel.customExtraFields.size(); i++) {
-            TextView exTv = createShadowText(mModel.customExtraFields.get(i), 13f, false, maxWidthDp);
+            TextView exTv = createShadowText(mModel.customExtraFields.get(i), 12.5f, false, maxWidthDp);
             exTv.setPadding(0, dp(2), 0, 0);
             parent.addView(exTv);
         }
@@ -1901,7 +2166,7 @@ public class MainActivity extends Activity {
 
         TextView verTv = new TextView(this);
         verTv.setText(" 100% True Time");
-        verTv.setTextSize(12);
+        verTv.setTextSize(11.5f);
         verTv.setTextColor(0xB3FFFFFF);
         verTv.setShadowLayer(2f, 0f, 1f, 0x80000000);
         verRow.addView(verTv);
@@ -1912,17 +2177,18 @@ public class MainActivity extends Activity {
     private LinearLayout createRedBulletRow(String text) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setPadding(0, dp(3), 0, 0);
+        row.setPadding(0, dp(2.5f), 0, 0);
 
         View bullet = new View(this);
         bullet.setBackgroundColor(0xFFFF2D20);
-        LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(dp(5), dp(11));
-        bLp.setMargins(0, dp(3), dp(7), 0);
+        LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(dp(4.5f), dp(10));
+        bLp.setMargins(0, dp(3), dp(6), 0);
         row.addView(bullet, bLp);
 
         TextView tv = new TextView(this);
         tv.setText(text);
-        tv.setTextSize(12.5f);
+        tv.setTextSize(12f);
+        tv.setSingleLine(false);
         tv.setTextColor(0xFFFFFFFF);
         row.addView(tv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         return row;
@@ -1948,6 +2214,7 @@ public class MainActivity extends Activity {
         TextView vTv = new TextView(this);
         vTv.setText(value);
         vTv.setTextSize(11.5f);
+        vTv.setSingleLine(false);
         vTv.setTypeface(Typeface.DEFAULT_BOLD);
         vTv.setTextColor(0xFF111111);
         row.addView(vTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -1962,26 +2229,33 @@ public class MainActivity extends Activity {
         parent.addView(div, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(0.8f))));
     }
 
-    private TextView addGreenSheetRow(LinearLayout parent, String label, String value, int greenColor) {
-        LinearLayout row = new LinearLayout(this);
+    private TextView addGreenSheetRow(LinearLayout parent, String label, String value, final int greenColor) {
+        final int divX = dp(66);
+        LinearLayout row = new LinearLayout(this) {
+            private final Paint divPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+                divPaint.setColor(greenColor);
+                divPaint.setStrokeWidth(Math.max(1f, dp(0.8f)));
+                canvas.drawLine(divX, 0, divX, getHeight(), divPaint);
+            }
+        };
         row.setOrientation(LinearLayout.HORIZONTAL);
 
         TextView lTv = new TextView(this);
         lTv.setText(label);
         lTv.setTextSize(11.5f);
         lTv.setTextColor(0xFFE0F2F1);
-        lTv.setPadding(dp(6), dp(4), dp(4), dp(4));
-        row.addView(lTv, new LinearLayout.LayoutParams(dp(64), ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        View vDiv = new View(this);
-        vDiv.setBackgroundColor(greenColor);
-        row.addView(vDiv, new LinearLayout.LayoutParams(Math.max(1, dp(0.8f)), ViewGroup.LayoutParams.MATCH_PARENT));
+        lTv.setPadding(dp(6), dp(3.5f), dp(4), dp(3.5f));
+        row.addView(lTv, new LinearLayout.LayoutParams(divX, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView vTv = new TextView(this);
         vTv.setText(value);
         vTv.setTextSize(11.5f);
+        vTv.setSingleLine(false);
         vTv.setTextColor(0xFFFFFFFF);
-        vTv.setPadding(0, dp(4), dp(6), dp(4));
+        vTv.setPadding(dp(6), dp(3.5f), dp(6), dp(3.5f));
         row.addView(vTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         parent.addView(row);
@@ -1995,7 +2269,25 @@ public class MainActivity extends Activity {
             Typeface tf = (mModel.clockFontIndex == 1) ? mFontSegment
                     : ((mModel.clockFontIndex == 2) ? mFontMono : mFontBebas);
             mLiveBigClockTv.setTypeface(tf, Typeface.BOLD);
-            mLiveBigClockTv.setText(new SimpleDateFormat(mModel.getClockPattern(), Locale.US).format(now));
+            String clockStr = new SimpleDateFormat(mModel.getClockPattern(), Locale.US).format(now);
+            mLiveBigClockTv.setText(clockStr);
+
+            // Auto-size big clock when seconds / AM-PM are active so adjacent date/map columns never get pushed off-screen
+            String id = (mModel.activeTemplate != null) ? mModel.activeTemplate.id : "34";
+            boolean isMap01 = "map01".equals(id) || ("34".equals(id) && mModel.showMap);
+            if ("34".equals(id) || "map01".equals(id)) {
+                if (clockStr.length() > 8) {
+                    mLiveBigClockTv.setTextSize(isMap01 ? 21f : 26f);
+                } else if (clockStr.length() > 5) {
+                    mLiveBigClockTv.setTextSize(isMap01 ? 24f : 30f);
+                } else {
+                    mLiveBigClockTv.setTextSize(isMap01 ? 30f : 36f);
+                }
+            } else if ("43".equals(id) && clockStr.length() > 8) {
+                mLiveBigClockTv.setTextSize(21f);
+            } else if ("21".equals(id) && clockStr.length() > 8) {
+                mLiveBigClockTv.setTextSize(19.5f);
+            }
         }
         if (mLiveDateTv != null) {
             String effectivePattern = mModel.getEffectiveDatePattern(mDatePattern);
@@ -2443,7 +2735,8 @@ public class MainActivity extends Activity {
 
         compCanvas.save();
         compCanvas.translate(mWatermarkCardContainer.getX(), mWatermarkCardContainer.getY());
-        compCanvas.scale(mModel.stampScale, mModel.stampScale, mWatermarkCardContainer.getPivotX(), mWatermarkCardContainer.getPivotY());
+        compCanvas.scale(mWatermarkCardContainer.getScaleX(), mWatermarkCardContainer.getScaleY(),
+                mWatermarkCardContainer.getPivotX(), mWatermarkCardContainer.getPivotY());
         mWatermarkCardContainer.draw(compCanvas);
         compCanvas.restore();
 
