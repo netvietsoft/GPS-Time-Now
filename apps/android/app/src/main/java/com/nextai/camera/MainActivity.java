@@ -20,6 +20,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -46,8 +47,12 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -55,6 +60,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
 
@@ -1347,7 +1353,7 @@ public class MainActivity extends Activity {
                 twoTone.addView(mLiveBigClockTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
             if (twoTone.getChildCount() > 0) {
-                wrap.addView(twoTone);
+                wrap.addView(twoTone, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
 
             LinearLayout rightCol = createVerticalBarContainer(mModel.customAccentColor, 3, 10);
@@ -1853,9 +1859,11 @@ public class MainActivity extends Activity {
             LinearLayout outerRow = new LinearLayout(this);
             outerRow.setOrientation(LinearLayout.HORIZONTAL);
             outerRow.setGravity(Gravity.BOTTOM);
+            outerRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
             LinearLayout leftBlock = new LinearLayout(this);
             leftBlock.setOrientation(LinearLayout.VERTICAL);
+            leftBlock.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             int maxAddrW = isMap01 ? 202 : 276;
             appendOptionalBrandLogoHeader(leftBlock);
 
@@ -1875,6 +1883,7 @@ public class MainActivity extends Activity {
                 LinearLayout middleRow = new LinearLayout(this);
                 middleRow.setOrientation(LinearLayout.HORIZONTAL);
                 middleRow.setGravity(Gravity.CENTER_VERTICAL);
+                middleRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 mLiveBigClockTv = new TextView(this);
                 mLiveBigClockTv.setTextSize(isMap01 ? 30 : 36);
@@ -1883,7 +1892,7 @@ public class MainActivity extends Activity {
                 mLiveBigClockTv.setTextColor(0xFFFFFFFF);
                 mLiveBigClockTv.setShadowLayer(4f, 0f, 1.5f, 0xCC000000);
                 mLiveBigClockTv.setIncludeFontPadding(false);
-                middleRow.addView(mLiveBigClockTv);
+                middleRow.addView(mLiveBigClockTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 View blockBar = new View(this);
                 blockBar.setBackground(roundedRect(mModel.customAccentColor, 1.5f, 0, 0));
@@ -1893,8 +1902,9 @@ public class MainActivity extends Activity {
 
                 LinearLayout dateCol = new LinearLayout(this);
                 dateCol.setOrientation(LinearLayout.VERTICAL);
+                dateCol.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-                int maxDateColW = isMap01 ? 102 : 148;
+                int maxDateColW = isMap01 ? 112 : 156;
                 mLiveDateTv = new TextView(this);
                 mLiveDateTv.setTextSize(isMap01 ? 12f : 13.5f);
                 mLiveDateTv.setSingleLine(false);
@@ -1902,7 +1912,7 @@ public class MainActivity extends Activity {
                 mLiveDateTv.setTypeface(Typeface.DEFAULT_BOLD);
                 mLiveDateTv.setTextColor(0xFFFFFFFF);
                 mLiveDateTv.setShadowLayer(3f, 0f, 1f, 0xCC000000);
-                dateCol.addView(mLiveDateTv);
+                dateCol.addView(mLiveDateTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 mLiveWeatherTv = new TextView(this);
                 mLiveWeatherTv.setTextSize(isMap01 ? 11.5f : 12.5f);
@@ -1910,26 +1920,27 @@ public class MainActivity extends Activity {
                 mLiveWeatherTv.setMaxWidth(dp(maxDateColW));
                 mLiveWeatherTv.setTextColor(0xFFFFFFFF);
                 mLiveWeatherTv.setShadowLayer(3f, 0f, 1f, 0xCC000000);
-                dateCol.addView(mLiveWeatherTv);
+                dateCol.addView(mLiveWeatherTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-                middleRow.addView(dateCol);
-                leftBlock.addView(middleRow);
+                middleRow.addView(dateCol, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                leftBlock.addView(middleRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
 
             if (mModel.showAddress) {
                 TextView addrTv = createShadowText(mModel.addressLine, 13.5f, false, maxAddrW);
                 addrTv.setPadding(0, dp(4), 0, 0);
-                leftBlock.addView(addrTv);
+                leftBlock.addView(addrTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             }
             appendOptionalGeoAndNoteLines(leftBlock, maxAddrW);
             appendTimeNowVerifiedFooter(leftBlock);
-            outerRow.addView(leftBlock);
+            outerRow.addView(leftBlock, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
             if (isMap01) {
                 outerRow.addView(createMiniGpsMapCard(68));
             }
 
-            mWatermarkCardContainer.addView(outerRow);
+            updateClockTexts();
+            mWatermarkCardContainer.addView(outerRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
 
         updateClockTexts();
@@ -2078,7 +2089,7 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(54), dp(54));
         card.setLayoutParams(lp);
         mapRow.addView(card);
-        parent.addView(mapRow);
+        parent.addView(mapRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
     private TextView createShadowText(String text, float sp, boolean bold, int maxWidthDp) {
@@ -2091,6 +2102,7 @@ public class MainActivity extends Activity {
         tv.setTextColor(0xFFFFFFFF);
         tv.setShadowLayer(3.5f, 0f, 1.2f, 0xDD000000);
         tv.setMaxWidth(dp(maxWidthDp));
+        tv.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return tv;
     }
 
@@ -2169,9 +2181,9 @@ public class MainActivity extends Activity {
         verTv.setTextSize(11.5f);
         verTv.setTextColor(0xB3FFFFFF);
         verTv.setShadowLayer(2f, 0f, 1f, 0x80000000);
-        verRow.addView(verTv);
+        verRow.addView(verTv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        parent.addView(verRow);
+        parent.addView(verRow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
     private LinearLayout createRedBulletRow(String text) {
@@ -2275,18 +2287,25 @@ public class MainActivity extends Activity {
             // Auto-size big clock when seconds / AM-PM are active so adjacent date/map columns never get pushed off-screen
             String id = (mModel.activeTemplate != null) ? mModel.activeTemplate.id : "34";
             boolean isMap01 = "map01".equals(id) || ("34".equals(id) && mModel.showMap);
+            float targetSp = 0f;
             if ("34".equals(id) || "map01".equals(id)) {
                 if (clockStr.length() > 8) {
-                    mLiveBigClockTv.setTextSize(isMap01 ? 21f : 26f);
+                    targetSp = isMap01 ? 21f : 26f;
                 } else if (clockStr.length() > 5) {
-                    mLiveBigClockTv.setTextSize(isMap01 ? 24f : 30f);
+                    targetSp = isMap01 ? 24f : 30f;
                 } else {
-                    mLiveBigClockTv.setTextSize(isMap01 ? 30f : 36f);
+                    targetSp = isMap01 ? 30f : 36f;
                 }
             } else if ("43".equals(id) && clockStr.length() > 8) {
-                mLiveBigClockTv.setTextSize(21f);
+                targetSp = 21f;
             } else if ("21".equals(id) && clockStr.length() > 8) {
-                mLiveBigClockTv.setTextSize(19.5f);
+                targetSp = 19.5f;
+            }
+            if (targetSp > 0f) {
+                float targetPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, targetSp, getResources().getDisplayMetrics());
+                if (Math.abs(mLiveBigClockTv.getTextSize() - targetPx) > 0.5f) {
+                    mLiveBigClockTv.setTextSize(targetSp);
+                }
             }
         }
         if (mLiveDateTv != null) {
@@ -2963,41 +2982,269 @@ public class MainActivity extends Activity {
         } catch (Throwable ignored) {}
     }
 
+    private LocationListener mLiveLocationListener;
+    private double mLastGeocodedLat = Double.NaN;
+    private double mLastGeocodedLon = Double.NaN;
+    private volatile boolean mReverseGeocodeInFlight = false;
+    private volatile boolean mIpFallbackInFlight = false;
+
+    private boolean isLocationFresher(Location candidate, Location currentBest) {
+        if (candidate == null) return false;
+        if (currentBest == null) return true;
+        if (Build.VERSION.SDK_INT >= 17) {
+            long candNanos = candidate.getElapsedRealtimeNanos();
+            long bestNanos = currentBest.getElapsedRealtimeNanos();
+            if (candNanos > 0 && bestNanos > 0 && Math.abs(candNanos - bestNanos) > 1_000_000_000L) {
+                return candNanos > bestNanos;
+            }
+        }
+        long timeDelta = candidate.getTime() - currentBest.getTime();
+        if (Math.abs(timeDelta) > 15_000L) {
+            return timeDelta > 0;
+        }
+        return candidate.getAccuracy() < currentBest.getAccuracy();
+    }
+
     private void initLiveGpsListener() {
         try {
-            if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= 23
+                    && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                fetchNetworkIpLocationFallbackAsync();
                 return;
             }
-            LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if (lm == null) return;
-            Location last = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if (last == null) last = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (last != null) {
-                mModel.currentLat = last.getLatitude();
-                mModel.currentLon = last.getLongitude();
-                mModel.latLongLine = String.format(Locale.US, "%.5f°N  %.5f°E", last.getLatitude(), last.getLongitude());
-                if (last.hasAltitude() && last.getAltitude() != 0) {
-                    mModel.altitudeLine = String.format(Locale.US, "%.1fm ASL", last.getAltitude());
-                }
+            final LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            if (lm == null) {
+                fetchNetworkIpLocationFallbackAsync();
+                return;
+            }
+
+            // Pick the freshest known location across fused, network, gps, and passive providers
+            String[] providers = new String[]{
+                    "fused",
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.GPS_PROVIDER,
+                    LocationManager.PASSIVE_PROVIDER
+            };
+            Location bestLoc = null;
+            for (String p : providers) {
                 try {
-                    android.location.Geocoder geocoder = new android.location.Geocoder(this, Locale.getDefault());
-                    java.util.List<android.location.Address> addrs = geocoder.getFromLocation(last.getLatitude(), last.getLongitude(), 1);
+                    Location loc = lm.getLastKnownLocation(p);
+                    if (isLocationFresher(loc, bestLoc)) {
+                        bestLoc = loc;
+                    }
+                } catch (Throwable ignoredProvider) {}
+            }
+
+            if (bestLoc != null) {
+                applyRealtimeLocationFix(bestLoc);
+            } else {
+                fetchNetworkIpLocationFallbackAsync();
+            }
+
+            // Register live LocationListener for continuous realtime updates
+            if (mLiveLocationListener == null) {
+                mLiveLocationListener = new LocationListener() {
+                    @Override
+                    public void onLocationChanged(Location location) {
+                        if (location != null) {
+                            applyRealtimeLocationFix(location);
+                        }
+                    }
+
+                    @Override
+                    public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+                    @Override
+                    public void onProviderEnabled(String provider) {}
+
+                    @Override
+                    public void onProviderDisabled(String provider) {}
+                };
+            }
+            try {
+                lm.removeUpdates(mLiveLocationListener);
+            } catch (Throwable ignoredRemove) {}
+
+            String[] liveProviders = new String[]{
+                    "fused",
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.GPS_PROVIDER
+            };
+            for (String lp : liveProviders) {
+                try {
+                    if (lm.isProviderEnabled(lp) || "fused".equals(lp)) {
+                        lm.requestLocationUpdates(lp, 4000L, 3f, mLiveLocationListener);
+                    }
+                } catch (Throwable ignoredReg) {}
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private void applyRealtimeLocationFix(final Location loc) {
+        if (loc == null) return;
+        final double lat = loc.getLatitude();
+        final double lon = loc.getLongitude();
+        if (lat == 0.0 && lon == 0.0) return;
+
+        boolean coordsChanged = Math.abs(mModel.currentLat - lat) > 0.00005
+                || Math.abs(mModel.currentLon - lon) > 0.00005;
+        mModel.currentLat = lat;
+        mModel.currentLon = lon;
+        mModel.latLongLine = String.format(Locale.US, "%.5f°N  %.5f°E", lat, lon);
+        if (loc.hasAltitude() && loc.getAltitude() != 0) {
+            mModel.altitudeLine = String.format(Locale.US, "%.1fm ASL", loc.getAltitude());
+        }
+        if (coordsChanged) {
+            mModel.saveState(this);
+            rebuildWatermarkOverlay();
+        }
+
+        boolean needGeocode = Double.isNaN(mLastGeocodedLat)
+                || Math.abs(mLastGeocodedLat - lat) > 0.00025
+                || Math.abs(mLastGeocodedLon - lon) > 0.00025;
+        if (needGeocode && !mReverseGeocodeInFlight) {
+            reverseGeocodeAsync(lat, lon);
+        }
+    }
+
+    private void reverseGeocodeAsync(final double lat, final double lon) {
+        mReverseGeocodeInFlight = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String resolvedAddress = null;
+                try {
+                    android.location.Geocoder geocoder = new android.location.Geocoder(MainActivity.this, Locale.getDefault());
+                    java.util.List<android.location.Address> addrs = geocoder.getFromLocation(lat, lon, 1);
                     if (addrs != null && !addrs.isEmpty()) {
                         String line = addrs.get(0).getAddressLine(0);
-                        if (line != null && !line.isEmpty()) {
-                            mModel.addressLine = line;
+                        if (line != null && !line.trim().isEmpty()) {
+                            resolvedAddress = line.trim();
                         }
                     }
                 } catch (Throwable ignoredGeo) {}
-                rebuildWatermarkOverlay();
+
+                // HTTPS OpenStreetMap Nominatim fallback if Android Geocoder returns empty or fails
+                if (resolvedAddress == null || resolvedAddress.isEmpty()) {
+                    HttpURLConnection conn = null;
+                    try {
+                        String urlStr = String.format(Locale.US,
+                                "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=%.6f&lon=%.6f&zoom=18&addressdetails=1",
+                                lat, lon);
+                        conn = (HttpURLConnection) new URL(urlStr).openConnection();
+                        conn.setRequestMethod("GET");
+                        conn.setConnectTimeout(4500);
+                        conn.setReadTimeout(4500);
+                        conn.setRequestProperty("User-Agent", "NextAICamera/2.0 (Android)");
+                        conn.setRequestProperty("Accept-Language", Locale.getDefault().getLanguage());
+                        if (conn.getResponseCode() == 200) {
+                            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+                            StringBuilder sb = new StringBuilder();
+                            String line;
+                            while ((line = br.readLine()) != null) sb.append(line);
+                            br.close();
+                            JSONObject json = new JSONObject(sb.toString());
+                            String displayName = json.optString("display_name", "");
+                            if (!displayName.isEmpty()) {
+                                resolvedAddress = displayName;
+                            }
+                        }
+                    } catch (Throwable ignoredNom) {
+                    } finally {
+                        if (conn != null) conn.disconnect();
+                    }
+                }
+
+                final String finalAddress = resolvedAddress;
+                mUiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mReverseGeocodeInFlight = false;
+                        if (finalAddress != null && !finalAddress.isEmpty()) {
+                            mLastGeocodedLat = lat;
+                            mLastGeocodedLon = lon;
+                            if (!finalAddress.equals(mModel.addressLine)) {
+                                mModel.addressLine = finalAddress;
+                                mModel.saveState(MainActivity.this);
+                                rebuildWatermarkOverlay();
+                            }
+                        }
+                    }
+                });
             }
-        } catch (Throwable ignored) {}
+        }).start();
+    }
+
+    private void fetchNetworkIpLocationFallbackAsync() {
+        if (mIpFallbackInFlight) return;
+        mIpFallbackInFlight = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                HttpURLConnection conn = null;
+                try {
+                    conn = (HttpURLConnection) new URL("https://ipwho.is/").openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(4500);
+                    conn.setReadTimeout(4500);
+                    conn.setRequestProperty("User-Agent", "NextAICamera/2.0 (Android)");
+                    if (conn.getResponseCode() == 200) {
+                        BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = br.readLine()) != null) sb.append(line);
+                        br.close();
+                        JSONObject json = new JSONObject(sb.toString());
+                        if (json.optBoolean("success", true)) {
+                            final double lat = json.optDouble("latitude", 0.0);
+                            final double lon = json.optDouble("longitude", 0.0);
+                            String city = json.optString("city", "");
+                            String region = json.optString("region", "");
+                            String country = json.optString("country", "");
+                            StringBuilder addrSb = new StringBuilder();
+                            if (!city.isEmpty()) addrSb.append(city);
+                            if (!region.isEmpty() && !region.equals(city)) {
+                                if (addrSb.length() > 0) addrSb.append(", ");
+                                addrSb.append(region);
+                            }
+                            if (!country.isEmpty()) {
+                                if (addrSb.length() > 0) addrSb.append(", ");
+                                addrSb.append(country);
+                            }
+                            final String ipAddr = addrSb.toString();
+                            if (lat != 0.0 || lon != 0.0) {
+                                mUiHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mModel.currentLat = lat;
+                                        mModel.currentLon = lon;
+                                        mModel.latLongLine = String.format(Locale.US, "%.5f°N  %.5f°E", lat, lon);
+                                        if (!ipAddr.isEmpty()) {
+                                            mModel.addressLine = ipAddr;
+                                        }
+                                        mModel.saveState(MainActivity.this);
+                                        rebuildWatermarkOverlay();
+                                        reverseGeocodeAsync(lat, lon);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                } catch (Throwable ignoredIp) {
+                } finally {
+                    if (conn != null) conn.disconnect();
+                    mIpFallbackInFlight = false;
+                }
+            }
+        }).start();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mUiHandler.post(mClockTicker);
+        initLiveGpsListener();
         if (mTextureView != null && mTextureView.isAvailable()) {
             openCameraHardware();
         }
@@ -3006,6 +3253,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         mUiHandler.removeCallbacks(mClockTicker);
+        try {
+            if (mLiveLocationListener != null) {
+                LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                if (lm != null) lm.removeUpdates(mLiveLocationListener);
+            }
+        } catch (Throwable ignored) {}
         closeCameraHardware();
         super.onPause();
     }
